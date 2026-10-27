@@ -1,0 +1,74 @@
+type = "application"
+id = "recipes"
+name = "Recipes"
+version = "0.2.0"
+about = "Collect materials for a recipe (screenshots, photos, text, notes); the LLM turns them into a recipe."
+author = "Bot Gateway"
+license = "Apache-2.0"
+timeout_secs = 30
+
+[app]
+
+[[app.collections]]
+name = "recipes"
+title = "Recipes"
+fields = [
+  { name = "title", title = "Title", type = "text", required = true },
+  { name = "status", title = "Status", type = "choice", choices = ["draft", "ready"] },
+  { name = "servings", title = "Servings", type = "number" },
+  { name = "photo", title = "Photo", type = "image" },
+  { name = "ingredients", title = "Ingredients (JSON list)", type = "json" },
+  { name = "steps", title = "Steps (JSON list)", type = "json" },
+  { name = "notes", title = "Notes", type = "longtext" },
+  { name = "source", title = "Source (link)", type = "text" },
+]
+
+[[app.collections]]
+name = "materials"
+title = "Materials"
+fields = [
+  { name = "recipe", title = "Recipe", type = "ref", ref = "recipes", required = true },
+  { name = "kind", title = "Kind", type = "choice", choices = ["screenshot", "photo", "text", "note"] },
+  { name = "text", title = "Text", type = "longtext" },
+  { name = "file", title = "Image", type = "image" },
+  { name = "extracted_text", title = "Text read from the image", type = "longtext" },
+]
+
+# Actions ask the LLM of the gateway's client (specification 3.1): the item, its materials and all their
+# files go with the task and the answer's schema; a valid answer is saved into the item.
+[[app.actions]]
+name = "build_recipe"
+title = "Build recipe"
+on = "recipes"
+task = """Write the recipe "{{title}}" from its materials (texts, notes, screenshots and photos in the attachments).
+Use only what the materials say; leave a field out if they don't say it. Ingredients with quantities, steps in order."""
+include = ["materials"]
+save = { title = "title", servings = "servings", ingredients = "ingredients", steps = "steps", notes = "notes" }
+set = { status = "ready" }
+[app.actions.schema]
+type = "object"
+required = ["title", "ingredients", "steps"]
+[app.actions.schema.properties.title]
+type = "string"
+[app.actions.schema.properties.servings]
+type = "number"
+[app.actions.schema.properties.ingredients]
+type = "array"
+items = { type = "object", required = ["name"], properties = { name = { type = "string" }, qty = { type = "string" } } }
+[app.actions.schema.properties.steps]
+type = "array"
+items = { type = "string" }
+[app.actions.schema.properties.notes]
+type = "string"
+
+[[app.actions]]
+name = "extract_text"
+title = "Read text from image"
+on = "materials"
+task = "Read the recipe text in the attached image exactly as written (keep the original language)."
+save = { text = "extracted_text" }
+[app.actions.schema]
+type = "object"
+required = ["text"]
+[app.actions.schema.properties.text]
+type = "string"

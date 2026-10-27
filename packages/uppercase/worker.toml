@@ -1,0 +1,19 @@
+id = "uppercase"
+name = "Uppercase (Python)"
+version = "1.2.0"
+about = "Upper-cases text - an example package (the old built-in uppercase as a Python program)."
+author = "Bot Gateway"
+license = "Apache-2.0"
+command = "python3"
+args = ["main.py"]
+timeout_secs = 30
+
+# Its tool's arguments (specification 3.0). "text" is optional: as an action it can read the "uses" files.
+[input_schema]
+type = "object"
+[input_schema.properties.text]
+type = "string"
+description = "the text to upper-case"
+
+[action]
+uses = "text artifacts - used when arguments.text is not given; their text is joined and upper-cased"

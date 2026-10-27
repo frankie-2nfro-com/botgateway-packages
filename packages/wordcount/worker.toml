@@ -1,0 +1,17 @@
+id = "wordcount"
+name = "Word Count (Python)"
+version = "1.1.0"
+about = "Counts the words and characters of a text - an example package."
+author = "Bot Gateway"
+license = "Apache-2.0"
+command = "python3"
+args = ["main.py"]
+timeout_secs = 30
+
+# Its tool's arguments (specification 3.0).
+[input_schema]
+type = "object"
+required = ["text"]
+[input_schema.properties.text]
+type = "string"
+description = "the text to count"

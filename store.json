@@ -1,0 +1,41 @@
+{
+ "packages": [
+  {
+   "about": "Collect materials for a recipe (screenshots, photos, text, notes); the LLM turns them into a recipe.",
+   "archive": "dist/recipes-0.2.0.tar.gz",
+   "author": "Bot Gateway",
+   "bytes": 1089,
+   "id": "recipes",
+   "license": "Apache-2.0",
+   "name": "Recipes",
+   "sha256": "65da33a93f07d4856fa357b50bf0aaaa898efcbe70c577bfda5713967a017523",
+   "type": "application",
+   "version": "0.2.0"
+  },
+  {
+   "about": "Upper-cases text - an example package (the old built-in uppercase as a Python program).",
+   "archive": "dist/uppercase-1.2.0.tar.gz",
+   "author": "Bot Gateway",
+   "bytes": 1450,
+   "id": "uppercase",
+   "license": "Apache-2.0",
+   "name": "Uppercase (Python)",
+   "sha256": "4a3cb1ba1cef60a7760e6e95dd4f0a544d6d30d9d8dd7b8cf34856ca97afe1b9",
+   "type": "worker",
+   "version": "1.2.0"
+  },
+  {
+   "about": "Counts the words and characters of a text - an example package.",
+   "archive": "dist/wordcount-1.1.0.tar.gz",
+   "author": "Bot Gateway",
+   "bytes": 555,
+   "id": "wordcount",
+   "license": "Apache-2.0",
+   "name": "Word Count (Python)",
+   "sha256": "bc148aaec2f6b2d5bd523a9ed4e329d7cfe91064aa991c861b3faf2d3feff71c",
+   "type": "worker",
+   "version": "1.1.0"
+  }
+ ],
+ "store": 1
+}
