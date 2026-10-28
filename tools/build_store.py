@@ -45,22 +45,15 @@ def pack(folder: pathlib.Path) -> bytes:
 
 
 def disclosure(m: dict):
-    """What the Portal shows before an application is picked (app_hosting_requirements.txt 3.5): its AI
-    actions (what they send to the owner's bot, who may run them), its login and what visitors of its
-    website may do. Taken from [app]; the gateway shows the same from the installed manifest."""
+    """What the Portal shows before an application is picked (app_hosting_requirements.txt 3.5,
+    app_sandbox_requirements.txt 3): what it sends to the owner's bot and who may cause it, its login,
+    what visitors of its website may do and which other websites it may reach. Taken from [app]; the
+    gateway shows the same from the installed manifest and enforces ai / net / login."""
     app = m.get("app") or {}
-    colls = {c["name"]: c for c in app.get("collections", [])}
-    title = lambda n: (colls.get(n, {}).get("title") or n)
-    has_files = lambda n: any(f.get("type") in ("image", "file") for f in colls.get(n, {}).get("fields", []))
-    ai = []
-    for a in app.get("actions", []):
-        on, inc = a.get("on", ""), a.get("include", [])
-        ai.append({"action": a["name"], "title": a.get("title") or a["name"],
-                   "sends": [f"a {colls[on]['item']}" if colls.get(on, {}).get("item") else f"an item of {title(on)}"] + [f"its {title(i)}" for i in inc],
-                   "files": any(has_files(n) for n in [on, *inc]), "who": "public" if a.get("public") else "owner"})
-    public = [{"collection": c["name"], "title": c.get("title") or c["name"], "may": c["public"]}
-              for c in app.get("collections", []) if c.get("public")]
-    return {"ai": ai, "login": app.get("login") or "none", "public": public}
+    ai = None
+    if app.get("ai_sends") or app.get("ai"):
+        ai = {"sends": app.get("ai_sends", ""), "who": "visitors" if app.get("ai") == "visitors" else "owner"}
+    return {"ai": ai, "login": app.get("login") or "none", "visitors": app.get("visitors") or None, "net": app.get("net", [])}
 
 
 def main():

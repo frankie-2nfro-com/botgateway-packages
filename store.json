@@ -6,29 +6,10 @@
    "author": "Bot Gateway",
    "bytes": 1089,
    "disclosure": {
-    "ai": [
-     {
-      "action": "build_recipe",
-      "files": true,
-      "sends": [
-       "an item of Recipes",
-       "its Materials"
-      ],
-      "title": "Build recipe",
-      "who": "owner"
-     },
-     {
-      "action": "extract_text",
-      "files": true,
-      "sends": [
-       "an item of Materials"
-      ],
-      "title": "Read text from image",
-      "who": "owner"
-     }
-    ],
+    "ai": null,
     "login": "none",
-    "public": []
+    "net": [],
+    "visitors": null
    },
    "id": "recipes",
    "license": "Apache-2.0",
@@ -43,28 +24,10 @@
    "author": "Bot Gateway",
    "bytes": 1387,
    "disclosure": {
-    "ai": [
-     {
-      "action": "build_recipe",
-      "files": true,
-      "sends": [
-       "a recipe",
-       "its Materials"
-      ],
-      "title": "Build recipe",
-      "who": "owner"
-     }
-    ],
+    "ai": null,
     "login": "none",
-    "public": [
-     {
-      "collection": "recipes",
-      "may": [
-       "read"
-      ],
-      "title": "Recipes"
-     }
-    ]
+    "net": [],
+    "visitors": null
    },
    "id": "recipes",
    "license": "Apache-2.0",
@@ -72,6 +35,27 @@
    "sha256": "18993ca52ecc500fe8d26c326f40525c8cf19346320c1d035d0c706564cd4b4f",
    "type": "application",
    "version": "0.3.0"
+  },
+  {
+   "about": "Your recipe book: collect screenshots, photos and notes as materials; the assistant writes the finished recipe from them - cover photo, ingredients you can scale, the method with step pictures. Its website shows the recipes.",
+   "archive": "dist/recipes-0.4.0.tar.gz",
+   "author": "Bot Gateway",
+   "bytes": 24115,
+   "disclosure": {
+    "ai": {
+     "sends": "a recipe with its materials (photos, screenshots, notes) when you press Build recipe",
+     "who": "owner"
+    },
+    "login": "none",
+    "net": [],
+    "visitors": "read the recipes and change the servings (amounts follow)"
+   },
+   "id": "recipes",
+   "license": "Apache-2.0",
+   "name": "Recipes",
+   "sha256": "50669f9fc29bb5750df6f6fb38692af4a2da49dcb50f2f683e9e4fa1813273da",
+   "type": "application",
+   "version": "0.4.0"
   },
   {
    "about": "Upper-cases text - an example package (the old built-in uppercase as a Python program).",

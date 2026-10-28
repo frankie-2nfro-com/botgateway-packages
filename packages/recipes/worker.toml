@@ -1,81 +1,58 @@
 type = "application"
 id = "recipes"
 name = "Recipes"
-version = "0.3.0"
-about = "Your recipe book: collect screenshots, photos and notes as materials; the assistant turns them into recipes. Its website shows the recipes (read only)."
+version = "0.4.0"
+about = "Your recipe book: collect screenshots, photos and notes as materials; the assistant writes the finished recipe from them - cover photo, ingredients you can scale, the method with step pictures. Its website shows the recipes."
 author = "Bot Gateway"
 license = "Apache-2.0"
 timeout_secs = 30
 
+# Its own program (app_sandbox_requirements.txt): server/main.js runs in the gateway's sandbox, built on
+# the app kit (kit/, copied from botgateway-packages/kit); its pages are web/.
 [app]
-
-# How the page looks: warm paper, a terracotta accent, a book-like font.
-[app.look]
-accent = "#b4532a"
-paper = "#faf6ef"
-font = "serif"
+main = "server/main.js"
 icon = "🍳"
+ai = "owner"
+ai_sends = "a recipe with its materials (photos, screenshots, notes) when you press Build recipe"
+visitors = "read the recipes and change the servings (amounts follow)"
+login = "none"
 
-[[app.collections]]
-name = "recipes"
-title = "Recipes"
-item = "recipe"
-view = "cards"
-cover = "photo"
-# Its website (app_hosting_requirements.txt): visitors may read the recipes; materials stay private.
-public = ["read"]
-fields = [
-  { name = "title", title = "Title", type = "text", required = true },
-  { name = "status", title = "Status", type = "choice", choices = ["draft", "ready"] },
-  { name = "servings", title = "Servings", type = "number" },
-  { name = "photo", title = "Photo", type = "image" },
-  { name = "ingredients", title = "Ingredients", type = "table", columns = [{ name = "qty", title = "Amount" }, { name = "name", title = "Ingredient" }] },
-  { name = "steps", title = "Method", type = "list", numbered = true },
-  { name = "notes", title = "Notes", type = "longtext" },
-  { name = "source", title = "Source", type = "text" },
-]
+# What the client's LLM may do (the program's callTool).
+[[tools]]
+name = "recipes_list"
+title = "List recipes"
+description = "The recipes (newest first), optionally only those containing a word."
+read_only = true
+input_schema = { type = "object", properties = { query = { type = "string" }, limit = { type = "integer" } } }
 
-# Materials are files (screenshots, photos, text notes, documents); one material can belong to several
-# recipes. Reading them is the assistant's job (build_recipe), not the owner's.
-[[app.collections]]
-name = "materials"
-title = "Materials"
-item = "material"
-view = "files"
-fields = [
-  { name = "file", title = "File", type = "file", required = true },
-  { name = "recipe", title = "Recipes", type = "refs", ref = "recipes" },
-]
+[[tools]]
+name = "recipes_get"
+title = "Read a recipe"
+description = "One recipe with all its fields."
+read_only = true
+input_schema = { type = "object", required = ["id"], properties = { id = { type = "integer" } } }
 
-# Actions ask the LLM of the gateway's client (specification 3.1): the item, its materials and all their
-# files go with the task and the answer's schema; a valid answer is saved into the item.
-[[app.actions]]
+[[tools]]
+name = "recipes_add"
+title = "Add a recipe"
+description = "A new recipe: title (needed), servings, ingredients [{qty, unit, name, note}], steps [{text}], tips [text], notes, source."
+input_schema = { type = "object", required = ["title"], properties = { title = { type = "string" } } }
+
+[[tools]]
+name = "recipes_update"
+title = "Change a recipe"
+description = "Changes the given fields of recipe id (same fields as recipes_add)."
+input_schema = { type = "object", required = ["id"], properties = { id = { type = "integer" } } }
+
+[[tools]]
+name = "materials_list"
+title = "List materials"
+description = "The material files (screenshots, photos, notes); recipe = only those of that recipe."
+read_only = true
+input_schema = { type = "object", properties = { recipe = { type = "integer" }, limit = { type = "integer" } } }
+
+[[tools]]
 name = "build_recipe"
-title = "Build recipe"
-on = "recipes"
-task = """Write the recipe "{{title}}" from its materials: the attached files (screenshots, photos, text notes,
-documents). Read the text in the images yourself. The recipe's current fields are in "item": keep what is
-there unless the materials say otherwise. Use only what the materials and the item say; leave a field out
-if they don't say it. Ingredients with their amounts, the method as steps in order, in the language of the
-materials."""
-include = ["materials"]
-save = { title = "title", servings = "servings", ingredients = "ingredients", steps = "steps", notes = "notes", source = "source" }
-set = { status = "ready" }
-[app.actions.schema]
-type = "object"
-required = ["title", "ingredients", "steps"]
-[app.actions.schema.properties.title]
-type = "string"
-[app.actions.schema.properties.servings]
-type = "number"
-[app.actions.schema.properties.ingredients]
-type = "array"
-items = { type = "object", required = ["name"], properties = { name = { type = "string" }, qty = { type = "string" } } }
-[app.actions.schema.properties.steps]
-type = "array"
-items = { type = "string" }
-[app.actions.schema.properties.notes]
-type = "string"
-[app.actions.schema.properties.source]
-type = "string"
-description = "a link or book the recipe comes from, if the materials show one"
+title = "Build a recipe"
+description = "Asks the assistant to write recipe id again from its materials (the answer arrives later)."
+input_schema = { type = "object", required = ["id"], properties = { id = { type = "integer" } } }

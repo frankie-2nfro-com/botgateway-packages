@@ -1,0 +1,29 @@
+/* Recipes: its looks, picked per recipe (field "look"; the kit puts look-<name> on the recipe's page).
+   classic = the kit's own layout. */
+
+/* magazine: a big cover across the page, a large title, ingredients beside the method. */
+.sheet.look-magazine { padding: 0; overflow: hidden; }
+.sheet.look-magazine .hero { display: block; position: relative; margin: 0; }
+.sheet.look-magazine .heroimg { aspect-ratio: 21 / 9; border-radius: 0; }
+.sheet.look-magazine .hinfo { padding: 22px 28px 0; }
+.sheet.look-magazine .hinfo h2 { font-size: 42px; }
+.sheet.look-magazine > section { padding: 0 28px; }
+.sheet.look-magazine > section:last-child { padding-bottom: 28px; }
+.sheet.look-magazine h3 { text-transform: uppercase; letter-spacing: .08em; font-size: 15px; }
+@media (min-width: 900px) {
+  .sheet.look-magazine { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); column-gap: 8px; align-items: start; }
+  .sheet.look-magazine .hero { grid-column: 1 / -1; }
+  .sheet.look-magazine > section { grid-column: 2; }
+  .sheet.look-magazine > section:has(.ingr) { grid-column: 1; grid-row: span 6; border-right: 1px solid var(--line); }
+  .sheet.look-magazine .ingr { columns: 1; }
+}
+
+/* notebook: lined paper, a hand-written feel, steps as a checklist. */
+.sheet.look-notebook { --font: ui-rounded, "SF Pro Rounded", "Comic Sans MS", system-ui, sans-serif;
+  background: repeating-linear-gradient(var(--card) 0 31px, color-mix(in srgb, var(--accent) 16%, var(--card)) 31px 32px);
+  border-left: 6px double color-mix(in srgb, var(--bad) 45%, var(--card)); }
+.sheet.look-notebook .heroimg { transform: rotate(-1.5deg); border: 8px solid #fff; box-shadow: 0 6px 18px rgba(0, 0, 0, .18); }
+.sheet.look-notebook h3::after { display: none; }
+.sheet.look-notebook .steps li::before { content: ""; width: 20px; height: 20px; border-radius: 4px; background: transparent;
+  border: 2px solid var(--accent); margin-top: 3px; }
+.sheet.look-notebook .ingr li { border-bottom: none; }
