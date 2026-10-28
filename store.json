@@ -5,12 +5,73 @@
    "archive": "dist/recipes-0.2.0.tar.gz",
    "author": "Bot Gateway",
    "bytes": 1089,
+   "disclosure": {
+    "ai": [
+     {
+      "action": "build_recipe",
+      "files": true,
+      "sends": [
+       "an item of Recipes",
+       "its Materials"
+      ],
+      "title": "Build recipe",
+      "who": "owner"
+     },
+     {
+      "action": "extract_text",
+      "files": true,
+      "sends": [
+       "an item of Materials"
+      ],
+      "title": "Read text from image",
+      "who": "owner"
+     }
+    ],
+    "login": "none",
+    "public": []
+   },
    "id": "recipes",
    "license": "Apache-2.0",
    "name": "Recipes",
    "sha256": "65da33a93f07d4856fa357b50bf0aaaa898efcbe70c577bfda5713967a017523",
    "type": "application",
    "version": "0.2.0"
+  },
+  {
+   "about": "Your recipe book: collect screenshots, photos and notes as materials; the assistant turns them into recipes. Its website shows the recipes (read only).",
+   "archive": "dist/recipes-0.3.0.tar.gz",
+   "author": "Bot Gateway",
+   "bytes": 1387,
+   "disclosure": {
+    "ai": [
+     {
+      "action": "build_recipe",
+      "files": true,
+      "sends": [
+       "a recipe",
+       "its Materials"
+      ],
+      "title": "Build recipe",
+      "who": "owner"
+     }
+    ],
+    "login": "none",
+    "public": [
+     {
+      "collection": "recipes",
+      "may": [
+       "read"
+      ],
+      "title": "Recipes"
+     }
+    ]
+   },
+   "id": "recipes",
+   "license": "Apache-2.0",
+   "name": "Recipes",
+   "sha256": "18993ca52ecc500fe8d26c326f40525c8cf19346320c1d035d0c706564cd4b4f",
+   "type": "application",
+   "version": "0.3.0"
   },
   {
    "about": "Upper-cases text - an example package (the old built-in uppercase as a Python program).",

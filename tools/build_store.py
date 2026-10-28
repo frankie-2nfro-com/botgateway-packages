@@ -44,6 +44,25 @@ def pack(folder: pathlib.Path) -> bytes:
     return out.getvalue()
 
 
+def disclosure(m: dict):
+    """What the Portal shows before an application is picked (app_hosting_requirements.txt 3.5): its AI
+    actions (what they send to the owner's bot, who may run them), its login and what visitors of its
+    website may do. Taken from [app]; the gateway shows the same from the installed manifest."""
+    app = m.get("app") or {}
+    colls = {c["name"]: c for c in app.get("collections", [])}
+    title = lambda n: (colls.get(n, {}).get("title") or n)
+    has_files = lambda n: any(f.get("type") in ("image", "file") for f in colls.get(n, {}).get("fields", []))
+    ai = []
+    for a in app.get("actions", []):
+        on, inc = a.get("on", ""), a.get("include", [])
+        ai.append({"action": a["name"], "title": a.get("title") or a["name"],
+                   "sends": [f"a {colls[on]['item']}" if colls.get(on, {}).get("item") else f"an item of {title(on)}"] + [f"its {title(i)}" for i in inc],
+                   "files": any(has_files(n) for n in [on, *inc]), "who": "public" if a.get("public") else "owner"})
+    public = [{"collection": c["name"], "title": c.get("title") or c["name"], "may": c["public"]}
+              for c in app.get("collections", []) if c.get("public")]
+    return {"ai": ai, "login": app.get("login") or "none", "public": public}
+
+
 def main():
     dist = ROOT / "dist"
     dist.mkdir(exist_ok=True)
@@ -71,6 +90,8 @@ def main():
         entries.append({"id": m["id"], "version": m["version"], "type": m.get("type", "worker"), "name": m["name"],
                         "about": m.get("about", ""), "author": m.get("author", ""), "license": m["license"],
                         "archive": f"dist/{a.name}", "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)})
+        if m.get("type") == "application":
+            entries[-1]["disclosure"] = disclosure(m)
     index = json.dumps({"store": 1, "packages": entries}, indent=1, sort_keys=True, ensure_ascii=False).encode() + b"\n"
     (ROOT / "store.json").write_bytes(index)
     sig = ROOT / "store.json.sig"

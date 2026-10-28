@@ -1,37 +1,50 @@
 type = "application"
 id = "recipes"
 name = "Recipes"
-version = "0.2.0"
-about = "Collect materials for a recipe (screenshots, photos, text, notes); the LLM turns them into a recipe."
+version = "0.3.0"
+about = "Your recipe book: collect screenshots, photos and notes as materials; the assistant turns them into recipes. Its website shows the recipes (read only)."
 author = "Bot Gateway"
 license = "Apache-2.0"
 timeout_secs = 30
 
 [app]
 
+# How the page looks: warm paper, a terracotta accent, a book-like font.
+[app.look]
+accent = "#b4532a"
+paper = "#faf6ef"
+font = "serif"
+icon = "🍳"
+
 [[app.collections]]
 name = "recipes"
 title = "Recipes"
+item = "recipe"
+view = "cards"
+cover = "photo"
+# Its website (app_hosting_requirements.txt): visitors may read the recipes; materials stay private.
+public = ["read"]
 fields = [
   { name = "title", title = "Title", type = "text", required = true },
   { name = "status", title = "Status", type = "choice", choices = ["draft", "ready"] },
   { name = "servings", title = "Servings", type = "number" },
   { name = "photo", title = "Photo", type = "image" },
-  { name = "ingredients", title = "Ingredients (JSON list)", type = "json" },
-  { name = "steps", title = "Steps (JSON list)", type = "json" },
+  { name = "ingredients", title = "Ingredients", type = "table", columns = [{ name = "qty", title = "Amount" }, { name = "name", title = "Ingredient" }] },
+  { name = "steps", title = "Method", type = "list", numbered = true },
   { name = "notes", title = "Notes", type = "longtext" },
-  { name = "source", title = "Source (link)", type = "text" },
+  { name = "source", title = "Source", type = "text" },
 ]
 
+# Materials are files (screenshots, photos, text notes, documents); one material can belong to several
+# recipes. Reading them is the assistant's job (build_recipe), not the owner's.
 [[app.collections]]
 name = "materials"
 title = "Materials"
+item = "material"
+view = "files"
 fields = [
-  { name = "recipe", title = "Recipe", type = "ref", ref = "recipes", required = true },
-  { name = "kind", title = "Kind", type = "choice", choices = ["screenshot", "photo", "text", "note"] },
-  { name = "text", title = "Text", type = "longtext" },
-  { name = "file", title = "Image", type = "image" },
-  { name = "extracted_text", title = "Text read from the image", type = "longtext" },
+  { name = "file", title = "File", type = "file", required = true },
+  { name = "recipe", title = "Recipes", type = "refs", ref = "recipes" },
 ]
 
 # Actions ask the LLM of the gateway's client (specification 3.1): the item, its materials and all their
@@ -40,10 +53,13 @@ fields = [
 name = "build_recipe"
 title = "Build recipe"
 on = "recipes"
-task = """Write the recipe "{{title}}" from its materials (texts, notes, screenshots and photos in the attachments).
-Use only what the materials say; leave a field out if they don't say it. Ingredients with quantities, steps in order."""
+task = """Write the recipe "{{title}}" from its materials: the attached files (screenshots, photos, text notes,
+documents). Read the text in the images yourself. The recipe's current fields are in "item": keep what is
+there unless the materials say otherwise. Use only what the materials and the item say; leave a field out
+if they don't say it. Ingredients with their amounts, the method as steps in order, in the language of the
+materials."""
 include = ["materials"]
-save = { title = "title", servings = "servings", ingredients = "ingredients", steps = "steps", notes = "notes" }
+save = { title = "title", servings = "servings", ingredients = "ingredients", steps = "steps", notes = "notes", source = "source" }
 set = { status = "ready" }
 [app.actions.schema]
 type = "object"
@@ -60,15 +76,6 @@ type = "array"
 items = { type = "string" }
 [app.actions.schema.properties.notes]
 type = "string"
-
-[[app.actions]]
-name = "extract_text"
-title = "Read text from image"
-on = "materials"
-task = "Read the recipe text in the attached image exactly as written (keep the original language)."
-save = { text = "extracted_text" }
-[app.actions.schema]
-type = "object"
-required = ["text"]
-[app.actions.schema.properties.text]
+[app.actions.schema.properties.source]
 type = "string"
+description = "a link or book the recipe comes from, if the materials show one"
