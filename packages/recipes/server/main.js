@@ -4,13 +4,14 @@ import { createApp } from "../kit/server.js";
 
 const recipes = {
   name: "recipes", title: "Recipes", item: "recipe", view: "cards", cover: "photo",
-  // Its website: visitors read the recipes (and scale them on the page); materials stay private.
+  // Its website: visitors read the published recipes (and scale them on the page); materials stay private.
   public: ["read"],
+  publish: { field: "status", value: "published" },
   scale: { base: "servings", table: "ingredients" },
   look: "look",
   fields: [
     { name: "title", title: "Title", type: "text", required: true },
-    { name: "status", title: "Status", type: "choice", choices: ["draft", "ready"] },
+    { name: "status", title: "Status", type: "choice", choices: ["unpublished", "published"], default: "unpublished" },
     { name: "look", title: "Look", type: "choice", choices: ["classic", "magazine", "notebook"] },
     { name: "servings", title: "Servings", type: "number" },
     { name: "prep_minutes", title: "Preparation", type: "number", unit: "min" },
@@ -88,7 +89,7 @@ const SCHEMA = {
   },
 };
 
-// The answer replaces the recipe (the prompt asks for the whole recipe); pictures are copied from the
+// The answer replaces the recipe (the prompt asks for the whole recipe; publishing stays the owner's choice); pictures are copied from the
 // materials under the recipe's name, so they show on its website while the materials stay private.
 function apply(a, ctx) {
   const mats = ctx.related.materials || [];
@@ -96,7 +97,6 @@ function apply(a, ctx) {
   const pic = (name, field) => (name && byFile.has(name) ? ctx.copyFile(name, field) : null);
   const update = {
     title: a.title,
-    status: "ready",
     servings: a.servings ?? null,
     prep_minutes: a.prep_minutes ?? null,
     cook_minutes: a.cook_minutes ?? null,
@@ -118,9 +118,19 @@ function apply(a, ctx) {
   }
 }
 
+// Before 0.5.0 the status was draft / ready and every recipe was on the website: "ready" ones stay
+// published, the others become unpublished.
+function upgrade(kit) {
+  for (const it of kit.items("recipes")) {
+    if (it.status === "published" || it.status === "unpublished") continue;
+    kit.update("recipes", it.id, { status: it.status === "ready" ? "published" : "unpublished" });
+  }
+}
+
 export const { handle, callTool, onAiResult, onInstall, onUpdate } = createApp({
+  upgrade,
   name: "Recipes",
-  look: { accent: "#b4532a", paper: "#faf6ef", font: "serif", icon: "🍳" },
+  look: { accent: "#b4532a", paper: "#faf6ef", font: "serif", icon: "icon.png" },
   collections: [recipes, materials],
   actions: [{ name: "build_recipe", title: "Build recipe", on: "recipes", include: ["materials"], task: TASK, schema: SCHEMA, apply,
     ask: { title: "Build recipe", hint: "The assistant writes the recipe from its materials. Anything else it should do this time? e.g. \"for 4 people\", \"less sugar\", \"write it in English\", \"add a tip about storing it\". Leave empty for none." } }],

@@ -34,6 +34,8 @@ a { color: var(--accent); }
   background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
 .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .brand .icon { font-size: 26px; line-height: 1; }
+.appimg { width: 1.15em; height: 1.15em; border-radius: 22%; object-fit: contain; vertical-align: middle; display: inline-block; }
+.brand .appimg { width: 32px; height: 32px; }
 .brand h1 { margin: 0; font: 600 23px/1.2 var(--font); letter-spacing: -.01em; }
 .nav { display: flex; gap: 4px; flex-wrap: wrap; }
 .nav a { padding: 6px 14px; border-radius: 999px; color: var(--muted); text-decoration: none; font-weight: 500; }
@@ -68,6 +70,14 @@ textarea.mono { font: 12px/1.45 ui-monospace, Menlo, monospace; }
 .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { display: inline-block; padding: 2px 10px; border-radius: 999px; background: var(--chip); color: var(--accent); font-size: 12px; font-weight: 600; }
+.chip.pub { background: #e3f4e6; color: #22713a; }
+.chip.unpub { background: #eee; color: #777; }
+.btn.pubgo { border-color: #2f8f4e; color: #22713a; }
+@media (prefers-color-scheme: dark) {
+  .chip.pub { background: #1f3a26; color: #8fd6a0; }
+  .chip.unpub { background: #333; color: #aaa; }
+  .btn.pubgo { border-color: #4caf6e; color: #8fd6a0; }
+}
 a.chip { text-decoration: none; }
 
 /* Browse */

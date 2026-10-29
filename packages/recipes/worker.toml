@@ -1,8 +1,8 @@
 type = "application"
 id = "recipes"
 name = "Recipes"
-version = "0.4.3"
-about = "Your recipe book: collect screenshots, photos and notes as materials; the assistant writes the finished recipe from them - cover photo, ingredients you can scale, the method with step pictures. Its website shows the recipes."
+version = "0.5.0"
+about = "Your recipe book: collect screenshots, photos and notes as materials; the assistant writes the finished recipe from them - cover photo, ingredients you can scale, the method with step pictures. Its website shows the recipes you publish."
 author = "Bot Gateway"
 license = "Apache-2.0"
 timeout_secs = 30
@@ -11,10 +11,10 @@ timeout_secs = 30
 # the app kit (kit/, copied from botgateway-packages/kit); its pages are web/.
 [app]
 main = "server/main.js"
-icon = "icon.png"
+icon = "web/icon.png"
 ai = "owner"
 ai_sends = "a recipe with its materials (photos, screenshots, notes) when you press Build recipe"
-visitors = "read the recipes and change the servings (amounts follow)"
+visitors = "read the published recipes and change the servings (amounts follow)"
 login = "none"
 
 # What the client's LLM may do (the program's callTool).
@@ -35,7 +35,7 @@ input_schema = { type = "object", required = ["id"], properties = { id = { type 
 [[tools]]
 name = "recipes_add"
 title = "Add a recipe"
-description = "A new recipe: title (needed), servings, ingredients [{qty, unit, name, note}], steps [{text}], tips [text], notes, source."
+description = "A new recipe (unpublished: only the owner sees it until they publish it): title (needed), status (unpublished / published), servings, ingredients [{qty, unit, name, note}], steps [{text}], tips [text], notes, source."
 input_schema = { type = "object", required = ["title"], properties = { title = { type = "string" } } }
 
 [[tools]]

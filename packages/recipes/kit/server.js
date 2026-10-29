@@ -4,14 +4,20 @@
 // it (or doesn't use it at all - the gateway doesn't know the kit).
 //
 //   import { createApp } from "../kit/server.js";
-//   export const { handle, callTool, onAiResult, onInstall, onUpdate } = createApp({ name, collections, actions, look });
+//   export const { handle, callTool, onAiResult, onInstall, onUpdate } = createApp({ name, collections, actions, look, upgrade });
+//
+// look: { accent, paper, font: "serif" | "sans" | "rounded", icon: an emoji or a picture in web/ (e.g. "icon.png") }
+// upgrade(kit): run on install and on every new version, for changing old data (kit: items(collection),
+//   update(collection, id, changes)); it must be safe to run again.
 //
 // Collection: { name, title, item, view: "list" | "cards" | "files", cover, label: "<field naming an item>",
 //               public: ["read","add","change","delete"], fields: [...],
+//               publish: { field: "<choice field>", value: "<its value>" }  (visitors see only the items with
+//                 that value, e.g. status = "published"; the owner and the client see all)
 //               scale: { base: "<number field>", table: "<table field>" }  (its number column follows the base)
 //               look: "<choice field>"  (class look-<value> on an item's page) }
-// Field: { name, title, type, required, choices, unit (number), ref, owned (ref / refs: deleting the last
-//          item it points to deletes this one too), columns, numbered }
+// Field: { name, title, type, required, choices, default (a new item's value), unit (number), ref, owned
+//          (ref / refs: deleting the last item it points to deletes this one too), columns, numbered }
 // Field types: text, longtext, number, bool, choice (choices), json, list (numbered), image, images, file,
 //   ref / refs (ref = "<collection>"), table (columns: [{ name, title, type: "text" | "number" | "image" }], numbered)
 // Action: { name, title, on, include: ["<collection pointing here>"], public, schema,
@@ -51,8 +57,11 @@ export function createApp(spec) {
     const r = host.db.query(`SELECT * FROM ${table(c)} WHERE id = ?`, [Number(id)])[0];
     return r ? row(c, r) : null;
   }
-  function list(c, args = {}) {
+  // Visitors see only published items (the collection's `publish`).
+  const shown = (c, it) => !c.publish || (it && it[c.publish.field] === c.publish.value);
+  function list(c, args = {}, visitor) {
     const where = [], params = [];
+    if (visitor && c.publish) { where.push(`json_extract(data, '$.${c.publish.field}') = ?`); params.push(c.publish.value); }
     if (args.query) { where.push("data LIKE ?"); params.push(`%${String(args.query)}%`); }
     for (const f of c.fields.filter((f) => f.type === "ref" || f.type === "refs")) {
       if (args[f.name] === undefined || args[f.name] === null) continue;
@@ -120,7 +129,8 @@ export function createApp(spec) {
       default: return String(v);
     }
   }
-  function write(c, id, args) {
+  /** keepTime: an old item keeps its "updated" time (data upgrades don't reorder the list). */
+  function write(c, id, args, keepTime) {
     if (!isObj(args)) throw new Error("arguments: an object");
     const old = id ? get(c, id) : null;
     if (id && !old) throw new Error(`${c.name} ${id} not found`);
@@ -130,13 +140,14 @@ export function createApp(spec) {
     try {
       const data = old ? { ...old } : {};
       delete data.id; delete data.created; delete data.updated;
+      if (!id) for (const f of c.fields) if (f.default !== undefined && !(f.name in args)) args = { ...args, [f.name]: f.default };
       for (const f of c.fields) {
         if (!(f.name in args)) continue;
         const v = value(c, newId, f, args[f.name]);
         if (v === null || (Array.isArray(v) && !v.length)) delete data[f.name]; else data[f.name] = v;
       }
       for (const f of c.fields) if (f.required && (data[f.name] === undefined || data[f.name] === "")) throw new Error(`${f.title || f.name} is needed`);
-      host.db.exec(`UPDATE ${table(c)} SET data = ?, updated = ? WHERE id = ?`, [JSON.stringify(data), t, newId]);
+      host.db.exec(`UPDATE ${table(c)} SET data = ?, updated = ? WHERE id = ?`, [JSON.stringify(data), keepTime && old ? old.updated : t, newId]);
     } catch (e) {
       if (!id) host.db.exec(`DELETE FROM ${table(c)} WHERE id = ?`, [newId]);
       throw e;
@@ -227,9 +238,10 @@ export function createApp(spec) {
     }
     const need = { list: "read", get: "read", add: "add", update: "change", delete: "delete" }[m[2]];
     if (who === "visitor" && !(c.public || []).includes(need)) throw new Error("This isn't open to visitors.");
+    const visitor = who === "visitor";
     switch (m[2]) {
-      case "list": return list(c, args);
-      case "get": { const it = get(c, args.id); if (!it) throw new Error(`${c.name} ${args.id} not found`); return it; }
+      case "list": return list(c, args, visitor);
+      case "get": { const it = get(c, args.id); if (!it || (visitor && !shown(c, it))) throw new Error(`${c.name} ${args.id} not found`); return it; }
       case "add": checkFree(c, null, args); return write(c, null, args);
       case "update": { const { id, ...rest } = args; checkFree(c, Number(id), rest); return write(c, Number(id), rest); }
       case "delete": checkFree(c, Number(args.id), null); return remove(c, Number(args.id), !!args.preview);
@@ -330,8 +342,9 @@ export function createApp(spec) {
       }
       if (req.method === "GET" && path.startsWith("files/")) {
         const name = decodeURIComponent(path.slice(6));
-        const c = coll(name.split("-")[0]);
-        if (!c || (who === "visitor" && !(c.public || []).includes("read"))) return reply(404, "no such file");
+        const [cn, id] = name.split("-"), c = coll(cn);
+        // A file is named after its item (<collection>-<id>-...): visitors get it only with a published item.
+        if (!c || (who === "visitor" && (!(c.public || []).includes("read") || !shown(c, get(c, id))))) return reply(404, "no such file");
         return { $response: { file: name } };
       }
       if (spec.handle) { const r = spec.handle(req, { op, get: (n, id) => get(coll(n), id) }); if (r !== undefined) return r; }
@@ -341,11 +354,18 @@ export function createApp(spec) {
     }
   }
 
+  function upgrade() {
+    setup();
+    if (!spec.upgrade) return;
+    const all = (n) => { const c = coll(n); return host.db.query(`SELECT * FROM ${table(c)}`).map((r) => row(c, r)); };
+    host.db.transaction(() => spec.upgrade({ items: all, update: (n, id, args) => write(coll(n), id, args, true) }));
+  }
+
   return {
     handle,
     callTool: (name, args) => op(name, args || {}, "client"),
     onAiResult,
-    onInstall: () => setup(),
-    onUpdate: () => setup(),
+    onInstall: () => upgrade(),
+    onUpdate: () => upgrade(),
   };
 }

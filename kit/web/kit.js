@@ -5,6 +5,9 @@
 // x-botgateway header (the gateway's CSRF check). Looks: the app's `look` (colours, font, icon), each
 // collection's view (list, cards, files), a collection's `look` field (class look-<value> on an item's
 // page, styled by the app's own CSS) and `scale` (amounts that follow a base value, display only).
+// look.icon: an emoji, or a picture in the app's web/ (e.g. "icon.png" - also the browser tab's icon).
+// A collection's `publish` ({field, value}): the owner gets Publish / Unpublish on an item's page; visitors
+// only ever get published items (the server decides).
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const APP_ID = '';
@@ -94,7 +97,10 @@ async function start() {
   if (colour.test(look.accent || '')) document.documentElement.style.setProperty('--look-accent', look.accent);
   if (colour.test(look.paper || '')) document.documentElement.style.setProperty('--look-paper', look.paper);
   if (['serif', 'sans', 'rounded'].includes(look.font)) document.body.classList.add('f-' + look.font);
-  if (look.icon) { $('avIcon').textContent = look.icon; $('avIcon').classList.remove('hidden'); }
+  if (look.icon) { $('avIcon').innerHTML = iconHtml(); $('avIcon').classList.remove('hidden'); }
+  if (iconFile()) {
+    const l = document.createElement('link'); l.rel = 'icon'; l.href = iconFile(); document.head.appendChild(l);
+  }
   $('avTitle').textContent = M.name;
   document.title = M.name;
   $('avNote').innerHTML = M.enabled ? '' : '<div class="note">This application is switched off at the moment, so the assistant can\'t work on it. You can still look at and change everything here.</div>';
@@ -103,6 +109,9 @@ async function start() {
   window.addEventListener('hashchange', () => render().catch(showErr));
   await render();
 }
+// The app's icon: a picture file of its pages (a plain name, .png / .svg) or an emoji.
+function iconFile() { const i = String((M && M.look && M.look.icon) || ''); return /^[A-Za-z0-9_-][A-Za-z0-9._/-]*\.(png|svg)$/.test(i) && !i.includes('..') ? i : ''; }
+function iconHtml() { return iconFile() ? `<img class="appimg" src="${esc(iconFile())}" alt="">` : esc((M.look || {}).icon || ''); }
 function showErr(e) { $('avView').innerHTML = `<div class="note">${esc(e.message)}</div>`; }
 function go(hash) { if (location.hash === '#' + hash) render().catch(showErr); else location.hash = hash; }
 async function render() {
@@ -147,7 +156,7 @@ async function fill(c) {
   const box = $('items');
   if (!box) return;
   if (!r.items.length) {
-    box.innerHTML = `<div class="empty" style="grid-column:1/-1"><span class="big">${esc((M.look || {}).icon || '·')}</span>
+    box.innerHTML = `<div class="empty" style="grid-column:1/-1"><span class="big">${iconHtml() || '·'}</span>
       ${query ? 'Nothing found.' : c.view === 'files' ? `No ${esc(title(c).toLowerCase())} yet - add files, or drop them here.` : `No ${esc(title(c).toLowerCase())} yet.`}</div>`;
     return;
   }
@@ -161,7 +170,7 @@ async function fill(c) {
     }));
     return;
   }
-  const icon = esc((M.look || {}).icon || '');
+  const icon = iconHtml();
   box.innerHTML = r.items.map(it => {
     const cover = c.cover && it[c.cover] && it[c.cover].file;
     return c.view === 'cards'
@@ -177,6 +186,7 @@ function chips(c, it, page) {
   return c.fields.filter(f => f.name !== c.look && !(page && c.scale && c.scale.base === f.name)).map(f => {
     const v = it[f.name];
     if (v === null || v === undefined || v === '') return '';
+    if (c.publish && f.name === c.publish.field) return M.public ? '' : `<span class="chip ${v === c.publish.value ? 'pub' : 'unpub'}" title="${v === c.publish.value ? 'visitors of the website see it' : 'only you see it - not on the website'}">${esc(v)}</span>`;
     if (f.type === 'choice') return `<span class="chip">${esc(v)}</span>`;
     if (f.type === 'number') return `<span class="chip">${f.unit ? `${esc(f.title || f.name)} ${esc(num(v))} ${esc(f.unit)}` : `${esc(num(v))} ${esc((f.title || f.name).toLowerCase())}`}</span>`;
     if (f.type === 'bool') return v ? `<span class="chip">${esc(f.title || f.name)}</span>` : '';
@@ -353,7 +363,7 @@ async function sheet(c, it, keep) {
           ${refs.map(f => ids(it[f.name]).length ? `<div class="refs"><span class="muted">${esc(f.title || f.name)}:</span> ${ids(it[f.name]).map(id =>
             `<a class="chip" href="#${esc(f.ref)}/${id}">${esc(refNames[f.name][id] ?? '?')}</a>`).join(' ')}</div>` : '').join('')}
           <div class="acts">${acts.map(a => `<button type="button" class="btn primary" data-act="${esc(a.name)}">✨ ${esc(a.title || a.name)}</button>`).join('')}
-            ${may(c, 'change') ? '<button type="button" class="btn" id="editBtn">Edit</button>' : ''}</div>
+            ${may(c, 'change') ? '<button type="button" class="btn" id="editBtn">Edit</button>' : ''}${pubBtn(c, it)}</div>
           <div id="runs"></div><div class="err" id="sErr"></div></div></div>
       ${body || `<p class="muted">Nothing written here yet.${acts.length ? ` Press “${esc(acts[0].title || acts[0].name)}” and the assistant fills it in.` : ''}</p>`}
       ${kids.map(({ o, f }) => `<section><div class="shead"><h3>${esc(title(o))}</h3>
@@ -361,6 +371,7 @@ async function sheet(c, it, keep) {
         <div id="kids_${esc(o.name)}" class="${o.view === 'files' ? 'folder mini' : 'checks'}"><span class="muted">…</span></div></section>`).join('')}
     </article>`;
   $('editBtn')?.addEventListener('click', () => go(`${c.name}/${it.id}/edit`));
+  $('pubBtn')?.addEventListener('click', () => publish(c, it));
   // Scaling: − / + on the base value, or a new amount for one ingredient (the others follow).
   const base = c.scale ? Number(it[c.scale.base]) : 0;
   document.querySelectorAll('[data-sc]').forEach(b => b.addEventListener('click', () => {
@@ -410,6 +421,27 @@ async function sheet(c, it, keep) {
     }).catch(() => {});
   }
   if (acts.length) runs(c, it.id);
+}
+// Publish / Unpublish (a collection with `publish`, the owner only). The other choice of the field is "not published".
+function pubBtn(c, it) {
+  if (!c.publish || M.public || !may(c, 'change')) return '';
+  const on = it[c.publish.field] === c.publish.value;
+  return `<button type="button" class="btn${on ? '' : ' pubgo'}" id="pubBtn">${on ? 'Unpublish' : '🌐 Publish'}</button>`;
+}
+function publish(c, it) {
+  const p = c.publish, f = c.fields.find(x => x.name === p.field) || {};
+  const on = it[p.field] === p.value;
+  const off = (f.choices || []).find(x => x !== p.value) || null;
+  const set = async () => {
+    await call(c.name + '_update', { id: it.id, [p.field]: on ? off : p.value });
+    closeModal();
+    const fresh = await call(c.name + '_get', { id: it.id }); sheet(c, fresh);
+  };
+  openModal(on
+    ? `<h3>Unpublish “${esc(label(c, it))}”?</h3><p>It is taken off the website at once: visitors can't open it any more (pages they already have open keep what they show). It stays here, and you can publish it again.</p>`
+    : `<h3>Publish “${esc(label(c, it))}”?</h3><p>Visitors of this application's website can then read it, with its pictures. Your materials stay private. (Nothing is public while the website itself isn't published - BotGateway → Dashboard.)</p>`
+    + `<div class="err" id="mErr"></div><div class="actions"><button type="button" class="btn" data-close>Cancel</button><button type="button" class="btn primary" id="pubGo">${on ? 'Unpublish' : 'Publish'}</button></div>`);
+  $('pubGo').addEventListener('click', async () => { $('pubGo').disabled = true; try { await set(); } catch (e) { $('mErr').textContent = e.message; $('pubGo').disabled = false; } });
 }
 // The item's latest assistant action; while it works, asks again every 2 s and shows the result.
 async function runs(c, id) {
