@@ -10,7 +10,10 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 const APP_ID = '';
 const API = 'api';
 async function api(path, opts = {}) {
-  const res = await fetch(API + path, { ...opts, credentials: 'same-origin', headers: { 'x-botgateway': '1', 'Content-Type': 'application/json', ...(opts.headers || {}) } });
+  let res;
+  // No answer at all (an old page from the browser's cache, the website switched off, the owner's computer offline).
+  try { res = await fetch(API + path, { ...opts, credentials: 'same-origin', headers: { 'x-botgateway': '1', 'Content-Type': 'application/json', ...(opts.headers || {}) } }); }
+  catch (_) { throw new Error('Can\'t reach this application right now - it may be switched off, or its computer is offline or restarting. Try again later (reload the page).'); }
   if (res.status === 401) throw new Error('This page\'s session ended - open the application again from the BotGateway app (left, under Applications).');
   if (!res.ok) throw new Error(await res.text());
   return res.status === 204 ? null : res.json();
