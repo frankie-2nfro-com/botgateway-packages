@@ -7,6 +7,8 @@ const recipes = {
   // Its website: visitors read the published recipes (and scale them on the page); materials stay private.
   public: ["read"],
   publish: { field: "status", value: "published" },
+  // The cover opens a viewer with the cover and the album.
+  album: "pictures",
   scale: { base: "servings", table: "ingredients" },
   look: "look",
   fields: [
@@ -24,7 +26,7 @@ const recipes = {
     { name: "steps", title: "Method", type: "table", numbered: true, columns: [
       { name: "text", title: "Step" }, { name: "picture", title: "Picture", type: "image" }] },
     { name: "tips", title: "Tips", type: "list" },
-    { name: "pictures", title: "Pictures", type: "images" },
+    { name: "pictures", title: "Album", type: "images" },
     { name: "notes", title: "Notes", type: "longtext" },
     { name: "source", title: "Source", type: "text" },
   ],
@@ -43,7 +45,15 @@ const materials = {
   ],
 };
 
-const TASK = (it) => `Write the finished recipe "${it.title}" for a recipe book.
+const BUILD_HINT = "The assistant writes the recipe from its materials. Anything else it should do this time? e.g. \"for 4 people\", \"less sugar\", \"write it in English\", \"add a tip about storing it\". Leave empty for none.";
+
+const IMG = /\.(png|jpe?g|gif|webp)$/i;
+// The photos the assistant may use: the recipe's own (cover, album) and the materials' pictures.
+const ownPhotos = (it) => [it.photo && it.photo.file, ...(it.pictures || []).map((p) => p && p.file)].filter(Boolean);
+const photosOf = (it, related) => [...new Set([...ownPhotos(it),
+  ...((related && related.materials) || []).map((m) => m.file && m.file.file).filter((n) => n && IMG.test(n))])];
+
+const TASK = (it, related) => `Write the finished recipe "${it.title}" for a recipe book.
 Input: "item" is the recipe as it is now. Its fields may be empty, wrong or in the wrong place (e.g. the
 whole recipe pasted into notes). The attached files are its materials (data.related.materials lists them
 with their file names): screenshots, photos, text notes, documents. Read the text in the images yourself.
@@ -55,15 +65,19 @@ Write the whole recipe again from everything in item and the materials:
    field. If nothing is left, leave notes out.
 3. For each material, say what it is (materials: file, kind, used) and use it:
    - text -> into the fields;
-   - a photo of the finished dish -> cover (the best one), the others into pictures;
    - a photo of a step -> that step's picture;
-   - a photo of the ingredients -> pictures.
-   Name pictures by their file name exactly as given.
-4. Ingredients: amount as a number (1/2 -> 0.5; a range: the lower number, the range in note), unit,
+   - the photos to show (the finished dish, the ingredients) -> step 4.
+4. Photos: the "photos" line at the end lists every photo you may use - the materials' and the ones the owner already put in
+   the recipe (its cover and its album). Pick the best photo of the finished dish as cover. Put the other
+   photos worth showing in pictures (the album), best first. Every photo the owner put in the cover or the
+   album stays: in cover or in pictures. Name photos by their file name exactly as given.
+5. Ingredients: amount as a number (1/2 -> 0.5; a range: the lower number, the range in note), unit,
    name. Words like 少許 / 適量 / to taste go in unit, with no amount.
-5. Use only what item and the materials say. Don't invent amounts or steps. Leave a field out if it is
+6. Use only what item and the materials say. Don't invent amounts or steps. Leave a field out if it is
    unknown.
-6. Keep the language of the materials. Don't translate.`;
+7. Keep the language of the materials. Don't translate.
+
+photos: ${photosOf(it, related).join(", ") || "(none)"}`;
 
 const SCHEMA = {
   type: "object",
@@ -81,20 +95,28 @@ const SCHEMA = {
     tips: { type: "array", items: { type: "string" } },
     notes: { type: "string" },
     source: { type: "string", description: "a link or book the recipe comes from, if the materials show one" },
-    cover: { type: "string", description: "the material file name of the best photo of the finished dish" },
-    pictures: { type: "array", items: { type: "string" }, description: "other useful photos (material file names)" },
+    cover: { type: "string", description: "the file name (from photos) of the best photo of the finished dish" },
+    pictures: { type: "array", items: { type: "string" }, description: "the album: the other photos worth showing, best first (file names from photos)" },
     materials: { type: "array", items: { type: "object", required: ["file", "kind"], properties: {
       file: { type: "string" }, kind: { type: "string", enum: ["finished dish", "step", "ingredients", "text", "other"] },
       used: { type: "string", description: "how it was used, in a few words" } } } },
   },
 };
 
-// The answer replaces the recipe (the prompt asks for the whole recipe; publishing stays the owner's choice); pictures are copied from the
-// materials under the recipe's name, so they show on its website while the materials stay private.
+// The answer replaces the recipe (the prompt asks for the whole recipe; publishing stays the owner's choice).
+// Photos from the materials are copied under the recipe's name, so they show on its website while the
+// materials stay private; the recipe's own photos are used as they are, and none of them is ever dropped.
 function apply(a, ctx) {
   const mats = ctx.related.materials || [];
   const byFile = new Map(mats.map((m) => [m.file && m.file.file, m]));
-  const pic = (name, field) => (name && byFile.has(name) ? ctx.copyFile(name, field) : null);
+  const own = ownPhotos(ctx.item);
+  const pic = (name, field) => (!name ? null : own.includes(name) ? { file: name } : byFile.has(name) ? ctx.copyFile(name, field) : null);
+  // Cover: the assistant's pick, else the one it had. Album: the picks, then any own photo left out.
+  const cover = pic(a.cover, "photo") || (ctx.item.photo && ctx.item.photo.file ? { file: ctx.item.photo.file } : null);
+  const album = [];
+  const add = (p) => { if (p && p.file !== (cover && cover.file) && !album.some((x) => x.file === p.file)) album.push(p); };
+  for (const name of a.pictures || []) add(pic(name, "pictures"));
+  for (const name of own) add({ file: name });
   const update = {
     title: a.title,
     servings: a.servings ?? null,
@@ -106,9 +128,8 @@ function apply(a, ctx) {
     tips: a.tips || null,
     notes: a.notes || null,
     source: a.source || null,
-    pictures: (a.pictures || []).map((p) => pic(p, "pictures")).filter(Boolean),
+    pictures: album,
   };
-  const cover = pic(a.cover, "photo");
   if (cover) update.photo = cover;
   if (!ctx.item.look) update.look = "classic";
   ctx.update(update);
@@ -127,11 +148,27 @@ function upgrade(kit) {
   }
 }
 
+// The page in English or Chinese (the switch in its top bar); the recipes themselves stay as written.
+const ZH = {
+  "Recipes": "食譜", "recipe": "食譜", "Materials": "素材", "material": "素材",
+  "Title": "標題", "Status": "狀態", "Look": "版面", "Servings": "份量", "Preparation": "準備時間", "Cooking": "烹調時間",
+  "Difficulty": "難度", "Cover": "封面", "Ingredients": "材料", "Amount": "數量", "Unit": "單位", "Ingredient": "材料",
+  "Note": "備註", "Method": "做法", "Step": "步驟", "Picture": "圖片", "Tips": "小貼士", "Pictures": "相片", "Album": "相簿",
+  "Notes": "筆記", "Source": "來源", "File": "檔案", "What it is": "類別", "How it was used": "用途", "min": "分鐘",
+  "unpublished": "未發佈", "published": "已發佈", "classic": "經典", "magazine": "雜誌", "notebook": "筆記本",
+  "easy": "容易", "medium": "中等", "hard": "困難",
+  "finished dish": "成品", "step": "步驟", "ingredients": "材料", "text": "文字", "other": "其他",
+  "Build recipe": "生成食譜",
+  [BUILD_HINT]: "助手會根據素材寫出食譜。今次還有其他要求嗎？例如「4 人份」、「少糖」、「用英文寫」、「加一個保存的小貼士」。沒有就留空。",
+};
+
 export const { handle, callTool, onAiResult, onInstall, onUpdate } = createApp({
   upgrade,
+  languages: ["en", "zh"],
+  words: { zh: ZH },
   name: "Recipes",
   look: { accent: "#b4532a", paper: "#faf6ef", font: "serif", icon: "icon.png", cover: "cover.svg" },
   collections: [recipes, materials],
   actions: [{ name: "build_recipe", title: "Build recipe", on: "recipes", include: ["materials"], task: TASK, schema: SCHEMA, apply,
-    ask: { title: "Build recipe", hint: "The assistant writes the recipe from its materials. Anything else it should do this time? e.g. \"for 4 people\", \"less sugar\", \"write it in English\", \"add a tip about storing it\". Leave empty for none." } }],
+    ask: { title: "Build recipe", hint: BUILD_HINT } }],
 });

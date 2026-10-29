@@ -6,7 +6,10 @@
 //   import { createApp } from "../kit/server.js";
 //   export const { handle, callTool, onAiResult, onInstall, onUpdate } = createApp({ name, collections, actions, look, upgrade });
 //
-// look: { accent, paper, font: "serif" | "sans" | "rounded", icon: an emoji or a picture in web/ (e.g. "icon.png") }
+// look: { accent, paper, font: "serif" | "sans" | "rounded", icon: an emoji or a picture in web/ (e.g. "icon.png"),
+//         cover: a picture in web/ for items without a cover }
+// languages: ["en", "zh"] (the page gets a switch), words: { zh: { "<English name>": "<translation>" } } for the
+//   app's names, field titles, choices, units and actions (the kit translates its own words).
 // upgrade(kit): run on install and on every new version, for changing old data (kit: items(collection),
 //   update(collection, id, changes)); it must be safe to run again.
 //
@@ -34,6 +37,19 @@ const MAX_FILE = 10 * 1024 * 1024;
 const WAIT_LIMIT_MS = 15 * 60 * 1000;
 const now = () => new Date().toISOString();
 const isObj = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
+// Messages people see, in the page's language (its Accept-Language; the client's LLM always gets English).
+const SAY = {
+  zh: {
+    "{what} {id} not found": "找不到{what} {id}",
+    "{what} is needed": "必須填寫{what}",
+    "The assistant is working on this {what} - wait until it is done, or cancel it.": "助手正在處理這個{what} - 請等它完成，或者取消。",
+    "The assistant is working on that {what} - wait until it is done, or cancel it.": "助手正在處理那個{what} - 請等它完成，或者取消。",
+    "This isn't open to visitors.": "這裏不開放給訪客。",
+    "The assistant is already working on it.": "助手已經在處理。",
+    "The extra requirements are too long (at most {n} characters).": "額外要求太長（最多 {n} 個字）。",
+    "{what}: the file is larger than 10 MB": "{what}：檔案大於 10 MB",
+  },
+};
 
 export function createApp(spec) {
   const colls = spec.collections || [];
@@ -41,6 +57,11 @@ export function createApp(spec) {
   const coll = (name) => colls.find((c) => c.name === name);
   const table = (c) => `c_${c.name}`;
   let ready = false;
+  let lang = "en";
+  const names = () => (spec.words && spec.words[lang]) || {};
+  const tn = (s) => names()[s] ?? s;
+  const say = (key, vars = {}) => String(((SAY[lang] || {})[key]) ?? key).replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
+  const itemWord = (c) => tn(c.item || c.name);
 
   // ---------- storage: one table per collection, the item as JSON ----------
   function setup() {
@@ -78,7 +99,7 @@ export function createApp(spec) {
   const safeName = (n) => String(n || "file").replace(/[^A-Za-z0-9._-]/g, "_").replace(/^\.+/, "").slice(-80) || "file";
   function saveUpload(c, id, f, v, suffix = "") {
     const data = String(v.data || "").replace(/^data:[^,]*,/, "");
-    if (data.length * 0.75 > MAX_FILE) throw new Error(`${f.name}: the file is larger than 10 MB`);
+    if (data.length * 0.75 > MAX_FILE) throw new Error(say("{what}: the file is larger than 10 MB", { what: tn(f.title || f.name) }));
     const name = `${c.name}-${id}-${f.name}${suffix}-${safeName(v.name)}`.slice(0, 160);
     host.files.write(name, data, "base64");
     return name;
@@ -146,7 +167,7 @@ export function createApp(spec) {
         const v = value(c, newId, f, args[f.name]);
         if (v === null || (Array.isArray(v) && !v.length)) delete data[f.name]; else data[f.name] = v;
       }
-      for (const f of c.fields) if (f.required && (data[f.name] === undefined || data[f.name] === "")) throw new Error(`${f.title || f.name} is needed`);
+      for (const f of c.fields) if (f.required && (data[f.name] === undefined || data[f.name] === "")) throw new Error(say("{what} is needed", { what: tn(f.title || f.name) }));
       host.db.exec(`UPDATE ${table(c)} SET data = ?, updated = ? WHERE id = ?`, [JSON.stringify(data), keepTime && old ? old.updated : t, newId]);
     } catch (e) {
       if (!id) host.db.exec(`DELETE FROM ${table(c)} WHERE id = ?`, [newId]);
@@ -209,19 +230,18 @@ export function createApp(spec) {
   }
   // Refused when the item, or an item it points to (e.g. a material's recipe, before or after), is being worked on.
   function checkFree(c, id, args) {
-    const word = (x) => x.item || x.name;
-    if (id && busy(c.name, id)) throw new Error(`The assistant is working on this ${word(c)} - wait until it is done, or cancel it.`);
+    if (id && busy(c.name, id)) throw new Error(say("The assistant is working on this {what} - wait until it is done, or cancel it.", { what: itemWord(c) }));
     const old = id ? get(c, id) : null;
     for (const f of c.fields.filter((f) => f.type === "ref" || f.type === "refs")) {
       const ids = new Set([old && old[f.name], args && args[f.name]].flat().filter((x) => x !== null && x !== undefined).map(Number));
-      for (const t of ids) if (busy(f.ref, t)) throw new Error(`The assistant is working on that ${word(coll(f.ref))} - wait until it is done, or cancel it.`);
+      for (const t of ids) if (busy(f.ref, t)) throw new Error(say("The assistant is working on that {what} - wait until it is done, or cancel it.", { what: itemWord(coll(f.ref)) }));
     }
   }
   function cancel(collName, item, who) {
     setup();
     const c = coll(collName);
     if (!c) throw new Error("no such collection");
-    if (who === "visitor" && !actions.some((a) => a.on === c.name && a.public)) throw new Error("This isn't open to visitors.");
+    if (who === "visitor" && !actions.some((a) => a.on === c.name && a.public)) throw new Error(say("This isn't open to visitors."));
     host.db.exec("UPDATE _runs SET state = 'cancelled', finished = ? WHERE coll = ? AND item = ? AND state = 'waiting'", [now(), c.name, Number(item)]);
     return { cancelled: true };
   }
@@ -237,11 +257,11 @@ export function createApp(spec) {
       throw new Error(`no operation '${name}'`);
     }
     const need = { list: "read", get: "read", add: "add", update: "change", delete: "delete" }[m[2]];
-    if (who === "visitor" && !(c.public || []).includes(need)) throw new Error("This isn't open to visitors.");
+    if (who === "visitor" && !(c.public || []).includes(need)) throw new Error(say("This isn't open to visitors."));
     const visitor = who === "visitor";
     switch (m[2]) {
       case "list": return list(c, args, visitor);
-      case "get": { const it = get(c, args.id); if (!it || (visitor && !shown(c, it))) throw new Error(`${c.name} ${args.id} not found`); return it; }
+      case "get": { const it = get(c, args.id); if (!it || (visitor && !shown(c, it))) throw new Error(say("{what} {id} not found", { what: itemWord(c), id: args.id })); return it; }
       case "add": checkFree(c, null, args); return write(c, null, args);
       case "update": { const { id, ...rest } = args; checkFree(c, Number(id), rest); return write(c, Number(id), rest); }
       case "delete": checkFree(c, Number(args.id), null); return remove(c, Number(args.id), !!args.preview);
@@ -253,12 +273,12 @@ export function createApp(spec) {
   const MAX_EXTRA = 4000;
   function startAction(a, id, who, extra) {
     setup();
-    if (who === "visitor" && !a.public) throw new Error("This isn't open to visitors.");
+    if (who === "visitor" && !a.public) throw new Error(say("This isn't open to visitors."));
     const c = coll(a.on), it = get(c, id);
-    if (!it) throw new Error(`${c.name} ${id} not found`);
-    if (busy(c.name, id)) throw new Error("The assistant is already working on it.");
+    if (!it) throw new Error(say("{what} {id} not found", { what: itemWord(c), id }));
+    if (busy(c.name, id)) throw new Error(say("The assistant is already working on it."));
     extra = typeof extra === "string" ? extra.trim() : "";
-    if (extra.length > MAX_EXTRA) throw new Error(`The extra requirements are too long (at most ${MAX_EXTRA} characters).`);
+    if (extra.length > MAX_EXTRA) throw new Error(say("The extra requirements are too long (at most {n} characters).", { n: MAX_EXTRA }));
     const related = {}, files = filesOf(c, it);
     for (const name of a.include || []) {
       const o = coll(name), f = pointing(c, o);
@@ -273,6 +293,7 @@ export function createApp(spec) {
   }
   function onAiResult(r) {
     setup();
+    lang = "en"; // saved run errors are translated by the page
     const tag = r.tag || {};
     const a = actions.find((x) => x.name === tag.action), c = coll(tag.coll);
     const end = (state, error) => host.db.exec("UPDATE _runs SET state = ?, error = ?, finished = ? WHERE run = ?", [state, error || null, now(), r.run]);
@@ -316,6 +337,7 @@ export function createApp(spec) {
     const visitor = who === "visitor";
     return {
       name: spec.name || host.app.name, look: spec.look || {}, enabled: true, public: visitor,
+      languages: spec.languages || ["en"], words: spec.words || {}, version: host.app.version || "",
       collections: colls.filter((c) => !visitor || (c.public || []).length),
       actions: actions.filter((a) => !visitor || a.public).map((a) => ({ name: a.name, title: a.title, on: a.on, runnable: true, ask: a.ask || null })),
     };
@@ -324,6 +346,9 @@ export function createApp(spec) {
   const reply = (status, body) => ({ $response: { status, body, headers: { "content-type": "text/plain; charset=utf-8" } } });
   function handle(req) {
     setup();
+    // The page sends its language (the switch) as Accept-Language.
+    const asked = String((req.headers && req.headers["accept-language"]) || "").slice(0, 2).toLowerCase();
+    lang = (spec.languages || ["en"]).includes(asked) ? asked : "en";
     const who = req.who, path = req.path.replace(/^\/+/, "");
     const body = () => { try { return req.body ? JSON.parse(req.body) : {}; } catch { throw new Error("the body must be JSON"); } };
     try {
@@ -337,7 +362,7 @@ export function createApp(spec) {
       if (req.method === "POST" && path === "cancel") { const b = body(); return cancel(b.collection, b.item, who); }
       if (req.method === "GET" && path === "runs") {
         const c = coll(req.query.collection);
-        if (!c || (who === "visitor" && !actions.some((a) => a.on === c.name && a.public))) return reply(403, "This isn't open to visitors.");
+        if (!c || (who === "visitor" && !actions.some((a) => a.on === c.name && a.public))) return reply(403, say("This isn't open to visitors."));
         return runs(c.name, req.query.item);
       }
       if (req.method === "GET" && path.startsWith("files/")) {
@@ -350,7 +375,7 @@ export function createApp(spec) {
       if (spec.handle) { const r = spec.handle(req, { op, get: (n, id) => get(coll(n), id) }); if (r !== undefined) return r; }
       return reply(404, "not found");
     } catch (e) {
-      return reply(e.message === "This isn't open to visitors." ? 403 : 400, e.message);
+      return reply(e.message === say("This isn't open to visitors.") ? 403 : 400, e.message);
     }
   }
 
@@ -363,7 +388,7 @@ export function createApp(spec) {
 
   return {
     handle,
-    callTool: (name, args) => op(name, args || {}, "client"),
+    callTool: (name, args) => { lang = "en"; return op(name, args || {}, "client"); },
     onAiResult,
     onInstall: () => upgrade(),
     onUpdate: () => upgrade(),
