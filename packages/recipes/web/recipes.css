@@ -7,14 +7,15 @@
 .sheet.look-magazine .heroimg { aspect-ratio: 21 / 9; border-radius: 0; }
 .sheet.look-magazine .hinfo { padding: 22px 28px 0; }
 .sheet.look-magazine .hinfo h2 { font-size: 42px; }
-.sheet.look-magazine > section { padding: 0 28px; }
-.sheet.look-magazine > section:last-child { padding-bottom: 28px; }
+.sheet.look-magazine > section, .sheet.look-magazine > .scaled { padding: 0 28px; }
+.sheet.look-magazine .scaled > section:first-child { margin-top: 26px; }
 .sheet.look-magazine h3 { text-transform: uppercase; letter-spacing: .08em; font-size: 15px; }
 @media (min-width: 900px) {
   .sheet.look-magazine { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); column-gap: 8px; align-items: start; }
   .sheet.look-magazine .hero { grid-column: 1 / -1; }
   .sheet.look-magazine > section { grid-column: 2; }
-  .sheet.look-magazine > section:has(.ingr) { grid-column: 1; grid-row: span 6; border-right: 1px solid var(--line); }
+  .sheet.look-magazine { grid-auto-flow: row dense; }
+  .sheet.look-magazine > .scaled { grid-column: 1; grid-row: span 8; align-self: stretch; border-right: 1px solid var(--line); }
   .sheet.look-magazine .ingr { columns: 1; }
 }
 
@@ -34,7 +35,7 @@
 .sheet.look-minimal .coverbtn { border-radius: 6px; }
 .sheet.look-minimal .hinfo h2 { font-weight: 300; font-size: 40px; letter-spacing: -.02em; }
 .sheet.look-minimal .hinfo .chip { background: transparent; color: var(--muted); padding: 0 10px 0 0; font-weight: 500; }
-.sheet.look-minimal > section { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sheet.look-minimal > section, .sheet.look-minimal > .scaled > section { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line); }
 .sheet.look-minimal h3 { font: 600 12px/1 var(--ui); text-transform: uppercase; letter-spacing: .16em; color: var(--muted); margin-bottom: 16px; }
 .sheet.look-minimal h3::after { display: none; }
 .sheet.look-minimal .ingr { columns: 1; max-width: 560px; }
@@ -59,7 +60,7 @@
 .sheet.look-bistro .hinfo h2 { font-style: italic; font-size: 40px; }
 .sheet.look-bistro .hinfo h2::before, .sheet.look-bistro .hinfo h2::after { content: " ✦ "; font-style: normal; font-size: 18px; color: var(--accent); vertical-align: middle; }
 .sheet.look-bistro .chips, .sheet.look-bistro .scale, .sheet.look-bistro .hinfo .acts, .sheet.look-bistro .run { justify-content: center; }
-.sheet.look-bistro > section { max-width: 620px; margin: 34px auto 0; }
+.sheet.look-bistro > section, .sheet.look-bistro > .scaled > section { max-width: 620px; margin: 34px auto 0; }
 .sheet.look-bistro h3 { justify-content: center; font-style: italic; font-size: 24px; }
 .sheet.look-bistro h3::before, .sheet.look-bistro h3::after { content: ""; flex: 0 0 48px; height: 1px; background: var(--accent); opacity: .7; }
 .sheet.look-bistro .shead { justify-content: center; flex-wrap: wrap; }

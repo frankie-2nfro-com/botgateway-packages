@@ -464,7 +464,7 @@ let factor = 1;   // scaling of the open item's amounts (collection `scale`), di
 function tableSection(c, f, v, h) {
   const cols = f.columns || [];
   const txt = cols.filter(col => !col.type || col.type === 'text'), nums = cols.filter(col => col.type === 'number'), imgs = cols.filter(col => col.type === 'image');
-  const scaled = c.scale && c.scale.table === f.name;
+  const scaled = scaledTables(c).includes(f.name);
   if (f.numbered) {
     return `<section>${h}<ol class="steps">${v.map(r => `<li><span>${esc(txt.map(col => r[col.name]).filter(Boolean).join(' · '))}
       ${imgs.map(col => fileOf(r[col.name]) ? `<img class="stepimg" src="${fileUrl(fileOf(r[col.name]))}" alt="" loading="lazy">` : '').join('')}</span></li>`).join('')}</ol></section>`;
@@ -479,7 +479,7 @@ function tableSection(c, f, v, h) {
       : (txt[0] ? r[txt[0].name] || '' : '');
     const rest = restCols.map(col => r[col.name]).filter(Boolean).join(' · ');
     const pic = imgs.map(col => fileOf(r[col.name])).find(Boolean);
-    const tap = scaled && Number.isFinite(n) ? ` data-scale="${i}" title="${esc(t('change this amount - the others follow'))}"` : '';
+    const tap = scaled && Number.isFinite(n) ? ` data-scale="${esc(f.name)}|${i}" title="${esc(t('change this amount - the others follow'))}"` : '';
     return `<li>${pic ? `<img class="ingimg" src="${fileUrl(pic)}" alt="" loading="lazy">` : ''}${lead ? `<b${tap}>${esc(lead)}</b>` : ''}${esc(rest)}</li>`;
   }).join('')}</ul></section>`;
 }
@@ -503,6 +503,8 @@ function section(c, f, v) {
   }
 }
 // The scale control: the base value (e.g. servings) with − / +; amounts follow (display only).
+// The tables whose amounts follow the base: `scale.table` is one table's name or a list of them.
+const scaledTables = c => (c.scale ? [c.scale.table].flat().filter(Boolean) : []);
 function scaleBar(c, it) {
   const s = c.scale; if (!s) return '';
   const base = Number(it[s.base]); const bf = c.fields.find(f => f.name === s.base);
@@ -522,7 +524,17 @@ async function sheet(c, it, keep) {
   const refNames = {};
   for (const f of refs) refNames[f.name] = await tagNames(f);
   viewSets = {};
-  const body = c.fields.filter(f => f !== lf && f.name !== coverName && !['choice', 'number', 'bool', 'ref', 'refs'].includes(f.type)).map(f => section(c, f, it[f.name])).join('');
+  // The tables that follow the servings (e.g. ingredients, seasonings) stay together in one block (.scaled),
+  // where the first of them is.
+  const shownFields = c.fields.filter(f => f !== lf && f.name !== coverName && !['choice', 'number', 'bool', 'ref', 'refs'].includes(f.type));
+  const st = scaledTables(c), scaledHtml = shownFields.filter(f => st.includes(f.name)).map(f => section(c, f, it[f.name])).join('');
+  let grouped = false;
+  const body = shownFields.map(f => {
+    if (!st.includes(f.name)) return section(c, f, it[f.name]);
+    if (grouped || !scaledHtml) return '';
+    grouped = true;
+    return `<div class="scaled">${scaledHtml}</div>`;
+  }).join('');
   const kids = childrenOf(c);
   const album = albumOf(c, it);
   viewSets._all = cover ? [cover, ...album] : album;
@@ -553,11 +565,12 @@ async function sheet(c, it, keep) {
     factor = next / base; sheet(c, it, true);
   }));
   document.querySelectorAll('[data-scale]').forEach(b => b.addEventListener('click', () => {
-    const f = c.fields.find(x => x.name === c.scale.table), col = (f.columns || []).find(x => x.type === 'number');
-    const was = it[f.name][Number(b.dataset.scale)][col.name];
+    const [table, row] = b.dataset.scale.split('|');
+    const f = c.fields.find(x => x.name === table), col = (f.columns || []).find(x => x.type === 'number');
+    const was = it[f.name][Number(row)][col.name];
     // Its name: the text column after the one that follows the amount (e.g. amount, unit, NAME, note).
     const texts = (f.columns || []).filter(x => !x.type || x.type === 'text'), nameCol = texts[1] || texts[0];
-    const what = nameCol ? it[f.name][Number(b.dataset.scale)][nameCol.name] || '' : '';
+    const what = nameCol ? it[f.name][Number(row)][nameCol.name] || '' : '';
     if (!(was > 0)) return;
     const now = amount(was * factor);
     openModal(`<h3>${esc(t('How much {what}?', { what }))}</h3><p class="muted" style="margin:0 0 12px">${esc(t('Now {n}. The other amounts follow.', { n: now }))}</p>

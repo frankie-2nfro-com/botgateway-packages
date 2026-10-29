@@ -11,7 +11,7 @@ const recipes = {
   album: "pictures",
   // Its page shows when it was created and last changed.
   dates: true,
-  scale: { base: "servings", table: "ingredients" },
+  scale: { base: "servings", table: ["ingredients", "seasonings"] },
   look: "look",
   fields: [
     { name: "title", title: "Title", type: "text", required: true },
@@ -27,6 +27,10 @@ const recipes = {
     { name: "ingredients", title: "Ingredients", type: "table", columns: [
       { name: "qty", title: "Amount", type: "number" }, { name: "unit", title: "Unit" },
       { name: "name", title: "Ingredient" }, { name: "note", title: "Note" }] },
+    // Salt, sugar, sauces, oil, spices: their own section (they follow the servings too).
+    { name: "seasonings", title: "Seasonings", type: "table", columns: [
+      { name: "qty", title: "Amount", type: "number" }, { name: "unit", title: "Unit" },
+      { name: "name", title: "Seasoning" }, { name: "note", title: "Note" }] },
     { name: "steps", title: "Method", type: "table", numbered: true, columns: [
       { name: "text", title: "Step" }, { name: "picture", title: "Picture", type: "image" }] },
     { name: "tips", title: "Tips", type: "list" },
@@ -64,7 +68,7 @@ with their file names): screenshots, photos, text notes, documents. Read the tex
 
 Write the whole recipe again from everything in item and the materials:
 1. Put every fact in its own field: title, servings, preparation and cooking minutes, difficulty,
-   ingredients, the method's steps in order, tips, source.
+   ingredients, seasonings, the method's steps in order, tips, source.
 2. notes: only what fits no other field (history, storage, variations). Never repeat what is in another
    field. If nothing is left, leave notes out.
 3. For each material, say what it is (materials: file, kind, used) and use it:
@@ -75,8 +79,11 @@ Write the whole recipe again from everything in item and the materials:
    the recipe (its cover and its album). Pick the best photo of the finished dish as cover. Put the other
    photos worth showing in pictures (the album), best first. Every photo the owner put in the cover or the
    album stays: in cover or in pictures. Name photos by their file name exactly as given.
-5. Ingredients: amount as a number (1/2 -> 0.5; a range: the lower number, the range in note), unit,
-   name. Words like 少許 / 適量 / to taste go in unit, with no amount.
+5. Ingredients and seasonings, each in its own list: seasonings = what gives taste - salt, sugar,
+   sauces (soy sauce, oyster sauce, vinegar, wine), oil, spices, herbs, stock powder; ingredients = the
+   rest (meat, fish, vegetables, eggs, rice, noodles, flour ...). A sauce mixed beforehand: its parts
+   in seasonings, with the sauce's name in note. Amount as a number (1/2 -> 0.5; a range: the lower
+   number, the range in note), unit, name. Words like 少許 / 適量 / to taste go in unit, with no amount.
 6. Use only what item and the materials say. Don't invent amounts or steps. Leave a field out if it is
    unknown.
 7. Keep the language of the materials. Don't translate.
@@ -93,6 +100,8 @@ const SCHEMA = {
     cook_minutes: { type: "number" },
     difficulty: { type: "string", enum: ["easy", "medium", "hard"] },
     ingredients: { type: "array", items: { type: "object", required: ["name"], properties: {
+      amount: { type: "number" }, unit: { type: "string" }, name: { type: "string" }, note: { type: "string" } } } },
+    seasonings: { type: "array", description: "salt, sugar, sauces, oil, spices ... (not in ingredients)", items: { type: "object", required: ["name"], properties: {
       amount: { type: "number" }, unit: { type: "string" }, name: { type: "string" }, note: { type: "string" } } } },
     steps: { type: "array", items: { type: "object", required: ["text"], properties: {
       text: { type: "string" }, picture: { type: "string", description: "a material's file name" } } } },
@@ -129,6 +138,7 @@ function apply(a, ctx) {
     cook_minutes: a.cook_minutes ?? null,
     difficulty: a.difficulty ?? null,
     ingredients: (a.ingredients || []).map((x) => ({ qty: x.amount, unit: x.unit, name: x.name, note: x.note })),
+    seasonings: (a.seasonings || []).map((x) => ({ qty: x.amount, unit: x.unit, name: x.name, note: x.note })),
     steps: (a.steps || []).map((s) => ({ text: s.text, picture: pic(s.picture, "steps") })),
     tips: a.tips || null,
     notes: a.notes || null,
@@ -161,7 +171,7 @@ function upgrade(kit) {
 const ZH = {
   "Recipes": "食譜", "recipe": "食譜", "Materials": "素材", "material": "素材",
   "Title": "標題", "Status": "狀態", "Look": "版面", "Servings": "份量", "Preparation": "準備時間", "Cooking": "烹調時間",
-  "Difficulty": "難度", "Cover": "封面", "Ingredients": "材料", "Amount": "數量", "Unit": "單位", "Ingredient": "材料",
+  "Difficulty": "難度", "Cover": "封面", "Ingredients": "材料", "Amount": "數量", "Unit": "單位", "Ingredient": "材料", "Seasonings": "調味料", "Seasoning": "調味料",
   "Note": "備註", "Method": "做法", "Step": "步驟", "Picture": "圖片", "Tips": "小貼士", "Pictures": "相片", "Album": "相簿",
   "Notes": "筆記", "Source": "來源", "File": "檔案", "What it is": "類別", "How it was used": "用途", "min": "分鐘",
   "unpublished": "未發佈", "published": "已發佈", "classic": "經典", "magazine": "雜誌", "notebook": "筆記本", "minimal": "極簡", "bistro": "餐館",

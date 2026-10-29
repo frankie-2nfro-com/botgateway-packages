@@ -17,7 +17,7 @@
 //               public: ["read","add","change","delete"], fields: [...],
 //               publish: { field: "<choice field>", value: "<its value>" }  (visitors see only the items with
 //                 that value, e.g. status = "published"; the owner and the client see all)
-//               scale: { base: "<number field>", table: "<table field>" }  (its number column follows the base)
+//               scale: { base: "<number field>", table: "<table field>" | ["<table>", ...] }  (their number column follows the base)
 //               look: "<choice field>"  (class look-<value> on an item's page) }
 // Collection `dates: true`: the page shows created / updated. Field `auto: true`: kept by the program (not in
 // the page's form); `format: "v{n}"`: a number's chip.
