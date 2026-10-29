@@ -83,7 +83,7 @@ function textB64(text) {
 }
 const MAX_FILE = 9 * 1024 * 1024;   // the relay takes 12 MB per message (base64 makes files a third bigger)
 
-// ---------- page and navigation (#<collection>, #<collection>/<id>, #<collection>/new) ----------
+// ---------- page and navigation (#<collection>, #<collection>/<id>, #<collection>/<id>/edit, #<collection>/new) ----------
 async function start() {
   try { M = await api('/meta'); }
   catch (e) { $('avTitle').textContent = document.title; $('avView').innerHTML = `<div class="note">${esc(e.message)}</div>`; return; }
@@ -105,13 +105,13 @@ function go(hash) { if (location.hash === '#' + hash) render().catch(showErr); e
 async function render() {
   clearTimeout(runsT);
   closeModal();
-  const [name, id] = decodeURIComponent(location.hash.slice(1)).split('/');
+  const [name, id, sub] = decodeURIComponent(location.hash.slice(1)).split('/');
   const c = coll(name) || M.collections[0];
   document.querySelectorAll('[data-tab]').forEach(a => a.classList.toggle('on', a.dataset.tab === c.name));
   if (id === 'new' && c.view !== 'files') return editView(c, null);
   if (id && c.view !== 'files') {
     const it = await call(c.name + '_get', { id: Number(id) }).catch(() => null);
-    if (it) return sheet(c, it);
+    if (it) return sub === 'edit' ? editView(c, it) : sheet(c, it);
   }
   return browse(c);
 }
@@ -357,7 +357,7 @@ async function sheet(c, it, keep) {
           ${may(o, 'change') ? `<button type="button" class="btn small" data-pick="${esc(o.name)}|${esc(f.name)}">＋ Add ${esc(title(o).toLowerCase())}</button>` : ''}</div>
         <div id="kids_${esc(o.name)}" class="${o.view === 'files' ? 'folder mini' : 'checks'}"><span class="muted">…</span></div></section>`).join('')}
     </article>`;
-  $('editBtn')?.addEventListener('click', () => editView(c, it));
+  $('editBtn')?.addEventListener('click', () => go(`${c.name}/${it.id}/edit`));
   // Scaling: − / + on the base value, or a new amount for one ingredient (the others follow).
   const base = c.scale ? Number(it[c.scale.base]) : 0;
   document.querySelectorAll('[data-sc]').forEach(b => b.addEventListener('click', () => {
@@ -374,11 +374,21 @@ async function sheet(c, it, keep) {
     const n = Number(String(asked ?? '').replace(',', '.').replace('½', '.5').replace('¼', '.25').replace('¾', '.75'));
     if (asked !== null && Number.isFinite(n) && n > 0 && was > 0) { factor = n / was; sheet(c, it, true); }
   }));
-  document.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', async () => {
+  const start = async (b, extra) => {
     b.disabled = true;
-    try { await api('/action', { method: 'POST', body: JSON.stringify({ action: b.dataset.act, item: it.id }) }); $('runs').dataset.w = '1'; }
+    try { await api('/action', { method: 'POST', body: JSON.stringify({ action: b.dataset.act, item: it.id, extra }) }); $('runs').dataset.w = '1'; }
     catch (e) { $('sErr').textContent = e.message; b.disabled = false; }
     runs(c, it.id);
+  };
+  // An action with `ask` first asks for optional extra requirements (Cancel: nothing is sent).
+  document.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => {
+    const a = acts.find(x => x.name === b.dataset.act);
+    if (!a || !a.ask) return start(b, '');
+    openModal(`<h3>${esc(a.ask.title || a.title || a.name)}</h3>${a.ask.hint ? `<p class="muted" style="margin:0 0 12px">${esc(a.ask.hint)}</p>` : ''}
+      <label class="field"><span>Extra requirements (optional)</span><textarea id="aExtra" maxlength="4000" style="min-height:140px"></textarea></label>
+      <div class="actions"><button type="button" class="btn" data-close>Cancel</button><button type="button" class="btn primary" id="aGo">✨ Send to the assistant</button></div>`);
+    $('aExtra').focus();
+    $('aGo').addEventListener('click', () => { const extra = $('aExtra').value.trim(); closeModal(); start(b, extra); });
   }));
   const reload = async () => { const fresh = await call(c.name + '_get', { id: it.id }).catch(() => null); if (fresh) sheet(c, fresh); };
   document.querySelectorAll('[data-pick]').forEach(b => b.addEventListener('click', () => {
@@ -409,10 +419,17 @@ async function runs(c, id) {
   if (!r) { el.innerHTML = ''; return; }
   const a = (M.actions || []).find(x => x.name === r.action), name = esc(a ? a.title || a.name : r.action);
   const waiting = r.state === 'waiting';
-  document.querySelectorAll('[data-act]').forEach(b => { b.disabled = waiting; });
-  el.innerHTML = waiting ? `<div class="run wait"><span class="spin"></span>${name}: the assistant is working on it…${r.attempt > 1 ? ' (second try)' : ''}</div>`
+  // While the assistant works on it, nothing of it can change (the server refuses it too).
+  document.querySelectorAll('[data-act], #editBtn, [data-pick], [data-kid]').forEach(b => { b.disabled = waiting; });
+  el.innerHTML = waiting ? `<div class="run wait"><span class="spin"></span>${name}: the assistant is working on it… it can't be changed until then.
+      ${M.public ? '' : '<button type="button" class="btn small ghost" id="runCancel">Cancel</button>'}</div>`
     : r.state === 'done' ? `<div class="run ok">✓ ${name} · ${esc(when(r.finished))}</div>`
+    : r.state === 'cancelled' ? `<div class="run">${name} was cancelled · ${esc(when(r.finished))}</div>`
     : `<div class="run bad">${name} didn't work${r.error ? ': ' + esc(r.error) : ''}</div>`;
+  $('runCancel')?.addEventListener('click', async () => {
+    try { await api('/cancel', { method: 'POST', body: JSON.stringify({ collection: c.name, item: id }) }); } catch (e) { $('sErr').textContent = e.message; }
+    el.dataset.w = ''; runs(c, id);
+  });
   if (waiting) { el.dataset.w = '1'; runsT = setTimeout(() => runs(c, id), 2000); return; }
   if (el.dataset.w === '1' && location.hash === `#${c.name}/${id}`) {
     el.dataset.w = '';
@@ -473,7 +490,22 @@ async function editView(c, it) {
         <div><a class="btn" href="#${esc(c.name)}${it ? '/' + it.id : ''}">Cancel</a><button type="button" class="btn primary" id="fSave">${it ? 'Save' : 'Add'}</button></div></div>
     </article>`;
   formRow = name => { const f = c.fields.find(x => x.name === name); $('f_' + f.name).insertAdjacentHTML('beforeend', trow(f, {})); };
-  if ($('fDel')) armed($('fDel'), 'Really delete? Click again', async () => { await call(c.name + '_delete', { id: it.id }); go(c.name); });
+  // Deleting: the first click says what goes with it (e.g. materials used only here) and what is kept.
+  const del = $('fDel');
+  del?.addEventListener('click', async () => {
+    if (!del.classList.contains('armed')) {
+      let extra = '';
+      try {
+        const p = await call(c.name + '_delete', { id: it.id, preview: true });
+        const count = l => Object.entries(l.reduce((m, x) => ({ ...m, [x.collection]: (m[x.collection] || 0) + 1 }), {}))
+          .map(([n, k]) => { const o = coll(n) || { name: n }; return `${k} ${esc(k === 1 ? word(o) : title(o).toLowerCase())}`; }).join(', ');
+        extra = [p.also.length ? `also deletes ${count(p.also)} used only here` : '', p.kept.length ? `keeps ${count(p.kept)} also used elsewhere` : ''].filter(Boolean).join('; ');
+      } catch (e) { $('fErr').textContent = e.message; return; }
+      del.classList.add('armed'); del.innerHTML = `Really delete?${extra ? ` (${extra})` : ''} Click again`; return;
+    }
+    del.disabled = true;
+    try { await call(c.name + '_delete', { id: it.id }); go(c.name); } catch (e) { $('fErr').textContent = e.message; del.disabled = false; }
+  });
   $('fSave').addEventListener('click', async () => {
     const args = it ? { id: it.id } : {};
     try {

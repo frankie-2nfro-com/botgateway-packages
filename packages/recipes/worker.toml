@@ -1,7 +1,7 @@
 type = "application"
 id = "recipes"
 name = "Recipes"
-version = "0.4.0"
+version = "0.4.1"
 about = "Your recipe book: collect screenshots, photos and notes as materials; the assistant writes the finished recipe from them - cover photo, ingredients you can scale, the method with step pictures. Its website shows the recipes."
 author = "Bot Gateway"
 license = "Apache-2.0"
@@ -54,5 +54,5 @@ input_schema = { type = "object", properties = { recipe = { type = "integer" }, 
 [[tools]]
 name = "build_recipe"
 title = "Build a recipe"
-description = "Asks the assistant to write recipe id again from its materials (the answer arrives later)."
-input_schema = { type = "object", required = ["id"], properties = { id = { type = "integer" } } }
+description = "Asks the assistant to write recipe id again from its materials (the answer arrives later); extra = optional additional requirements for this time."
+input_schema = { type = "object", required = ["id"], properties = { id = { type = "integer" }, extra = { type = "string" } } }

@@ -10,17 +10,22 @@
 //               public: ["read","add","change","delete"], fields: [...],
 //               scale: { base: "<number field>", table: "<table field>" }  (its number column follows the base)
 //               look: "<choice field>"  (class look-<value> on an item's page) }
-// Field: { name, title, type, required, choices, unit (number), ref, columns, numbered }
+// Field: { name, title, type, required, choices, unit (number), ref, owned (ref / refs: deleting the last
+//          item it points to deletes this one too), columns, numbered }
 // Field types: text, longtext, number, bool, choice (choices), json, list (numbered), image, images, file,
 //   ref / refs (ref = "<collection>"), table (columns: [{ name, title, type: "text" | "number" | "image" }], numbered)
 // Action: { name, title, on, include: ["<collection pointing here>"], public, schema,
-//           task(item, related) -> text, apply(answer, ctx) -> nothing (ctx: item, related, update, copyFile) }
+//           task(item, related) -> text, apply(answer, ctx) -> nothing (ctx: item, related, update, copyFile),
+//           ask: { title, hint }  (the page first asks for optional extra requirements; they are added to the task) }
 //
-// API (the page, under api/): GET meta, POST call {op, arguments}, POST action {action, item},
-// GET runs?collection=&item=, GET files/<name>. Visitors (request.who == "visitor") get only what the
+// API (the page, under api/): GET meta, POST call {op, arguments}, POST action {action, item, extra},
+// POST cancel {collection, item}, GET runs?collection=&item=, GET files/<name>. While an action's AI run
+// waits (at most 15 minutes), its item and the items pointing to it can't be changed or deleted. Visitors (request.who == "visitor") get only what the
 // collection's `public` / the action's `public` allow; the owner everything.
 
 const MAX_FILE = 10 * 1024 * 1024;
+// An AI run that has not answered in this time is taken as failed (e.g. the gateway restarted meanwhile).
+const WAIT_LIMIT_MS = 15 * 60 * 1000;
 const now = () => new Date().toISOString();
 const isObj = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
 
@@ -148,13 +153,66 @@ export function createApp(spec) {
     }
     return out.filter(Boolean);
   }
-  function remove(c, id) {
+  // What deleting an item does to the items pointing to it: those that belong to it (their ref field has
+  // `owned: true`) and point to nothing else go too, with their files; the others only lose the reference.
+  function dependants(c, id) {
+    const goes = [], loses = [];
+    for (const o of colls) {
+      for (const f of o.fields.filter((f) => (f.type === "ref" || f.type === "refs") && f.ref === c.name)) {
+        for (const x of list(o, { [f.name]: id, limit: 500 }).items) {
+          const rest = [x[f.name]].flat().filter((v) => v !== null && v !== undefined && Number(v) !== Number(id));
+          (f.owned && !rest.length ? goes : loses).push({ o, f, x, rest });
+        }
+      }
+    }
+    return { goes, loses };
+  }
+  function removeNow(c, id) {
     const it = get(c, id);
-    if (!it) throw new Error(`${c.name} ${id} not found`);
+    if (!it) return;
+    const d = dependants(c, id);
+    for (const l of d.loses) write(l.o, l.x.id, { [l.f.name]: l.f.type === "refs" ? l.rest : null });
+    for (const g of d.goes) removeNow(g.o, g.x.id);
     host.db.exec(`DELETE FROM ${table(c)} WHERE id = ?`, [Number(id)]);
-    // Its own files go too; a file another item still shows is kept.
+    // Its own files go too (named after it); files of other items are kept.
     for (const name of filesOf(c, it)) if (name.startsWith(`${c.name}-${it.id}-`)) host.files.remove(name);
-    return { deleted: Number(id) };
+  }
+  /** preview: only say what would go ({also: [{collection, id}], kept: [...]}). */
+  function remove(c, id, preview) {
+    if (!get(c, id)) throw new Error(`${c.name} ${id} not found`);
+    const d = dependants(c, id);
+    const ids = (l) => l.map((x) => ({ collection: x.o.name, id: x.x.id }));
+    if (preview) return { also: ids(d.goes), kept: ids(d.loses) };
+    host.db.transaction(() => removeNow(c, id));
+    return { deleted: Number(id), also: ids(d.goes), kept: ids(d.loses) };
+  }
+
+  // ---------- locks: an item (and what points to it) can't change while the assistant works on it ----------
+  function expire() {
+    const before = new Date(Date.now() - WAIT_LIMIT_MS).toISOString();
+    host.db.exec("UPDATE _runs SET state = 'failed', error = 'no answer from the assistant in 15 minutes', finished = ? WHERE state = 'waiting' AND started < ?", [now(), before]);
+  }
+  function busy(collName, id) {
+    expire();
+    return host.db.query("SELECT run FROM _runs WHERE coll = ? AND item = ? AND state = 'waiting' LIMIT 1", [collName, Number(id)]).length > 0;
+  }
+  // Refused when the item, or an item it points to (e.g. a material's recipe, before or after), is being worked on.
+  function checkFree(c, id, args) {
+    const word = (x) => x.item || x.name;
+    if (id && busy(c.name, id)) throw new Error(`The assistant is working on this ${word(c)} - wait until it is done, or cancel it.`);
+    const old = id ? get(c, id) : null;
+    for (const f of c.fields.filter((f) => f.type === "ref" || f.type === "refs")) {
+      const ids = new Set([old && old[f.name], args && args[f.name]].flat().filter((x) => x !== null && x !== undefined).map(Number));
+      for (const t of ids) if (busy(f.ref, t)) throw new Error(`The assistant is working on that ${word(coll(f.ref))} - wait until it is done, or cancel it.`);
+    }
+  }
+  function cancel(collName, item, who) {
+    setup();
+    const c = coll(collName);
+    if (!c) throw new Error("no such collection");
+    if (who === "visitor" && !actions.some((a) => a.on === c.name && a.public)) throw new Error("This isn't open to visitors.");
+    host.db.exec("UPDATE _runs SET state = 'cancelled', finished = ? WHERE coll = ? AND item = ? AND state = 'waiting'", [now(), c.name, Number(item)]);
+    return { cancelled: true };
   }
 
   // ---------- operations (the page's `call` and the client's tools) ----------
@@ -164,7 +222,7 @@ export function createApp(spec) {
     const c = m && coll(m[1]);
     if (!c) {
       const a = actions.find((x) => x.name === name);
-      if (a) return startAction(a, Number(args.id ?? args.item), who);
+      if (a) return startAction(a, Number(args.id ?? args.item), who, args.extra);
       throw new Error(`no operation '${name}'`);
     }
     const need = { list: "read", get: "read", add: "add", update: "change", delete: "delete" }[m[2]];
@@ -172,26 +230,32 @@ export function createApp(spec) {
     switch (m[2]) {
       case "list": return list(c, args);
       case "get": { const it = get(c, args.id); if (!it) throw new Error(`${c.name} ${args.id} not found`); return it; }
-      case "add": return write(c, null, args);
-      case "update": { const { id, ...rest } = args; return write(c, Number(id), rest); }
-      case "delete": return remove(c, args.id);
+      case "add": checkFree(c, null, args); return write(c, null, args);
+      case "update": { const { id, ...rest } = args; checkFree(c, Number(id), rest); return write(c, Number(id), rest); }
+      case "delete": checkFree(c, Number(args.id), null); return remove(c, Number(args.id), !!args.preview);
     }
   }
 
   // ---------- AI actions ----------
   const pointing = (c, other) => other.fields.find((f) => (f.type === "ref" || f.type === "refs") && f.ref === c.name);
-  function startAction(a, id, who) {
+  const MAX_EXTRA = 4000;
+  function startAction(a, id, who, extra) {
     setup();
     if (who === "visitor" && !a.public) throw new Error("This isn't open to visitors.");
     const c = coll(a.on), it = get(c, id);
     if (!it) throw new Error(`${c.name} ${id} not found`);
+    if (busy(c.name, id)) throw new Error("The assistant is already working on it.");
+    extra = typeof extra === "string" ? extra.trim() : "";
+    if (extra.length > MAX_EXTRA) throw new Error(`The extra requirements are too long (at most ${MAX_EXTRA} characters).`);
     const related = {}, files = filesOf(c, it);
     for (const name of a.include || []) {
       const o = coll(name), f = pointing(c, o);
       related[name] = list(o, { [f.name]: id, limit: 200 }).items;
       for (const x of related[name]) files.push(...filesOf(o, x));
     }
-    const { run } = host.ai.run({ task: a.task(it, related), schema: a.schema, data: { item: it, related }, files: [...new Set(files)].slice(0, 20), tag: { action: a.name, coll: c.name, item: id } });
+    let task = a.task(it, related);
+    if (extra) task += `\n\nExtra requirements from the owner for this time. Follow them; where they differ from the rules above, they win (the answer must still match the schema):\n${extra}`;
+    const { run } = host.ai.run({ task, schema: a.schema, data: { item: it, related }, files: [...new Set(files)].slice(0, 20), tag: { action: a.name, coll: c.name, item: id } });
     host.db.exec("INSERT INTO _runs (run, action, coll, item, state, started) VALUES (?, ?, ?, ?, 'waiting', ?)", [run, a.name, c.name, id, now()]);
     return { run, state: "waiting" };
   }
@@ -200,6 +264,9 @@ export function createApp(spec) {
     const tag = r.tag || {};
     const a = actions.find((x) => x.name === tag.action), c = coll(tag.coll);
     const end = (state, error) => host.db.exec("UPDATE _runs SET state = ?, error = ?, finished = ? WHERE run = ?", [state, error || null, now(), r.run]);
+    // Cancelled (or timed out) meanwhile: the answer is not used.
+    const was = host.db.query("SELECT state FROM _runs WHERE run = ?", [r.run])[0];
+    if (!was || was.state !== "waiting") return;
     if (!a || !c) return end("failed", "the action is gone");
     if (r.state !== "done") return end("failed", r.error);
     try {
@@ -228,6 +295,7 @@ export function createApp(spec) {
   }
   function runs(collName, item) {
     setup();
+    expire();
     return host.db.query("SELECT * FROM _runs WHERE coll = ? AND item = ? ORDER BY started DESC LIMIT 5", [collName, Number(item)]);
   }
 
@@ -237,7 +305,7 @@ export function createApp(spec) {
     return {
       name: spec.name || host.app.name, look: spec.look || {}, enabled: true, public: visitor,
       collections: colls.filter((c) => !visitor || (c.public || []).length),
-      actions: actions.filter((a) => !visitor || a.public).map((a) => ({ name: a.name, title: a.title, on: a.on, runnable: true })),
+      actions: actions.filter((a) => !visitor || a.public).map((a) => ({ name: a.name, title: a.title, on: a.on, runnable: true, ask: a.ask || null })),
     };
   }
   // A plain-text answer with an HTTP status (the gateway's "$response"; anything else is sent as JSON).
@@ -252,8 +320,9 @@ export function createApp(spec) {
       if (req.method === "POST" && path === "action") {
         const b = body(), a = actions.find((x) => x.name === b.action);
         if (!a) return reply(404, "no such action");
-        return startAction(a, Number(b.item), who);
+        return startAction(a, Number(b.item), who, b.extra);
       }
+      if (req.method === "POST" && path === "cancel") { const b = body(); return cancel(b.collection, b.item, who); }
       if (req.method === "GET" && path === "runs") {
         const c = coll(req.query.collection);
         if (!c || (who === "visitor" && !actions.some((a) => a.on === c.name && a.public))) return reply(403, "This isn't open to visitors.");

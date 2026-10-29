@@ -35,7 +35,8 @@ const materials = {
   name: "materials", title: "Materials", item: "material", view: "files",
   fields: [
     { name: "file", title: "File", type: "file", required: true },
-    { name: "recipe", title: "Recipes", type: "refs", ref: "recipes" },
+    // owned: deleting a recipe deletes the materials used only by it; shared ones are kept.
+    { name: "recipe", title: "Recipes", type: "refs", ref: "recipes", owned: true },
     { name: "kind", title: "What it is", type: "choice", choices: ["finished dish", "step", "ingredients", "text", "other"] },
     { name: "used", title: "How it was used", type: "text" },
   ],
@@ -121,5 +122,6 @@ export const { handle, callTool, onAiResult, onInstall, onUpdate } = createApp({
   name: "Recipes",
   look: { accent: "#b4532a", paper: "#faf6ef", font: "serif", icon: "🍳" },
   collections: [recipes, materials],
-  actions: [{ name: "build_recipe", title: "Build recipe", on: "recipes", include: ["materials"], task: TASK, schema: SCHEMA, apply }],
+  actions: [{ name: "build_recipe", title: "Build recipe", on: "recipes", include: ["materials"], task: TASK, schema: SCHEMA, apply,
+    ask: { title: "Build recipe", hint: "The assistant writes the recipe from its materials. Anything else it should do this time? e.g. \"for 4 people\", \"less sugar\", \"write it in English\", \"add a tip about storing it\". Leave empty for none." } }],
 });

@@ -58,6 +58,27 @@
    "version": "0.4.0"
   },
   {
+   "about": "Your recipe book: collect screenshots, photos and notes as materials; the assistant writes the finished recipe from them - cover photo, ingredients you can scale, the method with step pictures. Its website shows the recipes.",
+   "archive": "dist/recipes-0.4.1.tar.gz",
+   "author": "Bot Gateway",
+   "bytes": 26373,
+   "disclosure": {
+    "ai": {
+     "sends": "a recipe with its materials (photos, screenshots, notes) when you press Build recipe",
+     "who": "owner"
+    },
+    "login": "none",
+    "net": [],
+    "visitors": "read the recipes and change the servings (amounts follow)"
+   },
+   "id": "recipes",
+   "license": "Apache-2.0",
+   "name": "Recipes",
+   "sha256": "e122a16e1a97d522d7daa169c53fa8c932d912352cbb2bf959c818fde78f5e6e",
+   "type": "application",
+   "version": "0.4.1"
+  },
+  {
    "about": "Upper-cases text - an example package (the old built-in uppercase as a Python program).",
    "archive": "dist/uppercase-1.2.0.tar.gz",
    "author": "Bot Gateway",
