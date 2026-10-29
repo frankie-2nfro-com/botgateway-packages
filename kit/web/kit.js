@@ -9,6 +9,9 @@
 // look.cover: a picture in web/ for items without their own cover (else a coloured block with the first letter).
 // A collection's `publish` ({field, value}): the owner gets Publish / Unpublish on an item's page; visitors
 // only ever get published items (the server decides).
+// A collection's `dates: true`: an item's page ends with a quiet footer - when it was created and last
+// changed. A field's `auto: true`: kept by the program (not in the form, shown in that footer, not as a
+// chip); `format` ("v{n}"): how its number shows.
 // A collection's `album` ("<images field>"): its cover shows the number of photos and opens a viewer with the
 // cover and the album (pictures of any images field open the same viewer).
 // Languages: the app's `languages` (e.g. ["en", "zh"]) and `words` ({ zh: { "Recipes": "食譜", "easy": "容易" } }:
@@ -103,6 +106,8 @@ const KIT_WORDS = {
     '{what}: not valid JSON': '{what}：不是有效的 JSON',
     '{what} is needed': '必須填寫{what}',
     '{n} photos': '{n} 張相片',
+    'Created {when}': '建立於 {when}',
+    'Updated {when}': '更新於 {when}',
     'Previous': '上一張',
     'Next': '下一張',
     'Show the photos': '看相片',
@@ -173,6 +178,7 @@ const ext = name => (String(name).split('.').pop() || '').toLowerCase();
 const isImg = name => ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext(name));
 const isText = name => ['txt', 'md', 'json', 'csv'].includes(ext(name));
 const fileIcon = name => ({ pdf: '📄', txt: '📝', md: '📝', csv: '📊', json: '🗒️' }[ext(name)] || '📎');
+const whenTime = iso => { const d = new Date(iso || ''); return isNaN(d) ? '' : d.toLocaleString(LANG === 'zh' ? 'zh-HK' : LANG, { dateStyle: 'medium', timeStyle: 'short' }); };
 const when = iso => { const d = new Date(iso || ''); return isNaN(d) ? '' : d.toLocaleDateString(LANG === 'zh' ? 'zh-HK' : LANG, { day: 'numeric', month: 'short', year: 'numeric' }); };
 const num = v => Number.isInteger(v) ? String(v) : String(Math.round(v * 100) / 100);
 // Amounts read like a cook writes them: 1½, ¼, 0.3 -> 0.3.
@@ -336,7 +342,9 @@ function chips(c, it, page) {
     const v = it[f.name];
     if (v === null || v === undefined || v === '') return '';
     if (c.publish && f.name === c.publish.field) return ''; // shown on the cover instead (pubFlag)
+    if (f.auto) return '';                                  // in the footer (itemFoot)
     if (f.type === 'choice') return `<span class="chip">${esc(tn(v))}</span>`;
+    if (f.type === 'number' && f.format) return `<span class="chip" title="${esc(ftitle(f))}">${esc(t(f.format, { n: num(v) }))}</span>`;
     if (f.type === 'number') return `<span class="chip">${f.unit ? `${esc(ftitle(f))} ${esc(num(v))} ${esc(tn(f.unit))}` : esc(t('{n} {what}', { n: num(v), what: ftitle(f).toLowerCase() }))}</span>`;
     if (f.type === 'bool') return v ? `<span class="chip">${esc(ftitle(f))}</span>` : '';
     return '';
@@ -533,6 +541,7 @@ async function sheet(c, it, keep) {
       ${kids.map(({ o, f }) => `<section><div class="shead"><h3>${esc(title(o))}</h3>
           ${may(o, 'change') ? `<button type="button" class="btn small" data-pick="${esc(o.name)}|${esc(f.name)}">${esc(t('＋ Add {what}', { what: T(o) }))}</button>` : ''}</div>
         <div id="kids_${esc(o.name)}" class="${o.view === 'files' ? 'folder mini' : 'checks'}"><span class="muted">…</span></div></section>`).join('')}
+      ${itemFoot(c, it)}
     </article>`;
   $('editBtn')?.addEventListener('click', () => go(`${c.name}/${it.id}/edit`));
   $('pubBtn')?.addEventListener('click', () => publish(c, it));
@@ -597,6 +606,17 @@ async function sheet(c, it, keep) {
     }).catch(() => {});
   }
   if (acts.length) runs(c, it.id);
+}
+// The quiet footer at the end of an item's page: its `auto` fields (e.g. "v3") and, with `dates`,
+// "Created … · Updated …".
+function itemFoot(c, it) {
+  const parts = c.fields.filter(f => f.auto && it[f.name] !== undefined && it[f.name] !== null && it[f.name] !== '')
+    .map(f => f.format ? t(f.format, { n: num(it[f.name]) }) : `${ftitle(f)} ${it[f.name]}`);
+  if (c.dates && it.created) {
+    parts.push(t('Created {when}', { when: whenTime(it.created) }));
+    if (it.updated && it.updated !== it.created) parts.push(t('Updated {when}', { when: whenTime(it.updated) }));
+  }
+  return parts.length ? `<footer class="itemfoot">${esc(parts.join(' · '))}</footer>` : '';
 }
 // ---------- photos: the album and the viewer ----------
 let viewSets = {};   // the open item's photo lists (file names) by set: an images field, or _all = cover + album
@@ -711,6 +731,7 @@ async function editView(c, it) {
       <button type="button" class="btn small ghost" data-delrow title="${esc(t('remove'))}">×</button></div>`;
   const input = f => {
     const id = 'f_' + f.name, x = v(f), lab = `<span>${esc(ftitle(f))}${f.required ? ' *' : ''}</span>`;
+    if (f.auto) return '';   // kept by the program
     if ((f.type === 'ref' || f.type === 'refs') && !opts[f.name]) return '';   // points to something visitors can't see
     switch (f.type) {
       case 'longtext': return `<label class="field">${lab}<textarea id="${id}">${esc(x || '')}</textarea></label>`;

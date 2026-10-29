@@ -9,12 +9,16 @@ const recipes = {
   publish: { field: "status", value: "published" },
   // The cover opens a viewer with the cover and the album.
   album: "pictures",
+  // Its page shows when it was created and last changed.
+  dates: true,
   scale: { base: "servings", table: "ingredients" },
   look: "look",
   fields: [
     { name: "title", title: "Title", type: "text", required: true },
+    // Version of the written recipe: 1, 2, 3, ... - one more each time the assistant writes it again.
+    { name: "revision", title: "Version", type: "number", auto: true, format: "v{n}" },
     { name: "status", title: "Status", type: "choice", choices: ["unpublished", "published"], default: "unpublished" },
-    { name: "look", title: "Look", type: "choice", choices: ["classic", "magazine", "notebook"] },
+    { name: "look", title: "Look", type: "choice", choices: ["classic", "magazine", "notebook", "minimal", "bistro"] },
     { name: "servings", title: "Servings", type: "number" },
     { name: "prep_minutes", title: "Preparation", type: "number", unit: "min" },
     { name: "cook_minutes", title: "Cooking", type: "number", unit: "min" },
@@ -118,6 +122,7 @@ function apply(a, ctx) {
   for (const name of a.pictures || []) add(pic(name, "pictures"));
   for (const name of own) add({ file: name });
   const update = {
+    revision: (Number(ctx.item.revision) || 0) + 1,
     title: a.title,
     servings: a.servings ?? null,
     prep_minutes: a.prep_minutes ?? null,
@@ -141,10 +146,14 @@ function apply(a, ctx) {
 
 // Before 0.5.0 the status was draft / ready and every recipe was on the website: "ready" ones stay
 // published, the others become unpublished.
+// 0.5.3: a published recipe without a version is version 1.
 function upgrade(kit) {
   for (const it of kit.items("recipes")) {
-    if (it.status === "published" || it.status === "unpublished") continue;
-    kit.update("recipes", it.id, { status: it.status === "ready" ? "published" : "unpublished" });
+    if (it.status !== "published" && it.status !== "unpublished") {
+      it.status = it.status === "ready" ? "published" : "unpublished";
+      kit.update("recipes", it.id, { status: it.status });
+    }
+    if (it.status === "published" && it.revision === undefined) kit.update("recipes", it.id, { revision: 1 });
   }
 }
 
@@ -155,10 +164,10 @@ const ZH = {
   "Difficulty": "難度", "Cover": "封面", "Ingredients": "材料", "Amount": "數量", "Unit": "單位", "Ingredient": "材料",
   "Note": "備註", "Method": "做法", "Step": "步驟", "Picture": "圖片", "Tips": "小貼士", "Pictures": "相片", "Album": "相簿",
   "Notes": "筆記", "Source": "來源", "File": "檔案", "What it is": "類別", "How it was used": "用途", "min": "分鐘",
-  "unpublished": "未發佈", "published": "已發佈", "classic": "經典", "magazine": "雜誌", "notebook": "筆記本",
+  "unpublished": "未發佈", "published": "已發佈", "classic": "經典", "magazine": "雜誌", "notebook": "筆記本", "minimal": "極簡", "bistro": "餐館",
   "easy": "容易", "medium": "中等", "hard": "困難",
   "finished dish": "成品", "step": "步驟", "ingredients": "材料", "text": "文字", "other": "其他",
-  "Build recipe": "生成食譜",
+  "Build recipe": "生成食譜", "Version": "版本",
   [BUILD_HINT]: "助手會根據素材寫出食譜。今次還有其他要求嗎？例如「4 人份」、「少糖」、「用英文寫」、「加一個保存的小貼士」。沒有就留空。",
 };
 

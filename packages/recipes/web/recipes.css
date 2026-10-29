@@ -27,3 +27,53 @@
 .sheet.look-notebook .steps li::before { content: ""; width: 20px; height: 20px; border-radius: 4px; background: transparent;
   border: 2px solid var(--accent); margin-top: 3px; }
 .sheet.look-notebook .ingr li { border-bottom: none; }
+
+/* minimal: no frame, lots of space, quiet type; amounts on the right like a price list, steps 01, 02, ... */
+.sheet.look-minimal { background: transparent; border: 0; padding: 8px 0; --font: system-ui, -apple-system, "Segoe UI", sans-serif; }
+.sheet.look-minimal .heroimg { aspect-ratio: 16 / 10; border-radius: 6px; }
+.sheet.look-minimal .coverbtn { border-radius: 6px; }
+.sheet.look-minimal .hinfo h2 { font-weight: 300; font-size: 40px; letter-spacing: -.02em; }
+.sheet.look-minimal .hinfo .chip { background: transparent; color: var(--muted); padding: 0 10px 0 0; font-weight: 500; }
+.sheet.look-minimal > section { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sheet.look-minimal h3 { font: 600 12px/1 var(--ui); text-transform: uppercase; letter-spacing: .16em; color: var(--muted); margin-bottom: 16px; }
+.sheet.look-minimal h3::after { display: none; }
+.sheet.look-minimal .ingr { columns: 1; max-width: 560px; }
+.sheet.look-minimal .ingr li { display: flex; align-items: baseline; gap: 12px; border-bottom: 0; padding: 6px 0; }
+.sheet.look-minimal .ingr li b { order: 2; margin: 0 0 0 auto; color: var(--text); font-weight: 500; white-space: nowrap; }
+.sheet.look-minimal .steps { gap: 22px; }
+.sheet.look-minimal .steps li { grid-template-columns: 44px minmax(0, 1fr); }
+.sheet.look-minimal .steps li::before { content: counter(step, decimal-leading-zero); width: auto; height: auto; background: none;
+  color: var(--accent); font: 300 26px/1 var(--ui); }
+.sheet.look-minimal .stepimg, .sheet.look-minimal .gallery img { border-radius: 4px; }
+
+/* bistro: a restaurant menu - everything centred, a round "plate" cover, ornaments, dotted leaders,
+   steps in roman numbers. */
+.sheet.look-bistro { text-align: center; padding: 40px 28px; border: 1px solid var(--line);
+  box-shadow: inset 0 0 0 8px var(--card), inset 0 0 0 9px color-mix(in srgb, var(--accent) 45%, var(--card)); }
+.sheet.look-bistro .hero { display: block; }
+.sheet.look-bistro .coverbox { max-width: 300px; margin: 0 auto 22px; }
+.sheet.look-bistro .heroimg { aspect-ratio: 1; border-radius: 50%; box-shadow: 0 0 0 6px var(--card), 0 0 0 7px var(--line), 0 10px 30px rgba(0, 0, 0, .18); }
+.sheet.look-bistro .coverbtn { border-radius: 50%; }
+.sheet.look-bistro .pubflag { top: 14px; right: 14px; }
+.sheet.look-bistro .photocount { right: 50%; bottom: -8px; transform: translateX(50%); white-space: nowrap; }
+.sheet.look-bistro .hinfo h2 { font-style: italic; font-size: 40px; }
+.sheet.look-bistro .hinfo h2::before, .sheet.look-bistro .hinfo h2::after { content: " ✦ "; font-style: normal; font-size: 18px; color: var(--accent); vertical-align: middle; }
+.sheet.look-bistro .chips, .sheet.look-bistro .scale, .sheet.look-bistro .hinfo .acts, .sheet.look-bistro .run { justify-content: center; }
+.sheet.look-bistro > section { max-width: 620px; margin: 34px auto 0; }
+.sheet.look-bistro h3 { justify-content: center; font-style: italic; font-size: 24px; }
+.sheet.look-bistro h3::before, .sheet.look-bistro h3::after { content: ""; flex: 0 0 48px; height: 1px; background: var(--accent); opacity: .7; }
+.sheet.look-bistro .shead { justify-content: center; flex-wrap: wrap; }
+.sheet.look-bistro .ingr { columns: 1; text-align: left; }
+.sheet.look-bistro .ingr li { display: flex; align-items: baseline; gap: 8px; border-bottom: 0; padding: 5px 0; }
+.sheet.look-bistro .ingr li::after { content: ""; order: 1; flex: 1; border-bottom: 2px dotted var(--line); transform: translateY(-4px); min-width: 24px; }
+.sheet.look-bistro .ingr li b { order: 2; margin: 0; font-style: italic; white-space: nowrap; }
+.sheet.look-bistro .steps { text-align: left; }
+.sheet.look-bistro .steps li::before { content: counter(step, upper-roman); background: none; color: var(--accent); width: auto;
+  font: italic 600 20px/1.3 var(--font); }
+.sheet.look-bistro .prose, .sheet.look-bistro .bullets { text-align: left; }
+.sheet.look-bistro .gallery { justify-content: center; }
+@media (max-width: 640px) { .sheet.look-bistro { padding: 28px 16px; } .sheet.look-bistro .hinfo h2 { font-size: 30px; } }
+
+/* The quiet footer (version, created / updated) in each look. */
+.sheet.look-magazine .itemfoot { margin: 24px 28px 20px; grid-column: 1 / -1; }
+.sheet.look-bistro .itemfoot { text-align: center; max-width: 620px; margin-left: auto; margin-right: auto; }

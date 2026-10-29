@@ -10,8 +10,8 @@
 //         cover: a picture in web/ for items without a cover }
 // languages: ["en", "zh"] (the page gets a switch), words: { zh: { "<English name>": "<translation>" } } for the
 //   app's names, field titles, choices, units and actions (the kit translates its own words).
-// upgrade(kit): run on install and on every new version, for changing old data (kit: items(collection),
-//   update(collection, id, changes)); it must be safe to run again.
+// upgrade(kit): run once each time the program starts (so also after an install / a new version), for changing
+//   old data (kit: items(collection), update(collection, id, changes)); it must be safe to run again.
 //
 // Collection: { name, title, item, view: "list" | "cards" | "files", cover, label: "<field naming an item>",
 //               public: ["read","add","change","delete"], fields: [...],
@@ -19,6 +19,8 @@
 //                 that value, e.g. status = "published"; the owner and the client see all)
 //               scale: { base: "<number field>", table: "<table field>" }  (its number column follows the base)
 //               look: "<choice field>"  (class look-<value> on an item's page) }
+// Collection `dates: true`: the page shows created / updated. Field `auto: true`: kept by the program (not in
+// the page's form); `format: "v{n}"`: a number's chip.
 // Field: { name, title, type, required, choices, default (a new item's value), unit (number), ref, owned
 //          (ref / refs: deleting the last item it points to deletes this one too), columns, numbered }
 // Field types: text, longtext, number, bool, choice (choices), json, list (numbered), image, images, file,
@@ -37,6 +39,11 @@ const MAX_FILE = 10 * 1024 * 1024;
 const WAIT_LIMIT_MS = 15 * 60 * 1000;
 const now = () => new Date().toISOString();
 const isObj = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
+// The kit's own refusals (shown to visitors as they are); any other error (e.g. from the database) is shown
+// to visitors only as "something went wrong", so nothing inside leaks.
+const fail = (msg) => Object.assign(new Error(msg), { kit: true });
+// A whole number from a request, within [min, max] (default when it isn't one).
+const int = (v, def, min, max) => { const n = Math.floor(Number(v)); return Number.isFinite(n) ? Math.min(Math.max(n, min), max) : def; };
 // Messages people see, in the page's language (its Accept-Language; the client's LLM always gets English).
 const SAY = {
   zh: {
@@ -48,6 +55,7 @@ const SAY = {
     "The assistant is already working on it.": "助手已經在處理。",
     "The extra requirements are too long (at most {n} characters).": "額外要求太長（最多 {n} 個字）。",
     "{what}: the file is larger than 10 MB": "{what}：檔案大於 10 MB",
+    "Something went wrong - please try again.": "出了點問題 - 請再試一次。",
   },
 };
 
@@ -67,11 +75,12 @@ export function createApp(spec) {
   function setup() {
     if (ready) return;
     for (const c of colls) {
-      if (!/^[a-z][a-z0-9_]*$/.test(c.name)) throw new Error(`collection name '${c.name}': a-z, 0-9, _`);
+      if (!/^[a-z][a-z0-9_]*$/.test(c.name)) throw fail(`collection name '${c.name}': a-z, 0-9, _`);
       host.db.script(`CREATE TABLE IF NOT EXISTS ${table(c)} (id INTEGER PRIMARY KEY, data TEXT NOT NULL DEFAULT '{}', created TEXT NOT NULL, updated TEXT NOT NULL)`);
     }
     host.db.script(`CREATE TABLE IF NOT EXISTS _runs (run TEXT PRIMARY KEY, action TEXT, coll TEXT, item INTEGER, state TEXT, error TEXT, started TEXT, finished TEXT)`);
     ready = true;
+    upgrade();
   }
   const row = (c, r) => ({ ...JSON.parse(r.data), id: r.id, created: r.created, updated: r.updated });
   function get(c, id) {
@@ -90,7 +99,7 @@ export function createApp(spec) {
       else where.push(`EXISTS (SELECT 1 FROM json_each(data, '$.${f.name}') WHERE value = ?)`);
       params.push(Number(args[f.name]));
     }
-    const limit = Math.min(Number(args.limit) || 50, 500), offset = Number(args.offset) || 0;
+    const limit = int(args.limit, 50, 1, 500), offset = int(args.offset, 0, 0, 1e9);
     const sql = `SELECT * FROM ${table(c)}${where.length ? " WHERE " + where.join(" AND ") : ""} ORDER BY updated DESC LIMIT ${limit} OFFSET ${offset}`;
     return { items: host.db.query(sql, params).map((r) => row(c, r)) };
   }
@@ -99,7 +108,7 @@ export function createApp(spec) {
   const safeName = (n) => String(n || "file").replace(/[^A-Za-z0-9._-]/g, "_").replace(/^\.+/, "").slice(-80) || "file";
   function saveUpload(c, id, f, v, suffix = "") {
     const data = String(v.data || "").replace(/^data:[^,]*,/, "");
-    if (data.length * 0.75 > MAX_FILE) throw new Error(say("{what}: the file is larger than 10 MB", { what: tn(f.title || f.name) }));
+    if (data.length * 0.75 > MAX_FILE) throw fail(say("{what}: the file is larger than 10 MB", { what: tn(f.title || f.name) }));
     const name = `${c.name}-${id}-${f.name}${suffix}-${safeName(v.name)}`.slice(0, 160);
     host.files.write(name, data, "base64");
     return name;
@@ -108,33 +117,33 @@ export function createApp(spec) {
   function fileValue(c, id, f, v, suffix = "") {
     if (v === null || v === undefined || v === "") return null;
     if (typeof v === "string") v = { file: v };
-    if (!isObj(v)) throw new Error(`${f.name}: a file`);
+    if (!isObj(v)) throw fail(`${f.name}: a file`);
     if (v.data !== undefined) return { file: saveUpload(c, id, f, v, suffix) };
     if (v.file && host.files.info(String(v.file))) return { file: String(v.file) };
-    throw new Error(`${f.name}: no file '${v.file}'`);
+    throw fail(`${f.name}: no file '${v.file}'`);
   }
   function value(c, id, f, v) {
     if (v === null || v === undefined) return null;
     switch (f.type) {
-      case "number": { const n = Number(v); if (!Number.isFinite(n)) throw new Error(`${f.name}: a number`); return n; }
+      case "number": { const n = Number(v); if (!Number.isFinite(n)) throw fail(`${f.name}: a number`); return n; }
       case "bool": return !!v;
-      case "choice": if (!(f.choices || []).includes(v)) throw new Error(`${f.name}: one of ${(f.choices || []).join(", ")}`); return v;
+      case "choice": if (!(f.choices || []).includes(v)) throw fail(`${f.name}: one of ${(f.choices || []).join(", ")}`); return v;
       case "json": return v;
-      case "list": if (!Array.isArray(v)) throw new Error(`${f.name}: a list`); return v.map(String).filter((s) => s.trim());
-      case "ref": { const t = coll(f.ref), n = Number(v); if (!t || !get(t, n)) throw new Error(`${f.name}: no ${f.ref} ${v}`); return n; }
+      case "list": if (!Array.isArray(v)) throw fail(`${f.name}: a list`); return v.map(String).filter((s) => s.trim());
+      case "ref": { const t = coll(f.ref), n = Number(v); if (!t || !get(t, n)) throw fail(`${f.name}: no ${f.ref} ${v}`); return n; }
       case "refs": {
         const t = coll(f.ref); if (!Array.isArray(v)) v = [v];
         const out = [...new Set(v.map(Number))];
-        for (const n of out) if (!t || !get(t, n)) throw new Error(`${f.name}: no ${f.ref} ${n}`);
+        for (const n of out) if (!t || !get(t, n)) throw fail(`${f.name}: no ${f.ref} ${n}`);
         return out;
       }
       case "image": case "file": return fileValue(c, id, f, v);
       case "images": {
-        if (!Array.isArray(v)) throw new Error(`${f.name}: a list of pictures`);
+        if (!Array.isArray(v)) throw fail(`${f.name}: a list of pictures`);
         return v.map((x, i) => fileValue(c, id, f, x, `${i}`)).filter(Boolean);
       }
       case "table": {
-        if (!Array.isArray(v)) throw new Error(`${f.name}: a list of rows`);
+        if (!Array.isArray(v)) throw fail(`${f.name}: a list of rows`);
         return v.filter(isObj).map((r, i) => {
           const out = {};
           for (const col of f.columns || []) {
@@ -152,9 +161,9 @@ export function createApp(spec) {
   }
   /** keepTime: an old item keeps its "updated" time (data upgrades don't reorder the list). */
   function write(c, id, args, keepTime) {
-    if (!isObj(args)) throw new Error("arguments: an object");
+    if (!isObj(args)) throw fail("arguments: an object");
     const old = id ? get(c, id) : null;
-    if (id && !old) throw new Error(`${c.name} ${id} not found`);
+    if (id && !old) throw fail(`${c.name} ${id} not found`);
     const t = now();
     let newId = id;
     if (!id) newId = host.db.exec(`INSERT INTO ${table(c)} (data, created, updated) VALUES ('{}', ?, ?)`, [t, t]).last_id;
@@ -167,7 +176,7 @@ export function createApp(spec) {
         const v = value(c, newId, f, args[f.name]);
         if (v === null || (Array.isArray(v) && !v.length)) delete data[f.name]; else data[f.name] = v;
       }
-      for (const f of c.fields) if (f.required && (data[f.name] === undefined || data[f.name] === "")) throw new Error(say("{what} is needed", { what: tn(f.title || f.name) }));
+      for (const f of c.fields) if (f.required && (data[f.name] === undefined || data[f.name] === "")) throw fail(say("{what} is needed", { what: tn(f.title || f.name) }));
       host.db.exec(`UPDATE ${table(c)} SET data = ?, updated = ? WHERE id = ?`, [JSON.stringify(data), keepTime && old ? old.updated : t, newId]);
     } catch (e) {
       if (!id) host.db.exec(`DELETE FROM ${table(c)} WHERE id = ?`, [newId]);
@@ -211,7 +220,7 @@ export function createApp(spec) {
   }
   /** preview: only say what would go ({also: [{collection, id}], kept: [...]}). */
   function remove(c, id, preview) {
-    if (!get(c, id)) throw new Error(`${c.name} ${id} not found`);
+    if (!get(c, id)) throw fail(`${c.name} ${id} not found`);
     const d = dependants(c, id);
     const ids = (l) => l.map((x) => ({ collection: x.o.name, id: x.x.id }));
     if (preview) return { also: ids(d.goes), kept: ids(d.loses) };
@@ -230,18 +239,18 @@ export function createApp(spec) {
   }
   // Refused when the item, or an item it points to (e.g. a material's recipe, before or after), is being worked on.
   function checkFree(c, id, args) {
-    if (id && busy(c.name, id)) throw new Error(say("The assistant is working on this {what} - wait until it is done, or cancel it.", { what: itemWord(c) }));
+    if (id && busy(c.name, id)) throw fail(say("The assistant is working on this {what} - wait until it is done, or cancel it.", { what: itemWord(c) }));
     const old = id ? get(c, id) : null;
     for (const f of c.fields.filter((f) => f.type === "ref" || f.type === "refs")) {
       const ids = new Set([old && old[f.name], args && args[f.name]].flat().filter((x) => x !== null && x !== undefined).map(Number));
-      for (const t of ids) if (busy(f.ref, t)) throw new Error(say("The assistant is working on that {what} - wait until it is done, or cancel it.", { what: itemWord(coll(f.ref)) }));
+      for (const t of ids) if (busy(f.ref, t)) throw fail(say("The assistant is working on that {what} - wait until it is done, or cancel it.", { what: itemWord(coll(f.ref)) }));
     }
   }
   function cancel(collName, item, who) {
     setup();
     const c = coll(collName);
-    if (!c) throw new Error("no such collection");
-    if (who === "visitor" && !actions.some((a) => a.on === c.name && a.public)) throw new Error(say("This isn't open to visitors."));
+    if (!c) throw fail("no such collection");
+    if (who === "visitor" && !actions.some((a) => a.on === c.name && a.public)) throw fail(say("This isn't open to visitors."));
     host.db.exec("UPDATE _runs SET state = 'cancelled', finished = ? WHERE coll = ? AND item = ? AND state = 'waiting'", [now(), c.name, Number(item)]);
     return { cancelled: true };
   }
@@ -254,14 +263,14 @@ export function createApp(spec) {
     if (!c) {
       const a = actions.find((x) => x.name === name);
       if (a) return startAction(a, Number(args.id ?? args.item), who, args.extra);
-      throw new Error(`no operation '${name}'`);
+      throw fail(`no operation '${name}'`);
     }
     const need = { list: "read", get: "read", add: "add", update: "change", delete: "delete" }[m[2]];
-    if (who === "visitor" && !(c.public || []).includes(need)) throw new Error(say("This isn't open to visitors."));
+    if (who === "visitor" && !(c.public || []).includes(need)) throw fail(say("This isn't open to visitors."));
     const visitor = who === "visitor";
     switch (m[2]) {
       case "list": return list(c, args, visitor);
-      case "get": { const it = get(c, args.id); if (!it || (visitor && !shown(c, it))) throw new Error(say("{what} {id} not found", { what: itemWord(c), id: args.id })); return it; }
+      case "get": { const it = get(c, args.id); if (!it || (visitor && !shown(c, it))) throw fail(say("{what} {id} not found", { what: itemWord(c), id: args.id })); return it; }
       case "add": checkFree(c, null, args); return write(c, null, args);
       case "update": { const { id, ...rest } = args; checkFree(c, Number(id), rest); return write(c, Number(id), rest); }
       case "delete": checkFree(c, Number(args.id), null); return remove(c, Number(args.id), !!args.preview);
@@ -273,12 +282,12 @@ export function createApp(spec) {
   const MAX_EXTRA = 4000;
   function startAction(a, id, who, extra) {
     setup();
-    if (who === "visitor" && !a.public) throw new Error(say("This isn't open to visitors."));
+    if (who === "visitor" && !a.public) throw fail(say("This isn't open to visitors."));
     const c = coll(a.on), it = get(c, id);
-    if (!it) throw new Error(say("{what} {id} not found", { what: itemWord(c), id }));
-    if (busy(c.name, id)) throw new Error(say("The assistant is already working on it."));
+    if (!it) throw fail(say("{what} {id} not found", { what: itemWord(c), id }));
+    if (busy(c.name, id)) throw fail(say("The assistant is already working on it."));
     extra = typeof extra === "string" ? extra.trim() : "";
-    if (extra.length > MAX_EXTRA) throw new Error(say("The extra requirements are too long (at most {n} characters).", { n: MAX_EXTRA }));
+    if (extra.length > MAX_EXTRA) throw fail(say("The extra requirements are too long (at most {n} characters).", { n: MAX_EXTRA }));
     const related = {}, files = filesOf(c, it);
     for (const name of a.include || []) {
       const o = coll(name), f = pointing(c, o);
@@ -305,7 +314,7 @@ export function createApp(spec) {
     try {
       host.db.transaction(() => {
         const it = get(c, tag.item);
-        if (!it) throw new Error("the item was deleted");
+        if (!it) throw fail("the item was deleted");
         const related = {};
         for (const name of a.include || []) related[name] = list(coll(name), { [pointing(c, coll(name)).name]: it.id, limit: 200 }).items;
         a.apply(r.answer, {
@@ -350,7 +359,7 @@ export function createApp(spec) {
     const asked = String((req.headers && req.headers["accept-language"]) || "").slice(0, 2).toLowerCase();
     lang = (spec.languages || ["en"]).includes(asked) ? asked : "en";
     const who = req.who, path = req.path.replace(/^\/+/, "");
-    const body = () => { try { return req.body ? JSON.parse(req.body) : {}; } catch { throw new Error("the body must be JSON"); } };
+    const body = () => { try { return req.body ? JSON.parse(req.body) : {}; } catch { throw fail("the body must be JSON"); } };
     try {
       if (req.method === "GET" && path === "meta") return meta(who);
       if (req.method === "POST" && path === "call") { const b = body(); return op(b.op, b.arguments || {}, who); }
@@ -368,19 +377,23 @@ export function createApp(spec) {
       if (req.method === "GET" && path.startsWith("files/")) {
         const name = decodeURIComponent(path.slice(6));
         const [cn, id] = name.split("-"), c = coll(cn);
-        // A file is named after its item (<collection>-<id>-...): visitors get it only with a published item.
-        if (!c || (who === "visitor" && (!(c.public || []).includes("read") || !shown(c, get(c, id))))) return reply(404, "no such file");
+        // A file is named after its item (<collection>-<id>-...): visitors get it only while a published item
+        // uses it (not an old photo it no longer shows).
+        const it = c && get(c, id);
+        if (!c || (who === "visitor" && (!(c.public || []).includes("read") || !shown(c, it) || !filesOf(c, it).includes(name)))) return reply(404, "no such file");
         return { $response: { file: name } };
       }
       if (spec.handle) { const r = spec.handle(req, { op, get: (n, id) => get(coll(n), id) }); if (r !== undefined) return r; }
       return reply(404, "not found");
     } catch (e) {
-      return reply(e.message === say("This isn't open to visitors.") ? 403 : 400, e.message);
+      if (!e.kit) host.log(`request failed: ${e.message}`);
+      const msg = e.kit || who !== "visitor" ? e.message : say("Something went wrong - please try again.");
+      return reply(e.message === say("This isn't open to visitors.") ? 403 : 400, msg);
     }
   }
 
+  // The app's data upgrade: once each time the program starts (and so after every install / new version).
   function upgrade() {
-    setup();
     if (!spec.upgrade) return;
     const all = (n) => { const c = coll(n); return host.db.query(`SELECT * FROM ${table(c)}`).map((r) => row(c, r)); };
     host.db.transaction(() => spec.upgrade({ items: all, update: (n, id, args) => write(coll(n), id, args, true) }));
@@ -390,7 +403,7 @@ export function createApp(spec) {
     handle,
     callTool: (name, args) => { lang = "en"; return op(name, args || {}, "client"); },
     onAiResult,
-    onInstall: () => upgrade(),
-    onUpdate: () => upgrade(),
+    onInstall: () => setup(),
+    onUpdate: () => setup(),
   };
 }
