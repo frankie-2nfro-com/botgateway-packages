@@ -56,6 +56,27 @@ def disclosure(m: dict):
     return {"ai": ai, "login": app.get("login") or "none", "visitors": app.get("visitors") or None, "net": app.get("net", [])}
 
 
+MAX_ICON = 16 * 1024
+
+
+def icon_of(m: dict, tar):
+    """An application's icon for the Portal: its emoji, or its .svg / .png file (at most 16 KB) as a data:
+    address - inside the signed index, so the relay needs nothing else. None = the default icon."""
+    icon = ((m.get("app") or {}).get("icon") or "").strip()
+    if not icon.endswith((".svg", ".png")):
+        return icon or None
+    try:
+        data = tar.extractfile(icon).read()
+    except (KeyError, AttributeError):
+        sys.exit(f"{m['id']} {m['version']}: icon '{icon}' is not in the package")
+    if len(data) > MAX_ICON:
+        sys.exit(f"{m['id']} {m['version']}: icon '{icon}' is {len(data) // 1024} KB, at most {MAX_ICON // 1024} KB")
+    if icon.endswith(".png") and not data.startswith(b"\x89PNG\r\n\x1a\n") or icon.endswith(".svg") and b"<svg" not in data:
+        sys.exit(f"{m['id']} {m['version']}: icon '{icon}' is not a PNG / SVG file")
+    media = "image/png" if icon.endswith(".png") else "image/svg+xml"
+    return f"data:{media};base64,{base64.b64encode(data).decode()}"
+
+
 def main():
     dist = ROOT / "dist"
     dist.mkdir(exist_ok=True)
@@ -80,11 +101,14 @@ def main():
         data = a.read_bytes()
         with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as tar:
             m = tomllib.loads(tar.extractfile("worker.toml").read().decode())
+            icon = icon_of(m, tar) if m.get("type") == "application" else None
         entries.append({"id": m["id"], "version": m["version"], "type": m.get("type", "worker"), "name": m["name"],
                         "about": m.get("about", ""), "author": m.get("author", ""), "license": m["license"],
                         "archive": f"dist/{a.name}", "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)})
         if m.get("type") == "application":
             entries[-1]["disclosure"] = disclosure(m)
+            if icon:
+                entries[-1]["icon"] = icon
     index = json.dumps({"store": 1, "packages": entries}, indent=1, sort_keys=True, ensure_ascii=False).encode() + b"\n"
     (ROOT / "store.json").write_bytes(index)
     sig = ROOT / "store.json.sig"
