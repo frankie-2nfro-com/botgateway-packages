@@ -1,7 +1,7 @@
 type = "application"
 id = "recipes"
 name = "Recipes"
-version = "0.5.0"
+version = "0.5.1"
 about = "Your recipe book: collect screenshots, photos and notes as materials; the assistant writes the finished recipe from them - cover photo, ingredients you can scale, the method with step pictures. Its website shows the recipes you publish."
 author = "Bot Gateway"
 license = "Apache-2.0"

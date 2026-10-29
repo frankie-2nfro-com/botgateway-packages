@@ -91,7 +91,9 @@ a.chip { text-decoration: none; }
   color: inherit; text-decoration: none; transition: transform .12s, box-shadow .12s; }
 .card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px color-mix(in srgb, var(--text) 10%, transparent); }
 .card img, .card .ph { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; }
-.card .ph { display: grid; place-items: center; font-size: 44px; background: var(--chip); }
+.ph { display: grid; place-items: center; font: 600 56px/1 var(--font); color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 14%, var(--card)), color-mix(in srgb, var(--accent) 4%, var(--card))); }
+.heroimg.ph { font-size: 96px; }
 .card .cbody { padding: 12px 14px 14px; display: grid; gap: 6px; }
 .card .cbody b { font: 600 17px/1.3 var(--font); }
 .rows { display: grid; gap: 8px; }

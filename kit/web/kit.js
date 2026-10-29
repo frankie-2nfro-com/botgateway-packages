@@ -6,6 +6,7 @@
 // collection's view (list, cards, files), a collection's `look` field (class look-<value> on an item's
 // page, styled by the app's own CSS) and `scale` (amounts that follow a base value, display only).
 // look.icon: an emoji, or a picture in the app's web/ (e.g. "icon.png" - also the browser tab's icon).
+// look.cover: a picture in web/ for items without their own cover (else a coloured block with the first letter).
 // A collection's `publish` ({field, value}): the owner gets Publish / Unpublish on an item's page; visitors
 // only ever get published items (the server decides).
 const $ = id => document.getElementById(id);
@@ -110,7 +111,14 @@ async function start() {
   await render();
 }
 // The app's icon: a picture file of its pages (a plain name, .png / .svg) or an emoji.
-function iconFile() { const i = String((M && M.look && M.look.icon) || ''); return /^[A-Za-z0-9_-][A-Za-z0-9._/-]*\.(png|svg)$/.test(i) && !i.includes('..') ? i : ''; }
+const webFile = (v, exts) => { const i = String(v || ''); return new RegExp(`^[A-Za-z0-9_-][A-Za-z0-9._/-]*\\.(${exts})$`).test(i) && !i.includes('..') ? i : ''; };
+function iconFile() { return webFile(M && M.look && M.look.icon, 'png|svg'); }
+// An item without a cover picture: the app's default cover, or its first letter on a soft colour.
+function noCover(c, it, cls) {
+  const f = webFile((M.look || {}).cover, 'png|svg|jpg|jpeg|webp');
+  if (f) return `<img class="${cls} defcover" src="${esc(f)}" alt="">`;
+  return `<div class="${cls} ph">${esc((String(label(c, it) || '').trim()[0] || '·').toUpperCase())}</div>`;
+}
 function iconHtml() { return iconFile() ? `<img class="appimg" src="${esc(iconFile())}" alt="">` : esc((M.look || {}).icon || ''); }
 function showErr(e) { $('avView').innerHTML = `<div class="note">${esc(e.message)}</div>`; }
 function go(hash) { if (location.hash === '#' + hash) render().catch(showErr); else location.hash = hash; }
@@ -170,11 +178,10 @@ async function fill(c) {
     }));
     return;
   }
-  const icon = iconHtml();
   box.innerHTML = r.items.map(it => {
     const cover = c.cover && it[c.cover] && it[c.cover].file;
     return c.view === 'cards'
-      ? `<a class="card" href="#${esc(c.name)}/${it.id}">${cover ? `<img src="${fileUrl(cover)}" alt="" loading="lazy">` : `<div class="ph">${icon}</div>`}
+      ? `<a class="card" href="#${esc(c.name)}/${it.id}">${cover ? `<img src="${fileUrl(cover)}" alt="" loading="lazy">` : noCover(c, it, 'cimg')}
           <div class="cbody"><b>${esc(label(c, it))}</b><div class="chips">${chips(c, it)}</div></div></a>`
       : `<a class="rowi" href="#${esc(c.name)}/${it.id}"><b>${esc(label(c, it))}</b><span class="chips">${chips(c, it)}</span>
           <span class="muted">${esc(when(it.updated))}</span></a>`;
@@ -358,7 +365,7 @@ async function sheet(c, it, keep) {
   const kids = childrenOf(c);
   $('avView').innerHTML = `<a class="back" href="#${esc(c.name)}">← All ${esc(title(c).toLowerCase())}</a>
     <article class="sheet${c.look && it[c.look] ? ' look-' + esc(String(it[c.look]).toLowerCase().replace(/[^a-z0-9-]/g, '-')) : ''}">
-      <div class="hero ${cover ? '' : 'nocover'}">${cover ? `<img class="heroimg" src="${fileUrl(cover)}" alt="">` : ''}
+      <div class="hero">${cover ? `<img class="heroimg" src="${fileUrl(cover)}" alt="">` : noCover(c, it, 'heroimg')}
         <div class="hinfo"><h2>${esc(label(c, it))}</h2><div class="chips">${chips(c, it, true)}</div>${scaleBar(c, it)}
           ${refs.map(f => ids(it[f.name]).length ? `<div class="refs"><span class="muted">${esc(f.title || f.name)}:</span> ${ids(it[f.name]).map(id =>
             `<a class="chip" href="#${esc(f.ref)}/${id}">${esc(refNames[f.name][id] ?? '?')}</a>`).join(' ')}</div>` : '').join('')}

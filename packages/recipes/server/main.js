@@ -130,7 +130,7 @@ function upgrade(kit) {
 export const { handle, callTool, onAiResult, onInstall, onUpdate } = createApp({
   upgrade,
   name: "Recipes",
-  look: { accent: "#b4532a", paper: "#faf6ef", font: "serif", icon: "icon.png" },
+  look: { accent: "#b4532a", paper: "#faf6ef", font: "serif", icon: "icon.png", cover: "cover.svg" },
   collections: [recipes, materials],
   actions: [{ name: "build_recipe", title: "Build recipe", on: "recipes", include: ["materials"], task: TASK, schema: SCHEMA, apply,
     ask: { title: "Build recipe", hint: "The assistant writes the recipe from its materials. Anything else it should do this time? e.g. \"for 4 people\", \"less sugar\", \"write it in English\", \"add a tip about storing it\". Leave empty for none." } }],
