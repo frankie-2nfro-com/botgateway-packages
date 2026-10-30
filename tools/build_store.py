@@ -1,17 +1,25 @@
 #!/usr/bin/env python3
 """Builds the store: for every packages/<id>/ (worker.toml), packs dist/<id>-<version>.tar.gz once
 (reproducible: sorted, no times / owners, no caches), writes store.json (every version in dist/, with its
-SHA-256) and signs it into store.json.sig. A package changed without a new version is refused (an archive
-is never changed once published). Then commit and push packages/, dist/, store.json and store.json.sig.
+SHA-256 and what it changed) and signs it into store.json.sig. A package changed without a new version is
+refused (an archive is never changed once published). Then commit and push packages/, dist/, store.json and
+store.json.sig (../update_store.sh --package <id> does all of it).
+
+A package's CHANGELOG.TXT is not packed (writing in it doesn't change the package); its released sections
+("0.5.5 (2026-10-30)" + "- ..." lines; the coming one on top has no date) become each version's "changes"
+in store.json, shown in the Portal and in the gateway before Install / Update. The newest released version
+of STORE_CHANGELOG.TXT is the store's own version ("release" in store.json, shown in the Portal).
 
   python3 tools/build_store.py               sign with the USB security key (Thetis): touch it when it blinks
+  python3 tools/build_store.py --only <id>   pack only that package (others' unpublished changes are left alone)
+  python3 tools/build_store.py --index-only  pack nothing: only write and sign store.json (a new store version)
   python3 tools/build_store.py --emergency   sign with the EMERGENCY file key (asks for its password)
   python3 tools/build_store.py --verify      only check the current store.json.sig (either kind)
 
 The security key signs with Homebrew's OpenSSH (`ssh-keygen -Y sign`, namespace botgateway-store,
 key ~/.botgateway-store/store_sk); tools/allowed_signers holds its public key for `ssh-keygen -Y verify`.
 Requires: pip install cryptography   (Python 3.11+ for tomllib); brew install openssh"""
-import base64, getpass, gzip, hashlib, io, json, os, pathlib, subprocess, sys, tarfile, tomllib
+import base64, getpass, gzip, hashlib, io, json, os, pathlib, re, subprocess, sys, tarfile, tomllib
 from cryptography.hazmat.primitives import serialization
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -22,10 +30,33 @@ SSH_KEYGEN = "/opt/homebrew/bin/ssh-keygen"     # Apple's ssh-keygen can't use s
 NAMESPACE = "botgateway-store"
 EMERGENCY_PUBLIC = "nf8h5lmGo/kVj1YahP2c/55XRv2FINopAdTc9CmXhv8="
 SKIP = {"__pycache__", ".DS_Store", ".git"}
+CHANGELOG = "CHANGELOG.TXT"     # in a package folder: not packed
+MAX_CHANGES, MAX_CHANGE = 40, 500
 
 
 def files_of(folder: pathlib.Path):
-    return sorted(p for p in folder.rglob("*") if p.is_file() and not (SKIP & set(p.relative_to(folder).parts)) and p.suffix != ".pyc")
+    return sorted(p for p in folder.rglob("*") if p.is_file() and not (SKIP & set(p.relative_to(folder).parts)) and p.suffix != ".pyc"
+                  and p.relative_to(folder).as_posix() != CHANGELOG)
+
+
+def changes_of(path: pathlib.Path) -> dict:
+    """{version: [change, ...]} of a change log's released sections ("0.5.4 (2026-10-29)"; the coming one,
+    without a date, is left out), in the file's order (newest first)."""
+    out, cur = {}, None
+    if not path.is_file():
+        return out
+    for line in path.read_text(encoding="utf-8").splitlines():
+        s = line.strip()
+        m = re.match(r"^(\d\S*)\s*(\(.*\))?$", s)
+        if m:
+            cur = out.setdefault(m.group(1), []) if m.group(2) else None
+        elif cur is not None and s.startswith("-"):
+            item = s.lstrip("- ").strip()
+            if item and not item.startswith("[Changed and non commited"):
+                cur.append(item)
+        elif cur and s and not set(s) <= set("-#="):
+            cur[-1] += " " + s
+    return {v: [c[:MAX_CHANGE] for c in items[:MAX_CHANGES]] for v, items in out.items() if items}
 
 
 def pack(folder: pathlib.Path) -> bytes:
@@ -80,8 +111,15 @@ def icon_of(m: dict, tar):
 def main():
     dist = ROOT / "dist"
     dist.mkdir(exist_ok=True)
+    only = sys.argv[sys.argv.index("--only") + 1] if "--only" in sys.argv else None
+    if only and not (ROOT / "packages" / only / "worker.toml").is_file():
+        sys.exit(f"--only {only}: no such package")
+    changes = {}
     for folder in sorted((ROOT / "packages").iterdir()):
         if not (folder / "worker.toml").is_file():
+            continue
+        changes[folder.name] = changes_of(folder / CHANGELOG)
+        if "--index-only" in sys.argv or only and folder.name != only:
             continue
         m = tomllib.loads((folder / "worker.toml").read_text())
         if m.get("id") != folder.name:
@@ -105,11 +143,14 @@ def main():
         entries.append({"id": m["id"], "version": m["version"], "type": m.get("type", "worker"), "name": m["name"],
                         "about": m.get("about", ""), "author": m.get("author", ""), "license": m["license"],
                         "archive": f"dist/{a.name}", "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)})
+        if changes.get(m["id"], {}).get(m["version"]):
+            entries[-1]["changes"] = changes[m["id"]][m["version"]]
         if m.get("type") == "application":
             entries[-1]["disclosure"] = disclosure(m)
             if icon:
                 entries[-1]["icon"] = icon
-    index = json.dumps({"store": 1, "packages": entries}, indent=1, sort_keys=True, ensure_ascii=False).encode() + b"\n"
+    release = next(iter(changes_of(ROOT / "STORE_CHANGELOG.TXT")), None)
+    index = json.dumps({"store": 1, **({"release": release} if release else {}), "packages": entries}, indent=1, sort_keys=True, ensure_ascii=False).encode() + b"\n"
     (ROOT / "store.json").write_bytes(index)
     sig = ROOT / "store.json.sig"
     if sig.exists():

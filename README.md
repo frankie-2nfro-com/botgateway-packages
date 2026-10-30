@@ -11,5 +11,8 @@ from here only after the owner picked them in the Bot Gateway Portal and pressed
 - `dist/<id>-<version>.tar.gz` - the published archives (never changed once published).
 - `store.json` + `store.json.sig` - the signed index; the app refuses anything not signed with the store key.
 
-Publish a new version: change the package, raise its `version`, run `python3 tools/build_store.py`, commit
-and push. The signing key is created once with `tools/store_keygen.py` and never leaves the owner's computer.
+Change logs: `packages/<id>/CHANGELOG.TXT` (what each version changed - not packed; it becomes the
+version's "changes" in `store.json`, shown as "What's new" in the Portal and the gateway) and
+`STORE_CHANGELOG.TXT` (this repository itself: kit/, tools/ ...). Publish a new version: write the
+changes under the top (coming) version of its CHANGELOG.TXT, raise the package's `version`, run `python3 tools/build_store.py --only <id>`,
+commit and push (the owner's `update_store.sh --package <id>` does all of it). The signing key is created once with `tools/store_keygen.py` and never leaves the owner's computer.

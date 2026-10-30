@@ -23,6 +23,9 @@
    "archive": "dist/recipes-0.3.0.tar.gz",
    "author": "Bot Gateway",
    "bytes": 1387,
+   "changes": [
+    "Recipe-book look, materials as files, the website shows the recipes"
+   ],
    "disclosure": {
     "ai": null,
     "login": "none",
@@ -41,6 +44,9 @@
    "archive": "dist/recipes-0.4.0.tar.gz",
    "author": "Bot Gateway",
    "bytes": 24115,
+   "changes": [
+    "Its own program in the sandbox (app kit): full recipes, scaling of amounts, looks"
+   ],
    "disclosure": {
     "ai": {
      "sends": "a recipe with its materials (photos, screenshots, notes) when you press Build recipe",
@@ -63,6 +69,10 @@
    "archive": "dist/recipes-0.4.1.tar.gz",
    "author": "Bot Gateway",
    "bytes": 26373,
+   "changes": [
+    "Locked while a recipe is being built",
+    "Extra requirements can be given when building a recipe"
+   ],
    "disclosure": {
     "ai": {
      "sends": "a recipe with its materials (photos, screenshots, notes) when you press Build recipe",
@@ -85,6 +95,9 @@
    "archive": "dist/recipes-0.4.2.tar.gz",
    "author": "Bot Gateway",
    "bytes": 40787,
+   "changes": [
+    "App icon"
+   ],
    "disclosure": {
     "ai": {
      "sends": "a recipe with its materials (photos, screenshots, notes) when you press Build recipe",
@@ -107,6 +120,9 @@
    "archive": "dist/recipes-0.4.3.tar.gz",
    "author": "Bot Gateway",
    "bytes": 40901,
+   "changes": [
+    "A clearer message when the app can't be reached"
+   ],
    "disclosure": {
     "ai": {
      "sends": "a recipe with its materials (photos, screenshots, notes) when you press Build recipe",
@@ -129,6 +145,10 @@
    "archive": "dist/recipes-0.5.0.tar.gz",
    "author": "Bot Gateway",
    "bytes": 44355,
+   "changes": [
+    "Publish / unpublish: only published recipes show on the website; new and assistant-built recipes start unpublished",
+    "The app icon is shown on the page"
+   ],
    "disclosure": {
     "ai": {
      "sends": "a recipe with its materials (photos, screenshots, notes) when you press Build recipe",
@@ -151,6 +171,9 @@
    "archive": "dist/recipes-0.5.1.tar.gz",
    "author": "Bot Gateway",
    "bytes": 45162,
+   "changes": [
+    "Recipes without a photo show a default cover instead of the app icon"
+   ],
    "disclosure": {
     "ai": {
      "sends": "a recipe with its materials (photos, screenshots, notes) when you press Build recipe",
@@ -173,6 +196,13 @@
    "archive": "dist/recipes-0.5.2.tar.gz",
    "author": "Bot Gateway",
    "bytes": 52275,
+   "changes": [
+    "\"Unpublished\" shows as a flag on the cover's top right corner (published recipes have none)",
+    "中文 / English switch in the top bar; the owner's pages are translated too",
+    "The version is shown in small grey type after the app name",
+    "Several photos per recipe: the assistant picks the cover, the others form an album",
+    "Changing the amounts opens a dialog in the page instead of the browser's prompt"
+   ],
    "disclosure": {
     "ai": {
      "sends": "a recipe with its materials (photos, screenshots, notes) when you press Build recipe",
@@ -195,6 +225,12 @@
    "archive": "dist/recipes-0.5.3.tar.gz",
    "author": "Bot Gateway",
    "bytes": 54639,
+   "changes": [
+    "Security: visitors no longer see internal error text; list limits and offsets are checked; visitors only get files a published recipe still uses",
+    "Two new looks: minimal and bistro",
+    "Each recipe has its created and updated date and a version (1, 2, 3 ...) that goes up with every rebuild; existing published recipes start at 1",
+    "Dates and version are shown in a quiet footer of the recipe"
+   ],
    "disclosure": {
     "ai": {
      "sends": "a recipe with its materials (photos, screenshots, notes) when you press Build recipe",
@@ -217,6 +253,9 @@
    "archive": "dist/recipes-0.5.4.tar.gz",
    "author": "Bot Gateway",
    "bytes": 55224,
+   "changes": [
+    "Ingredients and seasonings (調味料) are separate sections"
+   ],
    "disclosure": {
     "ai": {
      "sends": "a recipe with its materials (photos, screenshots, notes) when you press Build recipe",
@@ -259,5 +298,6 @@
    "version": "1.1.0"
   }
  ],
+ "release": "1.0.0",
  "store": 1
 }

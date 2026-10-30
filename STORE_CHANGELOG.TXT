@@ -1,0 +1,14 @@
+Bot Gateway store - change log
+Changes of the repository itself: the app kit (kit/), the store tools (tools/), README, LICENSE.
+The top section is the store's coming version (no date): write each change below it as "- ...";
+update_store.sh --store publishes it (dated; the version is in the signed store.json and shown in the
+Portal) and puts the next patch version on top. Package changes go into packages/<id>/CHANGELOG.TXT.
+
+1.0.1
+- [Changed and non commited item put here]
+
+1.0.0 (2026-10-30)
+- Change logs: STORE_CHANGELOG.TXT and packages/<id>/CHANGELOG.TXT (not packed); build_store.py puts each
+  version's changes into store.json ("What's new" in the Portal and the gateway) and takes --only <id>
+- README: change logs and how to publish
+- The store has a version (this file's newest released one), shown in the Portal after "Package Store"
