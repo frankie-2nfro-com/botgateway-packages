@@ -9,8 +9,9 @@ const recipes = {
   publish: { field: "status", value: "published" },
   // The cover opens a viewer with the cover and the album.
   album: "pictures",
-  // Its page shows when it was created and last changed.
+  // Its page shows when it was created and last changed; the list can be filtered by the year it was last changed.
   dates: true,
+  years: "updated",
   scale: { base: "servings", table: ["ingredients", "seasonings"] },
   look: "look",
   fields: [

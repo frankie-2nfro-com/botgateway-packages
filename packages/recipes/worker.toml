@@ -1,7 +1,7 @@
 type = "application"
 id = "recipes"
 name = "Recipes"
-version = "0.5.4"
+version = "0.5.5"
 about = "Your recipe book: collect screenshots, photos and notes as materials; the assistant writes the finished recipe from them - cover photo, ingredients you can scale, the method with step pictures. Its website shows the recipes you publish."
 author = "Bot Gateway"
 license = "Apache-2.0"
@@ -21,9 +21,9 @@ login = "none"
 [[tools]]
 name = "recipes_list"
 title = "List recipes"
-description = "The recipes (newest first), optionally only those containing a word."
+description = "The recipes (newest first), optionally only those containing a word and / or last changed in a year (e.g. \"2026\"); the answer also lists the years there are."
 read_only = true
-input_schema = { type = "object", properties = { query = { type = "string" }, limit = { type = "integer" } } }
+input_schema = { type = "object", properties = { query = { type = "string" }, year = { type = "string" }, limit = { type = "integer" } } }
 
 [[tools]]
 name = "recipes_get"

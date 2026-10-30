@@ -19,6 +19,9 @@
 //                 that value, e.g. status = "published"; the owner and the client see all)
 //               scale: { base: "<number field>", table: "<table field>" | ["<table>", ...] }  (their number column follows the base)
 //               look: "<choice field>"  (class look-<value> on an item's page) }
+// Collection `years: "updated" | "created"`: the list can be filtered by the year of that date (`year`: "2026")
+//   and its answer has `years` (newest first, only those with items the caller may see); the page gets a
+//   year menu next to the search.
 // Collection `dates: true`: the page shows created / updated. Field `auto: true`: kept by the program (not in
 // the page's form); `format: "v{n}"`: a number's chip.
 // Field: { name, title, type, required, choices, default (a new item's value), unit (number), ref, owned
@@ -93,6 +96,8 @@ export function createApp(spec) {
     const where = [], params = [];
     if (visitor && c.publish) { where.push(`json_extract(data, '$.${c.publish.field}') = ?`); params.push(c.publish.value); }
     if (args.query) { where.push("data LIKE ?"); params.push(`%${String(args.query)}%`); }
+    const yearCol = c.years === "created" ? "created" : "updated";
+    if (c.years && /^\d{4}$/.test(String(args.year ?? ""))) { where.push(`substr(${yearCol}, 1, 4) = ?`); params.push(String(args.year)); }
     for (const f of c.fields.filter((f) => f.type === "ref" || f.type === "refs")) {
       if (args[f.name] === undefined || args[f.name] === null) continue;
       if (f.type === "ref") where.push(`json_extract(data, '$.${f.name}') = ?`);
@@ -101,7 +106,12 @@ export function createApp(spec) {
     }
     const limit = int(args.limit, 50, 1, 500), offset = int(args.offset, 0, 0, 1e9);
     const sql = `SELECT * FROM ${table(c)}${where.length ? " WHERE " + where.join(" AND ") : ""} ORDER BY updated DESC LIMIT ${limit} OFFSET ${offset}`;
-    return { items: host.db.query(sql, params).map((r) => row(c, r)) };
+    const out = { items: host.db.query(sql, params).map((r) => row(c, r)) };
+    if (c.years) {
+      const pub = visitor && c.publish ? ` WHERE json_extract(data, '$.${c.publish.field}') = ?` : "";
+      out.years = host.db.query(`SELECT DISTINCT substr(${yearCol}, 1, 4) AS y FROM ${table(c)}${pub} ORDER BY y DESC`, pub ? [c.publish.value] : []).map((r) => r.y);
+    }
+    return out;
   }
 
   // ---------- writing items: values checked per field type ----------
@@ -348,7 +358,7 @@ export function createApp(spec) {
       name: spec.name || host.app.name, look: spec.look || {}, enabled: true, public: visitor,
       languages: spec.languages || ["en"], words: spec.words || {}, version: host.app.version || "",
       collections: colls.filter((c) => !visitor || (c.public || []).length),
-      actions: actions.filter((a) => !visitor || a.public).map((a) => ({ name: a.name, title: a.title, on: a.on, runnable: true, ask: a.ask || null })),
+      actions: actions.filter((a) => !visitor || a.public).map((a) => ({ name: a.name, title: a.title, on: a.on, runnable: true, ask: a.ask || null, public: !!a.public })),
     };
   }
   // A plain-text answer with an HTTP status (the gateway's "$response"; anything else is sent as JSON).

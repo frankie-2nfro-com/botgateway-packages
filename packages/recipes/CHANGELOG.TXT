@@ -1,0 +1,51 @@
+Recipes - change log
+The top section is the coming version (no date): write each change below it as "- ...", in words
+for the gateway owners - the Portal and the gateway show them as "What's new" before an update.
+store_update.sh --package recipes publishes it (dated) and puts the next patch version on top; change
+the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
+
+0.5.6
+- [Changed and non commited item put here]
+
+0.5.5 (2026-10-30)
+- Recipes application Add filter by update year (other then existing by full text search)
+- Internal version should have a preview function to show same page exactly like public 
+
+0.5.4 (2026-10-29)
+- Ingredients and seasonings (調味料) are separate sections
+
+0.5.3 (2026-10-29)
+- Security: visitors no longer see internal error text; list limits and offsets are checked; visitors only get files a published recipe still uses
+- Two new looks: minimal and bistro
+- Each recipe has its created and updated date and a version (1, 2, 3 ...) that goes up with every rebuild; existing published recipes start at 1
+- Dates and version are shown in a quiet footer of the recipe
+
+0.5.2 (2026-10-29)
+- "Unpublished" shows as a flag on the cover's top right corner (published recipes have none)
+- 中文 / English switch in the top bar; the owner's pages are translated too
+- The version is shown in small grey type after the app name
+- Several photos per recipe: the assistant picks the cover, the others form an album
+- Changing the amounts opens a dialog in the page instead of the browser's prompt
+
+0.5.1 (2026-10-29)
+- Recipes without a photo show a default cover instead of the app icon
+
+0.5.0 (2026-10-29)
+- Publish / unpublish: only published recipes show on the website; new and assistant-built recipes start unpublished
+- The app icon is shown on the page
+
+0.4.3 (2026-10-29)
+- A clearer message when the app can't be reached
+
+0.4.2 (2026-10-29)
+- App icon
+
+0.4.1 (2026-10-29)
+- Locked while a recipe is being built
+- Extra requirements can be given when building a recipe
+
+0.4.0 (2026-10-28)
+- Its own program in the sandbox (app kit): full recipes, scaling of amounts, looks
+
+0.3.0 (2026-10-28)
+- Recipe-book look, materials as files, the website shows the recipes
