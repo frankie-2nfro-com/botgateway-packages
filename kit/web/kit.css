@@ -84,6 +84,9 @@ a.chip { text-decoration: none; }
 .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 18px; }
 .bar input[type=search] { flex: 1; min-width: 180px; max-width: 360px; border-radius: 999px; padding-left: 16px; }
 .bar .grow { flex: 1; }
+.bar select { width: auto; border-radius: 999px; padding: 6px 12px; }
+.note.preview { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.note.preview .btn { margin-left: auto; }
 .empty { text-align: center; padding: 48px 16px; color: var(--muted); }
 .empty .big { font-size: 40px; display: block; margin-bottom: 6px; }
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px; }

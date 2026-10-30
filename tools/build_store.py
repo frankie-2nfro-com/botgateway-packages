@@ -3,7 +3,7 @@
 (reproducible: sorted, no times / owners, no caches), writes store.json (every version in dist/, with its
 SHA-256 and what it changed) and signs it into store.json.sig. A package changed without a new version is
 refused (an archive is never changed once published). Then commit and push packages/, dist/, store.json and
-store.json.sig (../update_store.sh --package <id> does all of it).
+store.json.sig (../store_update.sh --package <id> does all of it).
 
 A package's CHANGELOG.TXT is not packed (writing in it doesn't change the package); its released sections
 ("0.5.5 (2026-10-30)" + "- ..." lines; the coming one on top has no date) become each version's "changes"

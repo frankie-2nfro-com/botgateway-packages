@@ -1,11 +1,18 @@
 Bot Gateway store - change log
 Changes of the repository itself: the app kit (kit/), the store tools (tools/), README, LICENSE.
 The top section is the store's coming version (no date): write each change below it as "- ...";
-update_store.sh --store publishes it (dated; the version is in the signed store.json and shown in the
+store_update.sh --store publishes it (dated; the version is in the signed store.json and shown in the
 Portal) and puts the next patch version on top. Package changes go into packages/<id>/CHANGELOG.TXT.
 
-1.0.1
+1.0.2
 - [Changed and non commited item put here]
+
+1.0.1 (2026-10-30)
+- App kit: a collection's `years` ("updated" / "created") - the list can be filtered by year (the page gets a
+  year menu next to the search; the list's answer names the years there are, visitors only published ones)
+- App kit: 👁 Preview on an item's page (owner, collections visitors may read) shows it exactly as the website
+  does, with a note (and whether it is published yet) and the way back; meta says which actions are public
+- README, STORE_CHANGELOG / CHANGELOG headers and build_store.py name store_update.sh (was update_store.sh)
 
 1.0.0 (2026-10-30)
 - Change logs: STORE_CHANGELOG.TXT and packages/<id>/CHANGELOG.TXT (not packed); build_store.py puts each

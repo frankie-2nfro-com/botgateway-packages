@@ -9,6 +9,10 @@
 // look.cover: a picture in web/ for items without their own cover (else a coloured block with the first letter).
 // A collection's `publish` ({field, value}): the owner gets Publish / Unpublish on an item's page; visitors
 // only ever get published items (the server decides).
+// A collection's `years` ("updated" / "created"): a year menu next to the search (the server lists the years).
+// Preview (the owner, a collection visitors may read): an item's page has 👁 Preview - #<collection>/<id>/preview
+// shows it exactly as the website does (the visitors' view of the app: no owner buttons, no private parts),
+// with a note on top and the way back.
 // A collection's `dates: true`: an item's page ends with a quiet footer - when it was created and last
 // changed. A field's `auto: true`: kept by the program (not in the form, shown in that footer, not as a
 // chip); `format` ("v{n}"): how its number shows.
@@ -111,6 +115,13 @@ const KIT_WORDS = {
     'Previous': '上一張',
     'Next': '下一張',
     'Show the photos': '看相片',
+    'All years': '所有年份',
+    'Year': '年份',
+    '👁 Preview': '👁 預覽',
+    'how visitors see it on the website': '訪客在網站上看到的樣子',
+    'Preview - this is how visitors see it on the website.': '預覽 - 這是訪客在網站上看到的樣子。',
+    "It isn't published yet: visitors can't open it until you publish it.": '它還未發佈：發佈之前訪客不能開啟。',
+    '← Back to editing': '← 返回編輯',
     'no answer from the assistant in 15 minutes': '助手 15 分鐘內沒有回覆',
     'the action is gone': '這個動作已不存在',
     'the item was deleted': '項目已被刪除',
@@ -155,7 +166,11 @@ function armed(btn, word, run) {
   });
 }
 
-let M = null;   // the application: collections, actions, look
+let M = null;   // the application: collections, actions, look (in a preview: the visitors' view of it)
+let OWNER = null;   // the application as the server gave it (M outside a preview)
+// What visitors get of the application (the server's meta for them): only collections they may use, only
+// public actions.
+const visitorMeta = m => ({ ...m, public: true, collections: m.collections.filter(c => (c.public || []).length), actions: (m.actions || []).filter(a => a.public) });
 const call = (op, args) => api('/call', { method: 'POST', body: JSON.stringify({ op, arguments: args || {} }) });
 const coll = name => M.collections.find(c => c.name === name);
 // On the application's public website only what the package opens to visitors (`public`); the owner's
@@ -216,7 +231,7 @@ const MAX_FILE = 9 * 1024 * 1024;   // the relay takes 12 MB per message (base64
 
 // ---------- page and navigation (#<collection>, #<collection>/<id>, #<collection>/<id>/edit, #<collection>/new) ----------
 async function start() {
-  try { M = await api('/meta'); }
+  try { M = OWNER = await api('/meta'); }
   catch (e) { $('avTitle').textContent = document.title; $('avView').innerHTML = `<div class="note">${esc(e.message)}</div>`; return; }
   const look = M.look || {}, colour = /^#[0-9a-fA-F]{6}$/;
   if (colour.test(look.accent || '')) document.documentElement.style.setProperty('--look-accent', look.accent);
@@ -274,27 +289,43 @@ async function render() {
   clearTimeout(runsT);
   closeModal();
   const [name, id, sub] = decodeURIComponent(location.hash.slice(1)).split('/');
+  // A preview uses the visitors' view of the app; anything else the real one.
+  const preview = sub === 'preview' && !OWNER.public && (((OWNER.collections.find(x => x.name === name) || {}).public) || []).includes('read');
+  const want = preview ? visitorMeta(OWNER) : OWNER;
+  if ((M === OWNER) !== (want === OWNER)) { M = want; frame(); }
   const c = coll(name) || M.collections[0];
   document.querySelectorAll('[data-tab]').forEach(a => a.classList.toggle('on', a.dataset.tab === c.name));
   if (id === 'new' && c.view !== 'files') return editView(c, null);
   if (id && c.view !== 'files') {
     const it = await call(c.name + '_get', { id: Number(id) }).catch(() => null);
+    if (it && preview) { previewNote(c, it); return sheet(c, it); }
     if (it) return sub === 'edit' ? editView(c, it) : sheet(c, it);
   }
   return browse(c);
 }
 
+// On top of a preview: what it is, whether visitors can open it yet, and the way back.
+function previewNote(c, it) {
+  const off = c.publish && it[c.publish.field] !== c.publish.value;
+  $('avNote').innerHTML = `<div class="note preview">👁 ${esc(t('Preview - this is how visitors see it on the website.'))}
+    ${off ? `<b>${esc(t("It isn't published yet: visitors can't open it until you publish it."))}</b>` : ''}
+    <a class="btn small" href="#${esc(c.name)}/${it.id}">${esc(t('← Back to editing'))}</a></div>`;
+}
+
 // ---------- browsing a collection ----------
-let query = '', queryT = 0;
+let query = '', queryT = 0, year = '', yearsOf = '';
 async function browse(c) {
   const files = c.view === 'files';
-  $('avView').innerHTML = `<div class="bar"><input type="search" id="q" placeholder="${esc(t('Search {what}', { what: T(c) }))}" value="${esc(query)}"><span class="grow"></span>
+  if (yearsOf !== c.name) { year = ''; yearsOf = c.name; }
+  $('avView').innerHTML = `<div class="bar"><input type="search" id="q" placeholder="${esc(t('Search {what}', { what: T(c) }))}" value="${esc(query)}">
+      ${c.years ? `<select id="yr" title="${esc(t('Year'))}"><option value="">${esc(t('All years'))}</option></select>` : ''}<span class="grow"></span>
       ${!may(c, 'add') ? '' : files ? `<button type="button" class="btn" id="noteBtn">${esc(t('✎ Write a note'))}</button>
         <label class="btn primary">${esc(t('＋ Add files'))}<input type="file" id="upl" multiple hidden></label>`
       : `<button type="button" class="btn primary" id="newBtn">${esc(t('＋ New {what}', { what: word(c) }))}</button>`}</div>
     <div class="err" id="bErr"></div>
     <div id="items" class="${files ? 'folder' : c.view === 'cards' ? 'cards' : 'rows'}"></div>`;
   $('q').addEventListener('input', () => { query = $('q').value.trim(); clearTimeout(queryT); queryT = setTimeout(() => fill(c).catch(showErr), 250); });
+  $('yr')?.addEventListener('change', () => { year = $('yr').value; fill(c).catch(showErr); });
   $('newBtn')?.addEventListener('click', () => go(c.name + '/new'));
   if (files && may(c, 'add')) {
     const done = () => fill(c).catch(showErr);
@@ -308,12 +339,21 @@ async function browse(c) {
   await fill(c);
 }
 async function fill(c) {
-  const r = await call(c.name + '_list', query ? { query, limit: 200 } : { limit: 200 });
+  const args = { limit: 200 };
+  if (query) args.query = query;
+  if (c.years && year) args.year = year;
+  const r = await call(c.name + '_list', args);
   const box = $('items');
   if (!box) return;
+  // The year menu: the years there are (the chosen one stays even when nothing is left in it).
+  const yr = $('yr');
+  if (yr && Array.isArray(r.years)) {
+    const ys = [...new Set([...r.years, ...(year ? [year] : [])])].sort().reverse();
+    yr.innerHTML = `<option value="">${esc(t('All years'))}</option>` + ys.map(y => `<option value="${esc(y)}" ${y === year ? 'selected' : ''}>${esc(y)}</option>`).join('');
+  }
   if (!r.items.length) {
     box.innerHTML = `<div class="empty" style="grid-column:1/-1"><span class="big">${iconHtml() || '·'}</span>
-      ${esc(query ? t('Nothing found.') : t(c.view === 'files' ? 'No {what} yet - add files, or drop them here.' : 'No {what} yet.', { what: T(c) }))}</div>`;
+      ${esc(query || year ? t('Nothing found.') : t(c.view === 'files' ? 'No {what} yet - add files, or drop them here.' : 'No {what} yet.', { what: T(c) }))}</div>`;
     return;
   }
   if (c.view === 'files') {
@@ -547,7 +587,8 @@ async function sheet(c, it, keep) {
           ${refs.map(f => ids(it[f.name]).length ? `<div class="refs"><span class="muted">${esc(ftitle(f))}:</span> ${ids(it[f.name]).map(id =>
             `<a class="chip" href="#${esc(f.ref)}/${id}">${esc(refNames[f.name][id] ?? '?')}</a>`).join(' ')}</div>` : '').join('')}
           <div class="acts">${acts.map(a => `<button type="button" class="btn primary" data-act="${esc(a.name)}">✨ ${esc(tn(a.title || a.name))}</button>`).join('')}
-            ${may(c, 'change') ? `<button type="button" class="btn" id="editBtn">${esc(t('Edit'))}</button>` : ''}${pubBtn(c, it)}</div>
+            ${may(c, 'change') ? `<button type="button" class="btn" id="editBtn">${esc(t('Edit'))}</button>` : ''}${pubBtn(c, it)}
+            ${!M.public && (c.public || []).includes('read') ? `<a class="btn" href="#${esc(c.name)}/${it.id}/preview" title="${esc(t('how visitors see it on the website'))}">${esc(t('👁 Preview'))}</a>` : ''}</div>
           <div id="runs"></div><div class="err" id="sErr"></div></div></div>
       ${body || `<p class="muted">${esc(t('Nothing written here yet.'))}${acts.length ? esc(t(' Press “{action}” and the assistant fills it in.', { action: tn(acts[0].title || acts[0].name) })) : ''}</p>`}
       ${kids.map(({ o, f }) => `<section><div class="shead"><h3>${esc(title(o))}</h3>
