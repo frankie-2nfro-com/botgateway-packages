@@ -4,8 +4,12 @@ for the gateway owners - the Portal and the gateway show them as "What's new" be
 store_update.sh --package recipes publishes it (dated) and puts the next patch version on top; change
 the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
 
-0.5.7
+0.5.8
 - [Changed and non commited item put here]
+
+0.5.7 (2026-10-31)
+- When the page can't reach the application (e.g. BotGateway was restarted), it also tells you to open it again
+  from the BotGateway app (app kit, store 1.0.3)
 
 0.5.6 (2026-10-31)
 - Save a recipe idea from anywhere: other services (a phone shortcut, a script ...) can send a title, link and

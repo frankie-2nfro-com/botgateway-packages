@@ -35,7 +35,7 @@ const KIT_WORDS = {
   zh: {
     'count {n} {what}': '{n} 個{what}',
     '{n} {what}': '{what} {n}',
-    "Can't reach this application right now - it may be switched off, or its computer is offline or restarting. Try again later (reload the page).": '暫時連接不到這個應用程式 - 它可能已關閉，或者它的電腦離線或正在重新啟動。請稍後再試（重新載入頁面）。',
+    "Can't reach this application right now - it may be switched off, or its computer is offline or restarting. Try again later (reload the page). Its owner: if BotGateway was restarted, open the application again from the BotGateway app.": '暫時連接不到這個應用程式 - 它可能已關閉，或者它的電腦離線或正在重新啟動。請稍後再試（重新載入頁面）。如果你是擁有者而 BotGateway 剛重新啟動，請從 BotGateway 再打開這個應用程式。',
     "This page's session ended - open the application again from the BotGateway app (left, under Applications).": '這個頁面的連線已結束 - 請從 BotGateway 應用程式再次開啟（左邊 Applications 下）。',
     'Untitled {what}': '未命名{what}',
     "This application is switched off at the moment, so the assistant can't work on it. You can still look at and change everything here.": '這個應用程式現在已關閉，助手暫時不能處理。你仍然可以在這裏查看和修改所有內容。',
@@ -148,7 +148,7 @@ async function api(path, opts = {}) {
   let res;
   // No answer at all (an old page from the browser's cache, the website switched off, the owner's computer offline).
   try { res = await fetch(API + path, { ...opts, credentials: 'same-origin', headers: { 'x-botgateway': '1', 'Content-Type': 'application/json', 'Accept-Language': LANG, ...(opts.headers || {}) } }); }
-  catch (_) { throw new Error(t("Can't reach this application right now - it may be switched off, or its computer is offline or restarting. Try again later (reload the page).")); }
+  catch (_) { throw new Error(t("Can't reach this application right now - it may be switched off, or its computer is offline or restarting. Try again later (reload the page). Its owner: if BotGateway was restarted, open the application again from the BotGateway app.")); }
   if (res.status === 401) throw new Error(t("This page's session ended - open the application again from the BotGateway app (left, under Applications)."));
   if (!res.ok) throw new Error(await res.text());
   return res.status === 204 ? null : res.json();
