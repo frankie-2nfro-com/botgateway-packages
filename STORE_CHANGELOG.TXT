@@ -4,8 +4,12 @@ The top section is the store's coming version (no date): write each change below
 store_update.sh --store publishes it (dated; the version is in the signed store.json and shown in the
 Portal) and puts the next patch version on top. Package changes go into packages/<id>/CHANGELOG.TXT.
 
-1.0.3
+1.0.4
 - [Changed and non commited item put here]
+
+1.0.3 (2026-10-31)
+- App kit: "Can't reach this application" also tells the owner what to do after BotGateway was restarted (open
+  the application again from the BotGateway app)
 
 1.0.2 (2026-10-31)
 - App kit: triggers - createApp({ onHook(name, req, hook) }) takes webhooks from outside services at
