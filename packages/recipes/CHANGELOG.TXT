@@ -4,8 +4,14 @@ for the gateway owners - the Portal and the gateway show them as "What's new" be
 store_update.sh --package recipes publishes it (dated) and puts the next patch version on top; change
 the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
 
-0.5.6
+0.5.7
 - [Changed and non commited item put here]
+
+0.5.6 (2026-10-31)
+- Save a recipe idea from anywhere: other services (a phone shortcut, a script ...) can send a title, link and
+  notes to https://<its website>/hook/clip; it becomes an unpublished recipe draft. Signed with the new
+  setting "Trigger secret" (empty = off); a repeat with the same X-Event-Id is saved once. With the offline
+  inbox on (Portal) it also works while the computer is off. Needs BotGateway 1.1.0
 
 0.5.5 (2026-10-30)
 - Recipes application Add filter by update year (other then existing by full text search)

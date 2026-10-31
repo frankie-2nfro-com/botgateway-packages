@@ -1,7 +1,7 @@
 type = "application"
 id = "recipes"
 name = "Recipes"
-version = "0.5.5"
+version = "0.5.6"
 about = "Your recipe book: collect screenshots, photos and notes as materials; the assistant writes the finished recipe from them - cover photo, ingredients you can scale, the method with step pictures. Its website shows the recipes you publish."
 author = "Bot Gateway"
 license = "Apache-2.0"
@@ -16,6 +16,9 @@ ai = "owner"
 ai_sends = "a recipe with its materials (photos, screenshots, notes) when you press Build recipe"
 visitors = "read the published recipes and change the servings (amounts follow)"
 login = "none"
+# Triggers (app_triggers_requirements.txt): https://<its website>/hook/clip saves a recipe draft sent by another
+# service (a shortcut on the phone, a script ...), signed with this secret. Empty = no triggers.
+settings = [{ key = "trigger_secret", label = "Trigger secret (for /hook/clip; empty = off)", type = "text", default = "" }]
 
 # What the client's LLM may do (the program's callTool).
 [[tools]]

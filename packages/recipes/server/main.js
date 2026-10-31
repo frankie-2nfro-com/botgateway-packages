@@ -182,8 +182,30 @@ const ZH = {
   [BUILD_HINT]: "助手會根據素材寫出食譜。今次還有其他要求嗎？例如「4 人份」、「少糖」、「用英文寫」、「加一個保存的小貼士」。沒有就留空。",
 };
 
+// Trigger "clip": another service (a phone shortcut, a script, a website) saves a recipe idea as an unpublished
+// draft - also while the computer is off when the offline inbox is on. POST https://<website>/hook/clip with
+// JSON {title, source, notes}, header X-Signature: sha256=<hex HMAC-SHA256 of the body with the Trigger secret>
+// and optionally X-Event-Id (a repeat with the same id is saved once).
+function onHook(name, req, hook) {
+  if (name !== "clip") return hook.reply(404, "no such trigger");
+  const secret = String((host.app.settings || {}).trigger_secret || "");
+  if (!secret) return hook.reply(404, "triggers are off (set the Trigger secret in the application's settings)");
+  const want = "sha256=" + hook.signature(secret).hex;
+  if (!hook.same(want, hook.header("x-signature") || "")) return hook.reply(401, "bad signature");
+  const event = hook.header("x-event-id");
+  if (event && hook.seen(event)) return { duplicate: true };
+  const b = hook.json();
+  const title = String(b.title || "").trim().slice(0, 200);
+  if (!title) return hook.reply(400, "title is needed");
+  const via = req.inbox ? "the offline inbox" : "a trigger";
+  const notes = [String(b.notes || "").trim(), `(saved by ${via} ${new Date().toISOString().slice(0, 16).replace("T", " ")})`].filter(Boolean).join("\n\n");
+  const r = hook.op("recipes_add", { title, source: String(b.source || "").slice(0, 500), notes });
+  return { ok: true, id: r.id };
+}
+
 export const { handle, callTool, onAiResult, onInstall, onUpdate } = createApp({
   upgrade,
+  onHook,
   languages: ["en", "zh"],
   words: { zh: ZH },
   name: "Recipes",
