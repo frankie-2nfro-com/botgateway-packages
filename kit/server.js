@@ -36,6 +36,15 @@
 // POST cancel {collection, item}, GET runs?collection=&item=, GET files/<name>. While an action's AI run
 // waits (at most 15 minutes), its item and the items pointing to it can't be changed or deleted. Visitors (request.who == "visitor") get only what the
 // collection's `public` / the action's `public` allow; the owner everything.
+//
+// Triggers (an outside service - Stripe, GitHub, a sensor - POSTs to https://<website>/hook/<name>): the gateway
+// hands them to handle with who "hook". By default an application has none (404). To take them, give createApp
+//   onHook(name, req, hook) -> nothing (204) | any answer (JSON) | hook.reply(status, text)
+// Anyone on the internet can call the address: check the sender first (hook.signature) and answer quickly - the
+// sender waits only a few seconds. hook: { name, header(n), text (the body), json(), signature(secret, options)
+// (HMAC of the exact body, {hex, base64}; options { hash: "sha256" | "sha1" }), same(a, b) (constant-time),
+// seen(id) (true if this event id came before - kept 7 days - else remembers it), op, get, reply }.
+// AI from a trigger needs the package's `ai = "visitors"`, like visitors.
 
 const MAX_FILE = 10 * 1024 * 1024;
 // An AI run that has not answered in this time is taken as failed (e.g. the gateway restarted meanwhile).
@@ -82,6 +91,7 @@ export function createApp(spec) {
       host.db.script(`CREATE TABLE IF NOT EXISTS ${table(c)} (id INTEGER PRIMARY KEY, data TEXT NOT NULL DEFAULT '{}', created TEXT NOT NULL, updated TEXT NOT NULL)`);
     }
     host.db.script(`CREATE TABLE IF NOT EXISTS _runs (run TEXT PRIMARY KEY, action TEXT, coll TEXT, item INTEGER, state TEXT, error TEXT, started TEXT, finished TEXT)`);
+    host.db.script(`CREATE TABLE IF NOT EXISTS _hooks_seen (id TEXT PRIMARY KEY, at TEXT NOT NULL)`);
     ready = true;
     upgrade();
   }
@@ -363,6 +373,29 @@ export function createApp(spec) {
   }
   // A plain-text answer with an HTTP status (the gateway's "$response"; anything else is sent as JSON).
   const reply = (status, body) => ({ $response: { status, body, headers: { "content-type": "text/plain; charset=utf-8" } } });
+  // A trigger (who "hook"): the application's onHook, or 404 when it takes none.
+  function hook(req) {
+    if (!spec.onHook) return reply(404, "no such trigger");
+    const text = req.body ?? "";
+    const headers = req.headers || {};
+    const h = {
+      name: req.hook, text,
+      header: (n) => headers[String(n).toLowerCase()],
+      json: () => { try { return JSON.parse(req.encoding === "base64" ? "" : text); } catch { throw fail("the body must be JSON"); } },
+      signature: (secret, options = {}) => host.crypto.hmac(secret, text, { hash: options.hash, data_encoding: req.encoding === "base64" ? "base64" : "text" }),
+      same: (a, b) => host.crypto.equal(a, b),
+      seen(id) {
+        const key = `${req.hook}:${id}`;
+        host.db.exec(`DELETE FROM _hooks_seen WHERE at < ?`, [new Date(Date.now() - 7 * 86400000).toISOString()]);
+        if (host.db.query(`SELECT 1 FROM _hooks_seen WHERE id = ?`, [key]).length) return true;
+        host.db.exec(`INSERT INTO _hooks_seen (id, at) VALUES (?, ?)`, [key, now()]);
+        return false;
+      },
+      op: (name, args) => op(name, args || {}, "owner"), get: (n, id) => get(coll(n), id), reply,
+    };
+    const r = spec.onHook(req.hook, req, h);
+    return r === undefined ? null : r;
+  }
   function handle(req) {
     setup();
     // The page sends its language (the switch) as Accept-Language.
@@ -371,6 +404,7 @@ export function createApp(spec) {
     const who = req.who, path = req.path.replace(/^\/+/, "");
     const body = () => { try { return req.body ? JSON.parse(req.body) : {}; } catch { throw fail("the body must be JSON"); } };
     try {
+      if (who === "hook") return hook(req);
       if (req.method === "GET" && path === "meta") return meta(who);
       if (req.method === "POST" && path === "call") { const b = body(); return op(b.op, b.arguments || {}, who); }
       if (req.method === "POST" && path === "action") {
@@ -397,7 +431,7 @@ export function createApp(spec) {
       return reply(404, "not found");
     } catch (e) {
       if (!e.kit) host.log(`request failed: ${e.message}`);
-      const msg = e.kit || who !== "visitor" ? e.message : say("Something went wrong - please try again.");
+      const msg = e.kit || (who !== "visitor" && who !== "hook") ? e.message : say("Something went wrong - please try again.");
       return reply(e.message === say("This isn't open to visitors.") ? 403 : 400, msg);
     }
   }

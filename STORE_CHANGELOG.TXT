@@ -4,8 +4,14 @@ The top section is the store's coming version (no date): write each change below
 store_update.sh --store publishes it (dated; the version is in the signed store.json and shown in the
 Portal) and puts the next patch version on top. Package changes go into packages/<id>/CHANGELOG.TXT.
 
-1.0.2
+1.0.3
 - [Changed and non commited item put here]
+
+1.0.2 (2026-10-31)
+- App kit: triggers - createApp({ onHook(name, req, hook) }) takes webhooks from outside services at
+  https://<website>/hook/<name> (gateway 1.0.2 or later); without onHook an application has none (404).
+  hook: name, header(), text, json(), signature(secret) (HMAC of the exact body), same() (constant-time),
+  seen(id) (de-duplicates event ids for 7 days), op(), get(), reply()
 
 1.0.1 (2026-10-30)
 - App kit: a collection's `years` ("updated" / "created") - the list can be filtered by year (the page gets a
