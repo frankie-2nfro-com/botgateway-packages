@@ -1,12 +1,14 @@
 id = "uppercase"
 name = "Uppercase (Python)"
-version = "1.2.0"
+version = "1.2.1"
 about = "Upper-cases text - an example package (the old built-in uppercase as a Python program)."
 author = "Bot Gateway"
 license = "Apache-2.0"
 command = "python3"
 args = ["main.py"]
 timeout_secs = 30
+# Sample arguments for trying it in the gateway window (Simulator, Send test, Dashboard).
+example = { text = "hello world" }
 
 # Its tool's arguments (specification 3.0). "text" is optional: as an action it can read the "uses" files.
 [input_schema]
