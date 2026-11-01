@@ -24,6 +24,8 @@ const recipes = {
     { name: "prep_minutes", title: "Preparation", type: "number", unit: "min" },
     { name: "cook_minutes", title: "Cooking", type: "number", unit: "min" },
     { name: "difficulty", title: "Difficulty", type: "choice", choices: ["easy", "medium", "hard"] },
+    // Tags: cuisine and kind together (中菜, 意大利菜, 日式, 甜品, 糖水, 湯 ...) - a menu filters the list.
+    { name: "tags", title: "Tags", type: "tags" },
     { name: "photo", title: "Cover", type: "image" },
     { name: "ingredients", title: "Ingredients", type: "table", columns: [
       { name: "qty", title: "Amount", type: "number" }, { name: "unit", title: "Unit" },
@@ -62,6 +64,13 @@ const ownPhotos = (it) => [it.photo && it.photo.file, ...(it.pictures || []).map
 const photosOf = (it, related) => [...new Set([...ownPhotos(it),
   ...((related && related.materials) || []).map((m) => m.file && m.file.file).filter((n) => n && IMG.test(n))])];
 
+// The tags the owner already uses (most used first), so the assistant picks from them.
+const knownTags = () => {
+  try {
+    return host.db.query("SELECT j.value AS tag, COUNT(*) AS n FROM c_recipes, json_each(c_recipes.data, '$.tags') j GROUP BY j.value ORDER BY n DESC LIMIT 60").map((r) => r.tag);
+  } catch { return []; }
+};
+
 const TASK = (it, related) => `Write the finished recipe "${it.title}" for a recipe book.
 Input: "item" is the recipe as it is now. Its fields may be empty, wrong or in the wrong place (e.g. the
 whole recipe pasted into notes). The attached files are its materials (data.related.materials lists them
@@ -88,8 +97,12 @@ Write the whole recipe again from everything in item and the materials:
 6. Use only what item and the materials say. Don't invent amounts or steps. Leave a field out if it is
    unknown.
 7. Keep the language of the materials. Don't translate.
+8. tags: 1-4 short tags for finding the recipe - its cuisine (e.g. 中菜, 意大利菜, 日式) and its kind (e.g. 甜品,
+   糖水, 湯, 小食). Use the owner's existing tags (the "tags" line) whenever one fits; make a new one only
+   when none does, in the same language as those tags.
 
-photos: ${photosOf(it, related).join(", ") || "(none)"}`;
+photos: ${photosOf(it, related).join(", ") || "(none)"}
+tags: ${knownTags().join(", ") || "(none yet)"}`;
 
 const SCHEMA = {
   type: "object",
@@ -107,6 +120,7 @@ const SCHEMA = {
     steps: { type: "array", items: { type: "object", required: ["text"], properties: {
       text: { type: "string" }, picture: { type: "string", description: "a material's file name" } } } },
     tips: { type: "array", items: { type: "string" } },
+    tags: { type: "array", items: { type: "string" }, description: "1-4 tags: cuisine and kind, from the existing tags when one fits" },
     notes: { type: "string" },
     source: { type: "string", description: "a link or book the recipe comes from, if the materials show one" },
     cover: { type: "string", description: "the file name (from photos) of the best photo of the finished dish" },
@@ -145,6 +159,8 @@ function apply(a, ctx) {
     notes: a.notes || null,
     source: a.source || null,
     pictures: album,
+    // The owner's tags stay; the assistant's are added.
+    tags: [...(ctx.item.tags || []), ...(a.tags || [])],
   };
   if (cover) update.photo = cover;
   if (!ctx.item.look) update.look = "classic";
@@ -170,6 +186,7 @@ function upgrade(kit) {
 
 // The page in English or Chinese (the switch in its top bar); the recipes themselves stay as written.
 const ZH = {
+  "Tags": "標籤",
   "Recipes": "食譜", "recipe": "食譜", "Materials": "素材", "material": "素材",
   "Title": "標題", "Status": "狀態", "Look": "版面", "Servings": "份量", "Preparation": "準備時間", "Cooking": "烹調時間",
   "Difficulty": "難度", "Cover": "封面", "Ingredients": "材料", "Amount": "數量", "Unit": "單位", "Ingredient": "材料", "Seasonings": "調味料", "Seasoning": "調味料",
@@ -184,7 +201,7 @@ const ZH = {
 
 // Trigger "clip": another service (a phone shortcut, a script, a website) saves a recipe idea as an unpublished
 // draft - also while the computer is off when the offline inbox is on. POST https://<website>/hook/clip with
-// JSON {title, source, notes}, header X-Signature: sha256=<hex HMAC-SHA256 of the body with the Trigger secret>
+// JSON {title, source, notes, tags}, header X-Signature: sha256=<hex HMAC-SHA256 of the body with the Trigger secret>
 // and optionally X-Event-Id (a repeat with the same id is saved once).
 function onHook(name, req, hook) {
   if (name !== "clip") return hook.reply(404, "no such trigger");
@@ -199,7 +216,7 @@ function onHook(name, req, hook) {
   if (!title) return hook.reply(400, "title is needed");
   const via = req.inbox ? "the offline inbox" : "a trigger";
   const notes = [String(b.notes || "").trim(), `(saved by ${via} ${new Date().toISOString().slice(0, 16).replace("T", " ")})`].filter(Boolean).join("\n\n");
-  const r = hook.op("recipes_add", { title, source: String(b.source || "").slice(0, 500), notes });
+  const r = hook.op("recipes_add", { title, source: String(b.source || "").slice(0, 500), notes, ...(b.tags ? { tags: b.tags } : {}) });
   return { ok: true, id: r.id };
 }
 

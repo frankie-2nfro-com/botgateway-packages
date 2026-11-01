@@ -22,6 +22,10 @@
 // Collection `years: "updated" | "created"`: the list can be filtered by the year of that date (`year`: "2026")
 //   and its answer has `years` (newest first, only those with items the caller may see); the page gets a
 //   year menu next to the search.
+// Field type `tags`: short labels, several per item (e.g. cuisine and kind: "中菜", "湯") - at most 20, each
+//   at most 30 characters, the same tag once (a text "a, b、c" is split too). The list can be filtered by one
+//   (`<field>`: "中菜") and its answer has `tags` ({<field>: [tags, most used first]}, only of items the
+//   caller may see); the page gets a tag menu, shows them as chips and suggests the existing ones in the form.
 // Collection `dates: true`: the page shows created / updated. Field `auto: true`: kept by the program (not in
 // the page's form); `format: "v{n}"`: a number's chip.
 // Field: { name, title, type, required, choices, default (a new item's value), unit (number), ref, owned
@@ -114,12 +118,27 @@ export function createApp(spec) {
       else where.push(`EXISTS (SELECT 1 FROM json_each(data, '$.${f.name}') WHERE value = ?)`);
       params.push(Number(args[f.name]));
     }
+    const tagFields = c.fields.filter((f) => f.type === "tags");
+    for (const f of tagFields) {
+      if (args[f.name] === undefined || args[f.name] === null || args[f.name] === "") continue;
+      where.push(`EXISTS (SELECT 1 FROM json_each(data, '$.${f.name}') WHERE value = ?)`);
+      params.push(String(args[f.name]));
+    }
     const limit = int(args.limit, 50, 1, 500), offset = int(args.offset, 0, 0, 1e9);
     const sql = `SELECT * FROM ${table(c)}${where.length ? " WHERE " + where.join(" AND ") : ""} ORDER BY updated DESC LIMIT ${limit} OFFSET ${offset}`;
     const out = { items: host.db.query(sql, params).map((r) => row(c, r)) };
     if (c.years) {
       const pub = visitor && c.publish ? ` WHERE json_extract(data, '$.${c.publish.field}') = ?` : "";
       out.years = host.db.query(`SELECT DISTINCT substr(${yearCol}, 1, 4) AS y FROM ${table(c)}${pub} ORDER BY y DESC`, pub ? [c.publish.value] : []).map((r) => r.y);
+    }
+    if (tagFields.length) {
+      // Every tag there is (most used first), of the items the caller may see.
+      const pub = visitor && c.publish ? ` WHERE json_extract(t.data, '$.${c.publish.field}') = ?` : "";
+      out.tags = {};
+      for (const f of tagFields) {
+        out.tags[f.name] = host.db.query(`SELECT j.value AS tag, COUNT(*) AS n FROM ${table(c)} t, json_each(t.data, '$.${f.name}') j${pub} GROUP BY j.value ORDER BY n DESC, j.value`,
+          pub ? [c.publish.value] : []).map((r) => r.tag);
+      }
     }
     return out;
   }
@@ -150,6 +169,12 @@ export function createApp(spec) {
       case "choice": if (!(f.choices || []).includes(v)) throw fail(`${f.name}: one of ${(f.choices || []).join(", ")}`); return v;
       case "json": return v;
       case "list": if (!Array.isArray(v)) throw fail(`${f.name}: a list`); return v.map(String).filter((s) => s.trim());
+      case "tags": {
+        const all = (Array.isArray(v) ? v : String(v).split(/[,，、\n]/)).map((s) => String(s).replace(/\s+/g, " ").trim().slice(0, 30)).filter(Boolean);
+        const seen = new Set(), out = [];
+        for (const s of all) { const k = s.toLowerCase(); if (!seen.has(k)) { seen.add(k); out.push(s); } }
+        return out.slice(0, 20);
+      }
       case "ref": { const t = coll(f.ref), n = Number(v); if (!t || !get(t, n)) throw fail(`${f.name}: no ${f.ref} ${v}`); return n; }
       case "refs": {
         const t = coll(f.ref); if (!Array.isArray(v)) v = [v];

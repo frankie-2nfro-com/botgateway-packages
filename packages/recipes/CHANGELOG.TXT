@@ -4,8 +4,14 @@ for the gateway owners - the Portal and the gateway show them as "What's new" be
 store_update.sh --package recipes publishes it (dated) and puts the next patch version on top; change
 the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
 
-0.5.8
+0.5.9
 - [Changed and non commited item put here]
+
+0.5.8 (2026-11-01)
+- Tags for recipes: cuisine and kind together (中菜, 意大利菜, 日式, 甜品, 糖水, 湯 ...), several per recipe. Filter the
+  list by a tag (menu next to the search - also on the website, published recipes only); in the form, click
+  the tags you already use. Build recipe: the assistant suggests 1-4 tags, from your existing ones when one
+  fits (your own tags stay). The bot can filter and set them too; the "clip" trigger can send tags
 
 0.5.7 (2026-10-31)
 - When the page can't reach the application (e.g. BotGateway was restarted), it also tells you to open it again
