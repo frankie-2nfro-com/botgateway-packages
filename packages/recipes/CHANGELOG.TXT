@@ -4,8 +4,12 @@ for the gateway owners - the Portal and the gateway show them as "What's new" be
 store_update.sh --package recipes publishes it (dated) and puts the next patch version on top; change
 the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
 
-0.5.9
+0.5.10
 - [Changed and non commited item put here]
+
+0.5.9 (2026-11-01)
+- All tags are listed under the search: click one to see only those recipes, click it again (or 全部 / All) for
+  all of them. A tag on a recipe's page shows all recipes with that tag
 
 0.5.8 (2026-11-01)
 - Tags for recipes: cuisine and kind together (中菜, 意大利菜, 日式, 甜品, 糖水, 湯 ...), several per recipe. Filter the

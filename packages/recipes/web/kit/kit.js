@@ -10,8 +10,9 @@
 // A collection's `publish` ({field, value}): the owner gets Publish / Unpublish on an item's page; visitors
 // only ever get published items (the server decides).
 // A collection's `years` ("updated" / "created"): a year menu next to the search (the server lists the years).
-// A field of type `tags`: chips on the cards and the item's page, a tag menu next to the search (the server lists
-// the tags, most used first), and in the form a text box (comma separated) with the existing tags to click.
+// A field of type `tags`: chips on the cards and the item's page, a row of every tag under the search (the server
+// lists them, most used first) - click one to filter, again (or All) to show everything; a tag on an item's page
+// opens the list filtered by it; in the form a text box (comma separated) with the existing tags to click.
 // Preview (the owner, a collection visitors may read): an item's page has 👁 Preview - #<collection>/<id>/preview
 // shows it exactly as the website does (the visitors' view of the app: no owner buttons, no private parts),
 // with a note on top and the way back.
@@ -119,6 +120,8 @@ const KIT_WORDS = {
     'Show the photos': '看相片',
     'All years': '所有年份',
     'All tags': '所有標籤',
+    'All': '全部',
+    'All with this tag': '所有有這個標籤的',
     'Separate tags with commas. Click one to add it:': '標籤之間用逗號分隔。撳一下加入：',
     'Separate tags with commas, e.g. Chinese, soup.': '標籤之間用逗號分隔，例如：中菜, 湯。',
     'Year': '年份',
@@ -327,15 +330,20 @@ async function browse(c) {
   const tg = tagsOf(c);
   $('avView').innerHTML = `<div class="bar"><input type="search" id="q" placeholder="${esc(t('Search {what}', { what: T(c) }))}" value="${esc(query)}">
       ${c.years ? `<select id="yr" title="${esc(t('Year'))}"><option value="">${esc(t('All years'))}</option></select>` : ''}
-      ${tg ? `<select id="tg" title="${esc(ftitle(tg))}"><option value="">${esc(t('All tags'))}</option></select>` : ''}<span class="grow"></span>
+<span class="grow"></span>
       ${!may(c, 'add') ? '' : files ? `<button type="button" class="btn" id="noteBtn">${esc(t('✎ Write a note'))}</button>
         <label class="btn primary">${esc(t('＋ Add files'))}<input type="file" id="upl" multiple hidden></label>`
       : `<button type="button" class="btn primary" id="newBtn">${esc(t('＋ New {what}', { what: word(c) }))}</button>`}</div>
+    ${tg ? '<div class="tagbar" id="tgBar"></div>' : ''}
     <div class="err" id="bErr"></div>
     <div id="items" class="${files ? 'folder' : c.view === 'cards' ? 'cards' : 'rows'}"></div>`;
   $('q').addEventListener('input', () => { query = $('q').value.trim(); clearTimeout(queryT); queryT = setTimeout(() => fill(c).catch(showErr), 250); });
   $('yr')?.addEventListener('change', () => { year = $('yr').value; fill(c).catch(showErr); });
-  $('tg')?.addEventListener('change', () => { tagVal = $('tg').value; fill(c).catch(showErr); });
+  $('tgBar')?.addEventListener('click', e => {
+    const b = e.target.closest('[data-tagf]'); if (!b) return;
+    tagVal = b.dataset.tagf === tagVal ? '' : b.dataset.tagf;
+    fill(c).catch(showErr);
+  });
   $('newBtn')?.addEventListener('click', () => go(c.name + '/new'));
   if (files && may(c, 'add')) {
     const done = () => fill(c).catch(showErr);
@@ -363,11 +371,13 @@ async function fill(c) {
     const ys = [...new Set([...r.years, ...(year ? [year] : [])])].sort().reverse();
     yr.innerHTML = `<option value="">${esc(t('All years'))}</option>` + ys.map(y => `<option value="${esc(y)}" ${y === year ? 'selected' : ''}>${esc(y)}</option>`).join('');
   }
-  // The tag menu: the tags there are, most used first (the chosen one stays).
-  const tgSel = $('tg');
-  if (tgSel && tg && r.tags) {
+  // Every tag there is, most used first (the chosen one stays even when nothing is left in it): click to filter.
+  const bar = $('tgBar');
+  if (bar && tg && r.tags) {
     const all = [...new Set([...(r.tags[tg.name] || []), ...(tagVal ? [tagVal] : [])])];
-    tgSel.innerHTML = `<option value="">${esc(t('All tags'))}</option>` + all.map(x => `<option value="${esc(x)}" ${x === tagVal ? 'selected' : ''}>${esc(x)}</option>`).join('');
+    bar.classList.toggle('hidden', !all.length);
+    bar.innerHTML = `<button type="button" class="chip tagf all${tagVal ? '' : ' on'}" data-tagf="">${esc(t('All'))}</button>`
+      + all.map(x => `<button type="button" class="chip tag tagf${x === tagVal ? ' on' : ''}" data-tagf="${esc(x)}">${esc(x)}</button>`).join('');
   }
   if (!r.items.length) {
     box.innerHTML = `<div class="empty" style="grid-column:1/-1"><span class="big">${iconHtml() || '·'}</span>
@@ -405,7 +415,8 @@ function chips(c, it, page) {
     if (f.type === 'number' && f.format) return `<span class="chip" title="${esc(ftitle(f))}">${esc(t(f.format, { n: num(v) }))}</span>`;
     if (f.type === 'number') return `<span class="chip">${f.unit ? `${esc(ftitle(f))} ${esc(num(v))} ${esc(tn(f.unit))}` : esc(t('{n} {what}', { n: num(v), what: ftitle(f).toLowerCase() }))}</span>`;
     if (f.type === 'bool') return v ? `<span class="chip">${esc(ftitle(f))}</span>` : '';
-    if (f.type === 'tags' && Array.isArray(v)) return v.map(x => `<span class="chip tag">${esc(x)}</span>`).join('');
+    // On an item's page a tag opens the list filtered by it (on a card the whole card is the link).
+    if (f.type === 'tags' && Array.isArray(v)) return v.map(x => page ? `<button type="button" class="chip tag tagf" data-tagopen="${esc(c.name)}" data-tag="${esc(x)}" title="${esc(t('All with this tag'))}">${esc(x)}</button>` : `<span class="chip tag">${esc(x)}</span>`).join('');
     return '';
   }).join('');
 }
@@ -924,4 +935,11 @@ document.addEventListener('click', e => {
   if (!have.some(x => x.toLowerCase() === b.dataset.tag.toLowerCase())) have.push(b.dataset.tag);
   box.value = have.join(', ');
   b.classList.add('on');
+});
+// A tag on an item's page: the list, filtered by that tag.
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-tagopen]');
+  if (!b) return;
+  tagVal = b.dataset.tag; yearsOf = b.dataset.tagopen; year = ''; query = '';
+  go(b.dataset.tagopen);
 });
