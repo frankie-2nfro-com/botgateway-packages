@@ -4,8 +4,13 @@ The top section is the store's coming version (no date): write each change below
 store_update.sh --store publishes it (dated; the version is in the signed store.json and shown in the
 Portal) and puts the next patch version on top. Package changes go into packages/<id>/CHANGELOG.TXT.
 
-1.0.5
+1.0.6
 - [Changed and non commited item put here]
+
+1.0.5 (2026-11-01)
+- App kit tags: every tag is listed under the search as a chip (most used first) - click one to filter, click it
+  again or "All" to show everything (replaces the tag menu); a tag on an item's page opens the list filtered
+  by it
 
 1.0.4 (2026-11-01)
 - App kit: field type `tags` - several short labels per item (at most 20 × 30 characters; "a, b、c" is split;
