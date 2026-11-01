@@ -4,8 +4,11 @@ for the gateway owners - the Portal and the gateway show them as "What's new" be
 store_update.sh --package recipes publishes it (dated) and puts the next patch version on top; change
 the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
 
-0.5.11
+0.5.12
 - [Changed and non commited item put here]
+
+0.5.11 (2026-11-01)
+- Each of its tools has a sample (`example`): the gateway's Simulator and Send test start from it (gateway 1.1.11)
 
 0.5.10 (2026-11-01)
 - Several tags can be chosen at once: e.g. 中菜 + 湯 shows only the Chinese soups. Click a chosen tag again to
