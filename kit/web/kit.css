@@ -74,6 +74,9 @@ textarea.mono { font: 12px/1.45 ui-monospace, Menlo, monospace; }
 .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { display: inline-block; padding: 2px 10px; border-radius: 999px; background: var(--chip); color: var(--accent); font-size: 12px; font-weight: 600; }
+.chip.tag::before { content: "#"; opacity: .55; margin-right: 1px; }
+button.chip.pick { border: 1px dashed currentColor; cursor: pointer; font: inherit; font-size: 12px; font-weight: 600; }
+button.chip.pick.on { border-style: solid; opacity: .6; }
 .btn.pubgo { border-color: #2f8f4e; color: #22713a; }
 @media (prefers-color-scheme: dark) {
   .btn.pubgo { border-color: #4caf6e; color: #8fd6a0; }

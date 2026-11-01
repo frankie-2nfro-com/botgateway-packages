@@ -4,8 +4,14 @@ The top section is the store's coming version (no date): write each change below
 store_update.sh --store publishes it (dated; the version is in the signed store.json and shown in the
 Portal) and puts the next patch version on top. Package changes go into packages/<id>/CHANGELOG.TXT.
 
-1.0.4
+1.0.5
 - [Changed and non commited item put here]
+
+1.0.4 (2026-11-01)
+- App kit: field type `tags` - several short labels per item (at most 20 × 30 characters; "a, b、c" is split;
+  the same tag once). The list can be filtered by a tag and lists the tags there are (most used first; for
+  visitors only those of published items); the page shows them as # chips, has a tag menu next to the search,
+  and the form suggests the existing tags to click
 
 1.0.3 (2026-10-31)
 - App kit: "Can't reach this application" also tells the owner what to do after BotGateway was restarted (open

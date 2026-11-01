@@ -10,6 +10,8 @@
 // A collection's `publish` ({field, value}): the owner gets Publish / Unpublish on an item's page; visitors
 // only ever get published items (the server decides).
 // A collection's `years` ("updated" / "created"): a year menu next to the search (the server lists the years).
+// A field of type `tags`: chips on the cards and the item's page, a tag menu next to the search (the server lists
+// the tags, most used first), and in the form a text box (comma separated) with the existing tags to click.
 // Preview (the owner, a collection visitors may read): an item's page has 👁 Preview - #<collection>/<id>/preview
 // shows it exactly as the website does (the visitors' view of the app: no owner buttons, no private parts),
 // with a note on top and the way back.
@@ -116,6 +118,9 @@ const KIT_WORDS = {
     'Next': '下一張',
     'Show the photos': '看相片',
     'All years': '所有年份',
+    'All tags': '所有標籤',
+    'Separate tags with commas. Click one to add it:': '標籤之間用逗號分隔。撳一下加入：',
+    'Separate tags with commas, e.g. Chinese, soup.': '標籤之間用逗號分隔，例如：中菜, 湯。',
     'Year': '年份',
     '👁 Preview': '👁 預覽',
     'how visitors see it on the website': '訪客在網站上看到的樣子',
@@ -313,12 +318,16 @@ function previewNote(c, it) {
 }
 
 // ---------- browsing a collection ----------
-let query = '', queryT = 0, year = '', yearsOf = '';
+let query = '', queryT = 0, year = '', yearsOf = '', tagVal = '';
+// The collection's tags field (type `tags`), if it has one.
+const tagsOf = c => c.fields.find(f => f.type === 'tags');
 async function browse(c) {
   const files = c.view === 'files';
-  if (yearsOf !== c.name) { year = ''; yearsOf = c.name; }
+  if (yearsOf !== c.name) { year = ''; tagVal = ''; yearsOf = c.name; }
+  const tg = tagsOf(c);
   $('avView').innerHTML = `<div class="bar"><input type="search" id="q" placeholder="${esc(t('Search {what}', { what: T(c) }))}" value="${esc(query)}">
-      ${c.years ? `<select id="yr" title="${esc(t('Year'))}"><option value="">${esc(t('All years'))}</option></select>` : ''}<span class="grow"></span>
+      ${c.years ? `<select id="yr" title="${esc(t('Year'))}"><option value="">${esc(t('All years'))}</option></select>` : ''}
+      ${tg ? `<select id="tg" title="${esc(ftitle(tg))}"><option value="">${esc(t('All tags'))}</option></select>` : ''}<span class="grow"></span>
       ${!may(c, 'add') ? '' : files ? `<button type="button" class="btn" id="noteBtn">${esc(t('✎ Write a note'))}</button>
         <label class="btn primary">${esc(t('＋ Add files'))}<input type="file" id="upl" multiple hidden></label>`
       : `<button type="button" class="btn primary" id="newBtn">${esc(t('＋ New {what}', { what: word(c) }))}</button>`}</div>
@@ -326,6 +335,7 @@ async function browse(c) {
     <div id="items" class="${files ? 'folder' : c.view === 'cards' ? 'cards' : 'rows'}"></div>`;
   $('q').addEventListener('input', () => { query = $('q').value.trim(); clearTimeout(queryT); queryT = setTimeout(() => fill(c).catch(showErr), 250); });
   $('yr')?.addEventListener('change', () => { year = $('yr').value; fill(c).catch(showErr); });
+  $('tg')?.addEventListener('change', () => { tagVal = $('tg').value; fill(c).catch(showErr); });
   $('newBtn')?.addEventListener('click', () => go(c.name + '/new'));
   if (files && may(c, 'add')) {
     const done = () => fill(c).catch(showErr);
@@ -342,6 +352,8 @@ async function fill(c) {
   const args = { limit: 200 };
   if (query) args.query = query;
   if (c.years && year) args.year = year;
+  const tg = tagsOf(c);
+  if (tg && tagVal) args[tg.name] = tagVal;
   const r = await call(c.name + '_list', args);
   const box = $('items');
   if (!box) return;
@@ -351,9 +363,15 @@ async function fill(c) {
     const ys = [...new Set([...r.years, ...(year ? [year] : [])])].sort().reverse();
     yr.innerHTML = `<option value="">${esc(t('All years'))}</option>` + ys.map(y => `<option value="${esc(y)}" ${y === year ? 'selected' : ''}>${esc(y)}</option>`).join('');
   }
+  // The tag menu: the tags there are, most used first (the chosen one stays).
+  const tgSel = $('tg');
+  if (tgSel && tg && r.tags) {
+    const all = [...new Set([...(r.tags[tg.name] || []), ...(tagVal ? [tagVal] : [])])];
+    tgSel.innerHTML = `<option value="">${esc(t('All tags'))}</option>` + all.map(x => `<option value="${esc(x)}" ${x === tagVal ? 'selected' : ''}>${esc(x)}</option>`).join('');
+  }
   if (!r.items.length) {
     box.innerHTML = `<div class="empty" style="grid-column:1/-1"><span class="big">${iconHtml() || '·'}</span>
-      ${esc(query || year ? t('Nothing found.') : t(c.view === 'files' ? 'No {what} yet - add files, or drop them here.' : 'No {what} yet.', { what: T(c) }))}</div>`;
+      ${esc(query || year || tagVal ? t('Nothing found.') : t(c.view === 'files' ? 'No {what} yet - add files, or drop them here.' : 'No {what} yet.', { what: T(c) }))}</div>`;
     return;
   }
   if (c.view === 'files') {
@@ -387,6 +405,7 @@ function chips(c, it, page) {
     if (f.type === 'number' && f.format) return `<span class="chip" title="${esc(ftitle(f))}">${esc(t(f.format, { n: num(v) }))}</span>`;
     if (f.type === 'number') return `<span class="chip">${f.unit ? `${esc(ftitle(f))} ${esc(num(v))} ${esc(tn(f.unit))}` : esc(t('{n} {what}', { n: num(v), what: ftitle(f).toLowerCase() }))}</span>`;
     if (f.type === 'bool') return v ? `<span class="chip">${esc(ftitle(f))}</span>` : '';
+    if (f.type === 'tags' && Array.isArray(v)) return v.map(x => `<span class="chip tag">${esc(x)}</span>`).join('');
     return '';
   }).join('');
 }
@@ -539,6 +558,7 @@ function section(c, f, v) {
     }
     case 'file': return v.file ? `<section>${h}<a class="btn small" href="${fileUrl(v.file)}" download="${esc(shownName(v.file))}">${fileIcon(v.file)} ${esc(shownName(v.file))}</a></section>` : '';
     case 'json': return `<section>${h}<pre class="json">${esc(JSON.stringify(v, null, 2))}</pre></section>`;
+    case 'tags': return '';   // chips under the title
     default: return '';
   }
 }
@@ -773,6 +793,8 @@ async function editView(c, it) {
   clearTimeout(runsT);
   const opts = {};
   for (const f of c.fields.filter(f => (f.type === 'ref' || f.type === 'refs') && coll(f.ref))) opts[f.name] = { t: coll(f.ref), items: await itemsOf(f.ref).catch(() => []) };
+  // The tags already used (to click instead of typing).
+  const known = tagsOf(c) ? ((await call(c.name + '_list', { limit: 1 }).catch(() => ({}))).tags || {}) : {};
   const v = f => it ? it[f.name] : undefined;
   const cell = (col, r) => {
     const x = r ? r[col.name] : undefined, ph = esc(ftitle(col));
@@ -790,6 +812,12 @@ async function editView(c, it) {
     switch (f.type) {
       case 'longtext': return `<label class="field">${lab}<textarea id="${id}">${esc(x || '')}</textarea></label>`;
       case 'json': return `<label class="field">${lab}<textarea id="${id}" class="mono" spellcheck="false">${esc(x === undefined || x === null ? '' : JSON.stringify(x, null, 2))}</textarea></label>`;
+      case 'tags': {
+        const have = (known[f.name] || []).slice(0, 40);
+        return `<div class="field">${lab}<input id="${id}" value="${esc((Array.isArray(x) ? x : []).join(', '))}" autocomplete="off">
+          <span class="hint">${esc(have.length ? t('Separate tags with commas. Click one to add it:') : t('Separate tags with commas, e.g. Chinese, soup.'))}</span>
+          ${have.length ? `<div class="chips">${have.map(s => `<button type="button" class="chip tag pick" data-addtag="${esc(f.name)}" data-tag="${esc(s)}">${esc(s)}</button>`).join('')}</div>` : ''}</div>`;
+      }
       case 'list': return `<label class="field">${lab}<textarea id="${id}" style="min-height:150px">${esc(ids(x).join('\n'))}</textarea><span class="hint">${esc(t('One per line.'))}</span></label>`;
       case 'table': return `<div class="field">${lab}<div class="tbled" id="${id}">${(Array.isArray(x) && x.length ? x : [{}]).map(r => trow(f, r)).join('')}</div>
           <div><button type="button" class="btn small" data-addrow="${esc(f.name)}">${esc(t('＋ Add a line'))}</button></div></div>`;
@@ -854,6 +882,7 @@ async function editView(c, it) {
             args[f.name] = [...kept, ...added]; continue;
           }
           case 'list': { const l = el.value.split('\n').map(s => s.trim()).filter(Boolean); put(l.length ? l : null); continue; }
+          case 'tags': { const l = el.value.split(/[,，、]/).map(s => s.trim()).filter(Boolean); put(l.length ? l : null); continue; }
           case 'table': {
             const rows = [];
             for (const tr of el.querySelectorAll('.trow')) {
@@ -886,3 +915,13 @@ async function editView(c, it) {
 }
 
 start().catch(showErr);
+// A suggested tag in the form: added to the box (once).
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-addtag]');
+  if (!b) return;
+  const box = $('f_' + b.dataset.addtag); if (!box) return;
+  const have = box.value.split(/[,，、]/).map(s => s.trim()).filter(Boolean);
+  if (!have.some(x => x.toLowerCase() === b.dataset.tag.toLowerCase())) have.push(b.dataset.tag);
+  box.value = have.join(', ');
+  b.classList.add('on');
+});
