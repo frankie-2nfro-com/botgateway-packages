@@ -1,12 +1,14 @@
 id = "wordcount"
 name = "Word Count (Python)"
-version = "1.1.0"
+version = "1.1.1"
 about = "Counts the words and characters of a text - an example package."
 author = "Bot Gateway"
 license = "Apache-2.0"
 command = "python3"
 args = ["main.py"]
 timeout_secs = 30
+# Sample arguments for trying it in the gateway window (Simulator, Send test, Dashboard).
+example = { text = "the quick brown fox jumps over the lazy dog" }
 
 # Its tool's arguments (specification 3.0).
 [input_schema]

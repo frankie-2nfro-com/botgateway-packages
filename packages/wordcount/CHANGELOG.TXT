@@ -1,0 +1,11 @@
+Word Count (Python) - change log
+The top section is the coming version (no date): write each change below it as "- ...", in words
+for the gateway owners - the Portal and the gateway show them as "What's new" before an update.
+store_update.sh --package wordcount publishes it (dated) and puts the next patch version on top; change
+the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
+
+1.1.2
+- [Changed and non commited item put here]
+
+1.1.1 (2026-11-01)
+- A sample (`example`) for the gateway's Simulator, Send test and Dashboard (gateway 1.1.11)
