@@ -23,9 +23,9 @@
 //   and its answer has `years` (newest first, only those with items the caller may see); the page gets a
 //   year menu next to the search.
 // Field type `tags`: short labels, several per item (e.g. cuisine and kind: "中菜", "湯") - at most 20, each
-//   at most 30 characters, the same tag once (a text "a, b、c" is split too). The list can be filtered by one
-//   (`<field>`: "中菜") and its answer has `tags` ({<field>: [tags, most used first]}, only of items the
-//   caller may see); the page gets a tag menu, shows them as chips and suggests the existing ones in the form.
+//   at most 30 characters, the same tag once (a text "a, b、c" is split too). The list can be filtered by
+//   tags (`<field>`: "中菜", or ["中菜", "湯"] = items with all of them) and its answer has `tags` ({<field>: [tags, most used first]}, only of items the
+//   caller may see); the page lists them as chips to pick (several = all of them), shows them as chips and suggests the existing ones in the form.
 // Collection `dates: true`: the page shows created / updated. Field `auto: true`: kept by the program (not in
 // the page's form); `format: "v{n}"`: a number's chip.
 // Field: { name, title, type, required, choices, default (a new item's value), unit (number), ref, owned
@@ -120,9 +120,11 @@ export function createApp(spec) {
     }
     const tagFields = c.fields.filter((f) => f.type === "tags");
     for (const f of tagFields) {
-      if (args[f.name] === undefined || args[f.name] === null || args[f.name] === "") continue;
-      where.push(`EXISTS (SELECT 1 FROM json_each(data, '$.${f.name}') WHERE value = ?)`);
-      params.push(String(args[f.name]));
+      const want = args[f.name] === undefined || args[f.name] === null ? [] : [].concat(args[f.name]).map(String).filter(Boolean);
+      for (const tag of want.slice(0, 20)) {
+        where.push(`EXISTS (SELECT 1 FROM json_each(data, '$.${f.name}') WHERE value = ?)`);
+        params.push(tag);
+      }
     }
     const limit = int(args.limit, 50, 1, 500), offset = int(args.offset, 0, 0, 1e9);
     const sql = `SELECT * FROM ${table(c)}${where.length ? " WHERE " + where.join(" AND ") : ""} ORDER BY updated DESC LIMIT ${limit} OFFSET ${offset}`;

@@ -321,12 +321,12 @@ function previewNote(c, it) {
 }
 
 // ---------- browsing a collection ----------
-let query = '', queryT = 0, year = '', yearsOf = '', tagVal = '';
+let query = '', queryT = 0, year = '', yearsOf = '', tagSel = [];
 // The collection's tags field (type `tags`), if it has one.
 const tagsOf = c => c.fields.find(f => f.type === 'tags');
 async function browse(c) {
   const files = c.view === 'files';
-  if (yearsOf !== c.name) { year = ''; tagVal = ''; yearsOf = c.name; }
+  if (yearsOf !== c.name) { year = ''; tagSel = []; yearsOf = c.name; }
   const tg = tagsOf(c);
   $('avView').innerHTML = `<div class="bar"><input type="search" id="q" placeholder="${esc(t('Search {what}', { what: T(c) }))}" value="${esc(query)}">
       ${c.years ? `<select id="yr" title="${esc(t('Year'))}"><option value="">${esc(t('All years'))}</option></select>` : ''}
@@ -341,7 +341,9 @@ async function browse(c) {
   $('yr')?.addEventListener('change', () => { year = $('yr').value; fill(c).catch(showErr); });
   $('tgBar')?.addEventListener('click', e => {
     const b = e.target.closest('[data-tagf]'); if (!b) return;
-    tagVal = b.dataset.tagf === tagVal ? '' : b.dataset.tagf;
+    // Several tags = items with all of them; click a chosen one again to drop it, "All" for none.
+    const v = b.dataset.tagf;
+    tagSel = !v ? [] : tagSel.includes(v) ? tagSel.filter(x => x !== v) : [...tagSel, v];
     fill(c).catch(showErr);
   });
   $('newBtn')?.addEventListener('click', () => go(c.name + '/new'));
@@ -361,7 +363,7 @@ async function fill(c) {
   if (query) args.query = query;
   if (c.years && year) args.year = year;
   const tg = tagsOf(c);
-  if (tg && tagVal) args[tg.name] = tagVal;
+  if (tg && tagSel.length) args[tg.name] = tagSel;
   const r = await call(c.name + '_list', args);
   const box = $('items');
   if (!box) return;
@@ -371,17 +373,17 @@ async function fill(c) {
     const ys = [...new Set([...r.years, ...(year ? [year] : [])])].sort().reverse();
     yr.innerHTML = `<option value="">${esc(t('All years'))}</option>` + ys.map(y => `<option value="${esc(y)}" ${y === year ? 'selected' : ''}>${esc(y)}</option>`).join('');
   }
-  // Every tag there is, most used first (the chosen one stays even when nothing is left in it): click to filter.
+  // Every tag there is, most used first (the chosen ones stay even when nothing is left in them): click to filter.
   const bar = $('tgBar');
   if (bar && tg && r.tags) {
-    const all = [...new Set([...(r.tags[tg.name] || []), ...(tagVal ? [tagVal] : [])])];
+    const all = [...new Set([...(r.tags[tg.name] || []), ...tagSel])];
     bar.classList.toggle('hidden', !all.length);
-    bar.innerHTML = `<button type="button" class="chip tagf all${tagVal ? '' : ' on'}" data-tagf="">${esc(t('All'))}</button>`
-      + all.map(x => `<button type="button" class="chip tag tagf${x === tagVal ? ' on' : ''}" data-tagf="${esc(x)}">${esc(x)}</button>`).join('');
+    bar.innerHTML = `<button type="button" class="chip tagf all${tagSel.length ? '' : ' on'}" data-tagf="">${esc(t('All'))}</button>`
+      + all.map(x => `<button type="button" class="chip tag tagf${tagSel.includes(x) ? ' on' : ''}" data-tagf="${esc(x)}">${esc(x)}</button>`).join('');
   }
   if (!r.items.length) {
     box.innerHTML = `<div class="empty" style="grid-column:1/-1"><span class="big">${iconHtml() || '·'}</span>
-      ${esc(query || year || tagVal ? t('Nothing found.') : t(c.view === 'files' ? 'No {what} yet - add files, or drop them here.' : 'No {what} yet.', { what: T(c) }))}</div>`;
+      ${esc(query || year || tagSel.length ? t('Nothing found.') : t(c.view === 'files' ? 'No {what} yet - add files, or drop them here.' : 'No {what} yet.', { what: T(c) }))}</div>`;
     return;
   }
   if (c.view === 'files') {
@@ -940,6 +942,6 @@ document.addEventListener('click', e => {
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-tagopen]');
   if (!b) return;
-  tagVal = b.dataset.tag; yearsOf = b.dataset.tagopen; year = ''; query = '';
+  tagSel = [b.dataset.tag]; yearsOf = b.dataset.tagopen; year = ''; query = '';
   go(b.dataset.tagopen);
 });
