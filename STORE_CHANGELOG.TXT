@@ -3,9 +3,15 @@ Changes of the repository itself: the app kit (kit/), the store tools (tools/), 
 The top section is the store's coming version (no date): write each change below it as "- ...";
 store_update.sh --store publishes it (dated; the version is in the signed store.json and shown in the
 Portal) and puts the next patch version on top. Package changes go into packages/<id>/CHANGELOG.TXT.
+kit/ changes only for something meant for every application: a change for one application stays in that
+package (its own kit copy), so it is published with --package alone and no other application needs a retest.
 
-1.0.6
+1.0.7
 - [Changed and non commited item put here]
+
+1.0.6 (2026-11-03)
+- Store index: an application's disclosure lists the service on BotGateway's internal network it uses ([[app.local]],
+  label and what for) - shown by the Portal (relay 1.1.5); other applications' entries are unchanged
 
 1.0.5 (2026-11-01)
 - App kit tags: every tag is listed under the search as a chip (most used first) - click one to filter, click it

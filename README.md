@@ -7,7 +7,9 @@ from here only after the owner picked them in the Bot Gateway Portal and pressed
   marks an application: its own program (`server/main.js`, run in the gateway's sandbox) and pages (`web/`).
 - `kit/` - the app kit: a JavaScript library for applications (collections, files, AI actions, the page,
   triggers from outside services: `onHook`, see the comment at the top of `kit/server.js`).
-  Copy `kit/server.js` into a package's `kit/` and `kit/web/*` into its `web/kit/`.
+  Copy `kit/server.js` into a package's `kit/` and `kit/web/*` into its `web/kit/`. Each package keeps its own
+  copy: a change for one application goes in that package only; `kit/` changes only for something meant for
+  every application, and each package takes a new kit on purpose in its own release.
 - Try an application before signing it: `gateway --dev-app packages/<id>` (http://127.0.0.1:47900/).
 - `dist/<id>-<version>.tar.gz` - the published archives (never changed once published).
 - `store.json` + `store.json.sig` - the signed index; the app refuses anything not signed with the store key.

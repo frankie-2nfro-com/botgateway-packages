@@ -78,13 +78,19 @@ def pack(folder: pathlib.Path) -> bytes:
 def disclosure(m: dict):
     """What the Portal shows before an application is picked (app_hosting_requirements.txt 3.5,
     app_sandbox_requirements.txt 3): what it sends to the owner's bot and who may cause it, its login,
-    what visitors of its website may do and which other websites it may reach. Taken from [app]; the
+    what visitors of its website may do, which other websites it may reach and which service on BotGateway's
+    internal network it uses ([[app.local]]). Taken from [app]; the
     gateway shows the same from the installed manifest and enforces ai / net / login."""
     app = m.get("app") or {}
     ai = None
     if app.get("ai_sends") or app.get("ai"):
         ai = {"sends": app.get("ai_sends", ""), "who": "visitors" if app.get("ai") == "visitors" else "owner"}
-    return {"ai": ai, "login": app.get("login") or "none", "visitors": app.get("visitors") or None, "net": app.get("net", [])}
+    # A service on BotGateway's internal network it uses at the address the owner sets ([[app.local]]).
+    local = [{"label": l.get("label") or l.get("key", ""), "about": l.get("about", "")} for l in app.get("local", [])]
+    out = {"ai": ai, "login": app.get("login") or "none", "visitors": app.get("visitors") or None, "net": app.get("net", [])}
+    if local:
+        out["local"] = local
+    return out
 
 
 MAX_ICON = 16 * 1024
