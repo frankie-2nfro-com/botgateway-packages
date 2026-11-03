@@ -478,6 +478,37 @@
    "version": "0.1.0"
   },
   {
+   "about": "One page for your whole home through Home Assistant: every room and device with its state, live, and the controls that fit it (lights, plugs, fans, air-con, curtains, TVs, vacuums ...). You choose per device what your assistant may see or switch; locks and heaters are never switched by the assistant.",
+   "archive": "dist/smarthomecontrol-0.1.1.tar.gz",
+   "author": "Bot Gateway",
+   "bytes": 14761,
+   "changes": [
+    "Cameras: each camera (and picture) card shows its picture, read again every 3 s while it is on the screen; click it to see it big",
+    "Doorbell: when it rings (a doorbell event in Home Assistant), the page pops up the camera of the same device or room and the history notes it",
+    "Only the buttons a device really supports are shown and accepted (Home Assistant's supported features) - e.g. no \"Turn on\" for a monitor that can't be switched on remotely",
+    "Assistant access: \"may control\" no longer disappears for a high-risk device - it is greyed with the reason; every change says \"saved\""
+   ],
+   "disclosure": {
+    "ai": null,
+    "local": [
+     {
+      "about": "reads and controls your devices through its API",
+      "label": "Home Assistant"
+     }
+    ],
+    "login": "none",
+    "net": [],
+    "visitors": null
+   },
+   "icon": "🏠",
+   "id": "smarthomecontrol",
+   "license": "Apache-2.0",
+   "name": "SmartHomeControl",
+   "sha256": "93cd248eea4daae7f53ef88a3d5142cdb9319ba64dcb569320ac8993745b22b8",
+   "type": "application",
+   "version": "0.1.1"
+  },
+  {
    "about": "Upper-cases text - an example package (the old built-in uppercase as a Python program).",
    "archive": "dist/uppercase-1.2.0.tar.gz",
    "author": "Bot Gateway",

@@ -62,7 +62,25 @@ const ACTIONS = {
   button: { press: () => ["button", "press", {}] },
   scene: { activate: () => ["scene", "turn_on", {}] },
 };
-const READ_ONLY = ["sensor", "binary_sensor", "weather"];
+// Cameras and images: their picture through api/snapshot. Events: e.g. a doorbell's ring.
+// What a device says it supports (Home Assistant's supported_features bits): an action whose bit is missing is
+// not offered (e.g. a monitor that can't be switched on remotely). Kinds / actions not listed are always offered.
+const FEATURES = {
+  media_player: { play_pause: 1 | 16384, volume: 4, turn_on: 128, turn_off: 256 },
+  cover: { open: 1, close: 2, position: 4, stop: 8 },
+  fan: { speed: 1, turn_on: 32, turn_off: 16 },
+  climate: { temperature: 1, fan_mode: 8, turn_off: 128, turn_on: 256 },
+  vacuum: { pause: 4, return_to_base: 16, start: 8192 },
+};
+function supported(id, attrs) {
+  const all = Object.keys(ACTIONS[kindOf(id)] || {});
+  const bits = attrs?.supported_features, need = FEATURES[kindOf(id)];
+  if (typeof bits !== "number" || !need) return all;
+  return all.filter((a) => need[a] === undefined || (bits & need[a]) !== 0);
+}
+
+const READ_ONLY = ["sensor", "binary_sensor", "weather", "camera", "image", "event"];
+const PICTURE = { camera: "/api/camera_proxy/", image: "/api/image_proxy/" };
 const SHOWN = new Set([...Object.keys(ACTIONS), ...READ_ONLY]);
 // Never switched by the assistant (it may read them at most); the owner can mark more on the page.
 const HIGH_RISK = new Set(["lock", "water_heater"]);
@@ -70,7 +88,7 @@ const HIGH_RISK = new Set(["lock", "water_heater"]);
 const KEEP = ["unit_of_measurement", "device_class", "brightness", "color_temp_kelvin", "min_color_temp_kelvin", "max_color_temp_kelvin",
   "supported_color_modes", "percentage", "hvac_modes", "hvac_action", "fan_modes", "fan_mode", "temperature", "current_temperature",
   "min_temp", "max_temp", "target_temp_step", "current_position", "volume_level", "media_title", "options", "min", "max", "step",
-  "humidity", "current_humidity", "min_humidity", "max_humidity", "operation_list", "operation_mode", "battery_level"];
+  "humidity", "current_humidity", "min_humidity", "max_humidity", "operation_list", "operation_mode", "battery_level", "event_type"];
 
 const kindOf = (id) => id.split(".")[0];
 
@@ -163,9 +181,31 @@ export function onLocal(e) {
   } else if (m.type === "event" && m.event?.event_type === "state_changed") {
     const { entity_id: id, new_state: s } = m.event.data || {};
     if (!id || !SHOWN.has(kindOf(id)) || !states) return;
+    const before = states.get(id);
     if (s) states.set(id, s); else states.delete(id);
     send({ type: "state", entity: s ? view(id) : { id, gone: true } });
+    if (s && before && isRing(s, before)) ring(id);
   }
+}
+
+// A doorbell: an event entity of class "doorbell" (or one whose event type says ring / press) that just fired.
+function isRing(s, before) {
+  if (kindOf(s.entity_id) !== "event" || s.state === before.state || s.state === "unavailable") return false;
+  const a = s.attributes || {};
+  return a.device_class === "doorbell" || /ring|doorbell|press/i.test(String(a.event_type || ""));
+}
+
+// The camera that belongs with it: the same device, else the same room, else none.
+function cameraFor(id) {
+  const m = meta.get(id) || {};
+  const cams = [...states.keys()].filter((e) => kindOf(e) === "camera");
+  return cams.find((c) => m.device && meta.get(c)?.device === m.device) || cams.find((c) => m.room && meta.get(c)?.room === m.room) || null;
+}
+
+function ring(id) {
+  const name = states.get(id)?.attributes?.friendly_name || id;
+  remember("doorbell", id, "ring", null, "rang", true);
+  send({ type: "ring", id, name, camera: cameraFor(id), at: new Date().toISOString() });
 }
 
 // --- the assistant's access and the history (the program's database) --------------------------------
@@ -206,7 +246,7 @@ function view(id, access = accessMap()) {
   const row = access.get(id);
   return {
     id, kind: kindOf(id), name: a.friendly_name || id, state: s.state, attrs, changed: s.last_changed,
-    room: m.room || "", device: m.device || "", actions: Object.keys(ACTIONS[kindOf(id)] || {}),
+    room: m.room || "", device: m.device || "", actions: supported(id, a),
     ai: aiOf(id, row), high_risk: highRisk(id, row),
   };
 }
@@ -226,9 +266,9 @@ function run(id, action, value, who) {
   }
   const kind = kindOf(id);
   const table = ACTIONS[kind] || {};
-  const make = table[action];
+  const can = supported(id, s.attributes);
+  const make = can.includes(action) ? table[action] : null;
   if (!make) {
-    const can = Object.keys(table);
     throw new Error(`${id} can ${can.length ? "do: " + can.join(", ") : "only be read"} (not "${action}")`);
   }
   const [domain, service, data] = make(value, s.attributes || {});
@@ -267,6 +307,18 @@ function page(req) {
   if (req.method === "GET" && path === "state") {
     ensure();
     return { conn, note: metaNote, devices: all() };
+  }
+  if (req.method === "GET" && path === "snapshot") {
+    // A camera's picture now (or an image entity's): passed to the page as it comes from Home Assistant.
+    if (!states) ensure();
+    const id = String(req.query?.id || "");
+    const base = PICTURE[kindOf(id)];
+    if (!base || !states?.has(id)) return { $response: { status: 404, body: "no such camera" } };
+    const r = host.local("home", { method: "GET", path: base + encodeURIComponent(id), encoding: "base64" });
+    if (r.status !== 200) return { $response: { status: 502, body: `no picture (Home Assistant: ${r.status})` } };
+    const type = String(r.headers["content-type"] || "image/jpeg");
+    return { $response: { status: 200, headers: { "content-type": type.startsWith("image/") ? type : "image/jpeg", "cache-control": "no-store" },
+      body: r.body, encoding: "base64" } };
   }
   if (req.method === "POST" && path === "reload") {
     loadStates();

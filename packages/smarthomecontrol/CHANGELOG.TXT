@@ -4,8 +4,14 @@ for the gateway owners - the Portal and the gateway show them as "What's new" be
 store_update.sh --package smarthomecontrol publishes it (dated) and puts the next patch version on top; change
 the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
 
-0.1.1
+0.1.2
 - [Changed and non commited item put here]
+
+0.1.1 (2026-11-03)
+- Cameras: each camera (and picture) card shows its picture, read again every 3 s while it is on the screen; click it to see it big
+- Doorbell: when it rings (a doorbell event in Home Assistant), the page pops up the camera of the same device or room and the history notes it
+- Only the buttons a device really supports are shown and accepted (Home Assistant's supported features) - e.g. no "Turn on" for a monitor that can't be switched on remotely
+- Assistant access: "may control" no longer disappears for a high-risk device - it is greyed with the reason; every change says "saved"
 
 0.1.0 (2026-11-03)
 - First version: one page for your home through Home Assistant - rooms and devices with their state, live, and the controls that fit each kind; choose per device what the assistant may read or control (locks and water heaters at most read); a history of what was done; tools home_list, home_state, home_set (needs gateway 1.1.20: local service)

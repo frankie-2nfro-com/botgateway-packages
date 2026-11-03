@@ -5,7 +5,10 @@
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const KIND_NAMES = { light: "Lights", switch: "Switches", input_boolean: "Toggles", fan: "Fans", climate: "Air-con / heating", cover: "Curtains / covers",
     media_player: "TV / media", vacuum: "Vacuums", humidifier: "Humidifiers", lock: "Locks", water_heater: "Water heaters", select: "Options",
-    number: "Numbers", button: "Buttons", scene: "Scenes", sensor: "Sensors", binary_sensor: "Detectors", weather: "Weather" };
+    number: "Numbers", button: "Buttons", scene: "Scenes", sensor: "Sensors", binary_sensor: "Detectors", weather: "Weather",
+    camera: "Cameras", image: "Pictures", event: "Events (doorbells, buttons)" };
+  // A camera's picture is read again this often while it is on the screen (and the page is open).
+  const SNAP_EVERY_MS = 3000;
   const ON = ["on", "open", "opening", "playing", "cleaning", "unlocked", "heat", "cool", "heat_cool", "auto", "dry", "fan_only"];
 
   let devices = new Map();
@@ -40,15 +43,19 @@
     if (d.kind === "climate") return `${d.state}${d.attrs.current_temperature !== undefined ? ` · ${d.attrs.current_temperature}°` : ""}`;
     if (d.kind === "cover" && d.attrs.current_position !== undefined) return `${d.state} · ${d.attrs.current_position}%`;
     if (d.kind === "light" && d.state === "on" && d.attrs.brightness !== undefined) return `on · ${Math.round(d.attrs.brightness / 2.55)}%`;
+    if (d.kind === "event") return isNaN(Date.parse(d.state)) ? d.state : `last: ${new Date(d.state).toLocaleString()}${d.attrs.event_type ? " · " + d.attrs.event_type : ""}`;
     return `${d.state}${u ? " " + u : ""}`;
   };
-  const btn = (action, label, extra = "") => `<button type="button" data-act="${action}" ${extra}>${esc(label)}</button>`;
-  const slider = (action, v, lo, hi, step = 1) =>
+  // Only what the device supports (its program says which actions: d.actions).
+  let can = new Set();
+  const btn = (action, label, extra = "") => action.startsWith("temp_") || can.has(action) ? `<button type="button" data-act="${action}" ${extra}>${esc(label)}</button>` : "";
+  const slider = (action, v, lo, hi, step = 1) => !can.has(action) ? "" :
     `<input type="range" data-act="${action}" min="${lo}" max="${hi}" step="${step}" value="${esc(v ?? lo)}"><span class="val">${esc(v ?? "")}</span>`;
-  const choose = (action, list, v) => `<select data-act="${action}">${(list || []).map((o) => `<option ${o === v ? "selected" : ""}>${esc(o)}</option>`).join("")}</select>`;
+  const choose = (action, list, v) => !can.has(action) ? "" : `<select data-act="${action}">${(list || []).map((o) => `<option ${o === v ? "selected" : ""}>${esc(o)}</option>`).join("")}</select>`;
 
   function controls(d) {
-    const a = d.attrs, can = new Set(d.actions), on = d.state === "on";
+    can = new Set(d.actions);
+    const a = d.attrs, on = d.state === "on";
     const toggle = can.has("turn_on") ? btn(on ? "turn_off" : "turn_on", on ? "Turn off" : "Turn on", `class="${on ? "primary" : ""}"`) : "";
     switch (d.kind) {
       case "light": {
@@ -61,7 +68,7 @@
         return toggle + (a.percentage !== undefined ? `<div class="row">⟳ ${slider("speed", a.percentage, 0, 100)}</div>` : "");
       case "climate":
         return `<div class="row">${choose("hvac_mode", a.hvac_modes, d.state)}</div>`
-          + (a.temperature !== undefined && a.temperature !== null ? `<div class="row">${btn("temp_down", "−")}<b class="temp">${esc(a.temperature)}°</b>${btn("temp_up", "+")}</div>` : "")
+          + (a.temperature !== undefined && a.temperature !== null && can.has("temperature") ? `<div class="row">${btn("temp_down", "−")}<b class="temp">${esc(a.temperature)}°</b>${btn("temp_up", "+")}</div>` : "")
           + (a.fan_modes ? `<div class="row">fan ${choose("fan_mode", a.fan_modes, a.fan_mode)}</div>` : "");
       case "cover":
         return `<div class="row">${btn("open", "Open")}${btn("stop", "Stop")}${btn("close", "Close")}</div>`
@@ -85,16 +92,23 @@
         return btn("press", "Press");
       case "scene":
         return btn("activate", "Activate");
+      case "camera":
+      case "image":
+        return `<img class="snap" data-snap="${esc(d.id)}" alt="${esc(d.name)}" src="${snapUrl(d.id)}" title="click to enlarge">`;
       default:
         return toggle;
     }
   }
 
+  const snapUrl = (id) => `api/snapshot?id=${encodeURIComponent(id)}&t=${Date.now()}`;
+
   function card(d) {
+    // High risk: "may control" stays in the list, greyed, with the reason (it never just disappears).
+    const why = HIGH_RISK_KIND(d.kind) ? "never for locks / water heaters" : "untick high risk first";
     const ai = $("showAi").checked ? `<div class="ai">Assistant: <select data-ai="1">
         <option value="off" ${d.ai === "off" ? "selected" : ""}>no access</option>
         <option value="read" ${d.ai === "read" ? "selected" : ""}>may read</option>
-        ${d.high_risk ? "" : `<option value="control" ${d.ai === "control" ? "selected" : ""}>may control</option>`}</select>
+        <option value="control" ${d.ai === "control" ? "selected" : ""} ${d.high_risk ? "disabled" : ""}>may control${d.high_risk ? ` (${why})` : ""}</option></select>
         ${HIGH_RISK_KIND(d.kind) ? '<span class="muted">high risk</span>' : `<label class="check"><input type="checkbox" data-risk="1" ${d.high_risk ? "checked" : ""}> high risk</label>`}</div>` : "";
     const busy = pending.has(d.id);
     return `<div class="card ${ON.includes(d.state) ? "is-on" : ""} ${d.state === "unavailable" ? "off-line" : ""}" id="c-${esc(d.id)}" data-id="${esc(d.id)}">
@@ -174,7 +188,33 @@
     }
   }
 
+  // Pictures: the ones on the screen are read again every few seconds (the new one replaces the old when it
+  // has arrived, so nothing flickers); a click shows it big.
+  function refreshSnaps() {
+    if (document.hidden) return;
+    for (const img of document.querySelectorAll("img[data-snap]")) {
+      const r = img.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > innerHeight || img.dataset.loading) continue;
+      img.dataset.loading = "1";
+      const next = new Image();
+      next.onload = () => { img.src = next.src; delete img.dataset.loading; img.classList.remove("nopic"); };
+      next.onerror = () => { delete img.dataset.loading; img.classList.add("nopic"); };
+      next.src = snapUrl(img.dataset.snap);
+    }
+  }
+  setInterval(refreshSnaps, SNAP_EVERY_MS);
+
+  function bigPicture(id, title, note = "") {
+    const box = $("big");
+    box.innerHTML = `<div class="bigbox"><div class="bighead"><b>${esc(title)}</b> <span class="muted">${esc(note)}</span>
+      <button type="button" id="bigClose">Close</button></div><img data-snap="${esc(id)}" src="${snapUrl(id)}" alt=""></div>`;
+    box.classList.remove("hidden");
+  }
+
   document.addEventListener("click", (e) => {
+    if (e.target.id === "bigClose" || e.target.id === "big") { $("big").classList.add("hidden"); $("big").innerHTML = ""; return; }
+    const pic = e.target.closest(".card img[data-snap]");
+    if (pic) { const d = devices.get(pic.dataset.snap); bigPicture(pic.dataset.snap, d ? d.name : pic.dataset.snap); return; }
     const b = e.target.closest("button[data-act]");
     if (b) act(b.closest(".card").dataset.id, b.dataset.act);
     const t = e.target.closest(".tab");
@@ -193,8 +233,12 @@
     if (c && el.dataset.act) return act(c.dataset.id, el.dataset.act, el.type === "range" ? Number(el.value) : el.value);
     if (c && (el.dataset.ai || el.dataset.risk)) {
       const ai = c.querySelector("[data-ai]").value, risk = c.querySelector("[data-risk]");
-      try { update(await api("access", { id: c.dataset.id, ai, high_risk: risk ? risk.checked : false })); }
-      catch (err) { toast(err.message, true); }
+      try {
+        const d = await api("access", { id: c.dataset.id, ai, high_risk: risk ? risk.checked : false });
+        update(d);
+        const said = { off: "no access", read: "may read", control: "may control" }[d.ai];
+        toast(`${d.name || d.id}: assistant ${said}${d.high_risk ? " · high risk" : ""} ✓ saved`);
+      } catch (err) { toast(err.message, true); }
     }
   });
   $("search").addEventListener("input", render);
@@ -221,6 +265,12 @@
     if (m.type === "state") update(m.entity);
     else if (m.type === "conn") showConn(m.conn);
     else if (m.type === "resync") load();
+    else if (m.type === "ring") {
+      toast(`🔔 ${m.name}`);
+      const cam = m.camera && devices.get(m.camera);
+      bigPicture(m.camera || "", `🔔 ${m.name}`, `${new Date(m.at).toLocaleTimeString()}${cam ? " · " + cam.name : " · no camera found for it"}`);
+      if (!m.camera) $("big").querySelector("img").remove();
+    }
   };
   events.addEventListener("resync", () => load());
   events.onerror = () => { broken = true; };
