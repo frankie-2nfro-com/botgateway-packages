@@ -1,7 +1,7 @@
 type = "application"
 id = "smarthomecontrol"
 name = "SmartHomeControl"
-version = "0.1.1"
+version = "0.1.2"
 about = "One page for your whole home through Home Assistant: every room and device with its state, live, and the controls that fit it (lights, plugs, fans, air-con, curtains, TVs, vacuums ...). You choose per device what your assistant may see or switch; locks and heaters are never switched by the assistant."
 author = "Bot Gateway"
 license = "Apache-2.0"
@@ -39,6 +39,14 @@ description = "One device's state and details (attributes), e.g. temperature, br
 read_only = true
 input_schema = { type = "object", required = ["id"], properties = { id = { type = "string", description = "the device id from home_list, e.g. light.living_room" } } }
 example = { id = "light.example" }
+
+[[tools]]
+name = "home_snapshot"
+title = "Camera picture"
+description = "The picture a camera sees now (e.g. the doorbell's), as an image file in the answer - only cameras the owner lets the assistant read. Use it for questions like \"is someone at the door?\"."
+read_only = true
+input_schema = { type = "object", required = ["id"], properties = { id = { type = "string", description = "a camera id from home_list (kind camera), e.g. camera.front_door" } } }
+example = { id = "camera.example" }
 
 [[tools]]
 name = "home_set"

@@ -289,6 +289,14 @@ function run(id, action, value, who) {
   return { id, action, value: value ?? null, result, state: states?.has(id) ? view(id) : null };
 }
 
+// A camera's (or image entity's) picture now: {type, data (base64)}.
+function picture(id) {
+  const r = host.local("home", { method: "GET", path: PICTURE[kindOf(id)] + encodeURIComponent(id), encoding: "base64" });
+  if (r.status !== 200) throw new Error(`no picture from ${id} (Home Assistant: ${r.status})`);
+  const type = String(r.headers["content-type"] || "image/jpeg").split(";")[0].trim();
+  return { type: type.startsWith("image/") ? type : "image/jpeg", data: r.body };
+}
+
 // --- the page (local page only: the program refuses anyone else) --------------------------------------
 
 export function handle(req) {
@@ -312,13 +320,10 @@ function page(req) {
     // A camera's picture now (or an image entity's): passed to the page as it comes from Home Assistant.
     if (!states) ensure();
     const id = String(req.query?.id || "");
-    const base = PICTURE[kindOf(id)];
-    if (!base || !states?.has(id)) return { $response: { status: 404, body: "no such camera" } };
-    const r = host.local("home", { method: "GET", path: base + encodeURIComponent(id), encoding: "base64" });
-    if (r.status !== 200) return { $response: { status: 502, body: `no picture (Home Assistant: ${r.status})` } };
-    const type = String(r.headers["content-type"] || "image/jpeg");
-    return { $response: { status: 200, headers: { "content-type": type.startsWith("image/") ? type : "image/jpeg", "cache-control": "no-store" },
-      body: r.body, encoding: "base64" } };
+    if (!PICTURE[kindOf(id)] || !states?.has(id)) return { $response: { status: 404, body: "no such camera" } };
+    let p;
+    try { p = picture(id); } catch (e) { return { $response: { status: 502, body: e.message } }; }
+    return { $response: { status: 200, headers: { "content-type": p.type, "cache-control": "no-store" }, body: p.data, encoding: "base64" } };
   }
   if (req.method === "POST" && path === "reload") {
     loadStates();
@@ -362,6 +367,15 @@ export function callTool(name, args = {}) {
   if (name === "home_state") {
     const s = states.get(id);
     return { ...view(id, access), attributes: s.attributes };
+  }
+  if (name === "home_snapshot") {
+    if (!PICTURE[kindOf(id)]) throw new Error(`${id} is not a camera (see home_list: kind camera)`);
+    const p = picture(id);
+    const ext = { "image/png": "png", "image/webp": "webp", "image/gif": "gif" }[p.type] || "jpg";
+    remember("assistant", id, "snapshot", null, "picture sent", true);
+    // The gateway turns $attachments into the answer's files (specification 5.2.1).
+    return { id, name: states.get(id).attributes?.friendly_name || id, at: new Date().toISOString(),
+      $attachments: [{ name: `${id.replace(/[^a-z0-9_]/gi, "_")}.${ext}`, media_type: p.type, data: p.data }] };
   }
   if (name === "home_set") {
     const row = access.get(id);

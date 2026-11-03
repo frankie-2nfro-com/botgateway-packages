@@ -4,8 +4,11 @@ for the gateway owners - the Portal and the gateway show them as "What's new" be
 store_update.sh --package smarthomecontrol publishes it (dated) and puts the next patch version on top; change
 the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
 
-0.1.2
+0.1.3
 - [Changed and non commited item put here]
+
+0.1.2 (2026-11-03)
+- New tool home_snapshot: the assistant can see a camera's picture now (only cameras it may read), e.g. to answer "is someone at the door?" (needs gateway 1.1.21)
 
 0.1.1 (2026-11-03)
 - Cameras: each camera (and picture) card shows its picture, read again every 3 s while it is on the screen; click it to see it big
