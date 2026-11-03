@@ -1,0 +1,11 @@
+SmartHomeControl - change log
+The top section is the coming version (no date): write each change below it as "- ...", in words
+for the gateway owners - the Portal and the gateway show them as "What's new" before an update.
+store_update.sh --package smarthomecontrol publishes it (dated) and puts the next patch version on top; change
+the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
+
+0.1.1
+- [Changed and non commited item put here]
+
+0.1.0 (2026-11-03)
+- First version: one page for your home through Home Assistant - rooms and devices with their state, live, and the controls that fit each kind; choose per device what the assistant may read or control (locks and water heaters at most read); a history of what was done; tools home_list, home_state, home_set (needs gateway 1.1.20: local service)

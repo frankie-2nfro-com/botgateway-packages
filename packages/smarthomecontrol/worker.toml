@@ -1,0 +1,48 @@
+type = "application"
+id = "smarthomecontrol"
+name = "SmartHomeControl"
+version = "0.1.0"
+about = "One page for your whole home through Home Assistant: every room and device with its state, live, and the controls that fit it (lights, plugs, fans, air-con, curtains, TVs, vacuums ...). You choose per device what your assistant may see or switch; locks and heaters are never switched by the assistant."
+author = "Bot Gateway"
+license = "Apache-2.0"
+timeout_secs = 30
+
+# Its own program (app_smarthomecontrol_requirements.txt): server/main.js in the gateway's sandbox; its page is web/.
+# It speaks only to the owner's Home Assistant (address + token in Config), never to the internet, and has no website.
+[app]
+main = "server/main.js"
+icon = "🏠"
+login = "none"
+
+# The owner's Home Assistant (app_local_service_requirements.txt): the token is kept by the gateway; this program
+# never sees it.
+[[app.local]]
+key = "home"
+label = "Home Assistant"
+about = "reads and controls your devices through its API"
+auth = "bearer"
+websocket = true
+
+# What the client's LLM may do - only with the devices the owner allows on the page.
+[[tools]]
+name = "home_list"
+title = "List devices"
+description = "The rooms and the devices the owner lets the assistant see: id, name, room, device, kind, state, unit, and whether the assistant may control it. Optional room and kind (e.g. light, climate) narrow the list."
+read_only = true
+input_schema = { type = "object", properties = { room = { type = "string" }, kind = { type = "string" } } }
+example = { room = "", kind = "" }
+
+[[tools]]
+name = "home_state"
+title = "Read a device"
+description = "One device's state and details (attributes), e.g. temperature, brightness, mode."
+read_only = true
+input_schema = { type = "object", required = ["id"], properties = { id = { type = "string", description = "the device id from home_list, e.g. light.living_room" } } }
+example = { id = "light.example" }
+
+[[tools]]
+name = "home_set"
+title = "Control a device"
+description = "Sets a device the owner lets the assistant control. Actions by kind: light turn_on / turn_off / brightness (value 0-100) / color_temp (value kelvin); switch, input_boolean, humidifier, media_player turn_on / turn_off; fan turn_on / turn_off / speed (0-100); climate hvac_mode (value one of its modes, not heat) / temperature (value) / fan_mode (value); cover open / close / stop / position (0-100); media_player volume (0-100) / play_pause; vacuum start / pause / return_to_base; humidifier humidity (value); select option (value); number set (value); button press; scene activate. Answers with the state Home Assistant reports right after."
+input_schema = { type = "object", required = ["id", "action"], properties = { id = { type = "string" }, action = { type = "string" }, value = { description = "the action's value, if it has one" } } }
+example = { id = "light.example", action = "turn_on" }

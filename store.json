@@ -450,6 +450,34 @@
    "version": "0.5.9"
   },
   {
+   "about": "One page for your whole home through Home Assistant: every room and device with its state, live, and the controls that fit it (lights, plugs, fans, air-con, curtains, TVs, vacuums ...). You choose per device what your assistant may see or switch; locks and heaters are never switched by the assistant.",
+   "archive": "dist/smarthomecontrol-0.1.0.tar.gz",
+   "author": "Bot Gateway",
+   "bytes": 12640,
+   "changes": [
+    "First version: one page for your home through Home Assistant - rooms and devices with their state, live, and the controls that fit each kind; choose per device what the assistant may read or control (locks and water heaters at most read); a history of what was done; tools home_list, home_state, home_set (needs gateway 1.1.20: local service)"
+   ],
+   "disclosure": {
+    "ai": null,
+    "local": [
+     {
+      "about": "reads and controls your devices through its API",
+      "label": "Home Assistant"
+     }
+    ],
+    "login": "none",
+    "net": [],
+    "visitors": null
+   },
+   "icon": "🏠",
+   "id": "smarthomecontrol",
+   "license": "Apache-2.0",
+   "name": "SmartHomeControl",
+   "sha256": "eb9403b300f70f7b9a0cd99273eeeb4b2b55283cdb72e57319d0081f37430896",
+   "type": "application",
+   "version": "0.1.0"
+  },
+  {
    "about": "Upper-cases text - an example package (the old built-in uppercase as a Python program).",
    "archive": "dist/uppercase-1.2.0.tar.gz",
    "author": "Bot Gateway",
