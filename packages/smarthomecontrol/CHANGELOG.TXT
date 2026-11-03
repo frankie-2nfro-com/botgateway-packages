@@ -4,8 +4,12 @@ for the gateway owners - the Portal and the gateway show them as "What's new" be
 store_update.sh --package smarthomecontrol publishes it (dated) and puts the next patch version on top; change
 the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
 
-0.1.3
+0.1.4
 - [Changed and non commited item put here]
+
+0.1.3 (2026-11-03)
+- home_snapshot says when the picture is from (picture_updated_at) and, for cameras that only give their last recording (e.g. battery doorbells like Ring), that it is not live - so the assistant doesn't call an old picture "now"
+- The doorbell pop-up also knows Ring's "ding" event
 
 0.1.2 (2026-11-03)
 - New tool home_snapshot: the assistant can see a camera's picture now (only cameras it may read), e.g. to answer "is someone at the door?" (needs gateway 1.1.21)

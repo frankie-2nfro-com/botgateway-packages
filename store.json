@@ -537,6 +537,35 @@
    "version": "0.1.2"
   },
   {
+   "about": "One page for your whole home through Home Assistant: every room and device with its state, live, and the controls that fit it (lights, plugs, fans, air-con, curtains, TVs, vacuums ...). You choose per device what your assistant may see or switch; locks and heaters are never switched by the assistant.",
+   "archive": "dist/smarthomecontrol-0.1.3.tar.gz",
+   "author": "Bot Gateway",
+   "bytes": 15479,
+   "changes": [
+    "home_snapshot says when the picture is from (picture_updated_at) and, for cameras that only give their last recording (e.g. battery doorbells like Ring), that it is not live - so the assistant doesn't call an old picture \"now\"",
+    "The doorbell pop-up also knows Ring's \"ding\" event"
+   ],
+   "disclosure": {
+    "ai": null,
+    "local": [
+     {
+      "about": "reads and controls your devices through its API",
+      "label": "Home Assistant"
+     }
+    ],
+    "login": "none",
+    "net": [],
+    "visitors": null
+   },
+   "icon": "🏠",
+   "id": "smarthomecontrol",
+   "license": "Apache-2.0",
+   "name": "SmartHomeControl",
+   "sha256": "8d1ae2207573764dd65b8a25f704a3bd1f5a5eb2880377b54ef143ba050d7a4b",
+   "type": "application",
+   "version": "0.1.3"
+  },
+  {
    "about": "Upper-cases text - an example package (the old built-in uppercase as a Python program).",
    "archive": "dist/uppercase-1.2.0.tar.gz",
    "author": "Bot Gateway",

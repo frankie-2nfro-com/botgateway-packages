@@ -192,7 +192,7 @@ export function onLocal(e) {
 function isRing(s, before) {
   if (kindOf(s.entity_id) !== "event" || s.state === before.state || s.state === "unavailable") return false;
   const a = s.attributes || {};
-  return a.device_class === "doorbell" || /ring|doorbell|press/i.test(String(a.event_type || ""));
+  return a.device_class === "doorbell" || /ring|ding|doorbell|press/i.test(String(a.event_type || ""));
 }
 
 // The camera that belongs with it: the same device, else the same room, else none.
@@ -373,8 +373,15 @@ export function callTool(name, args = {}) {
     const p = picture(id);
     const ext = { "image/png": "png", "image/webp": "webp", "image/gif": "gif" }[p.type] || "jpg";
     remember("assistant", id, "snapshot", null, "picture sent", true);
+    const st = states.get(id), a = st.attributes || {};
+    // Some cameras (e.g. battery doorbells like Ring) give a frame of their last recording, not what they
+    // see now: say so, with when Home Assistant last updated the picture, so the assistant doesn't call it live.
+    const recorded = a.last_video_id !== undefined || a.video_url !== undefined;
     // The gateway turns $attachments into the answer's files (specification 5.2.1).
-    return { id, name: states.get(id).attributes?.friendly_name || id, at: new Date().toISOString(),
+    return { id, name: a.friendly_name || id, asked_at: new Date().toISOString(), picture_updated_at: st.last_updated || null,
+      note: recorded
+        ? "This camera gives a frame of its LAST RECORDING (e.g. the last motion or ring), not a live view: the picture is from about picture_updated_at, not now - say so in your answer."
+        : "The picture is what Home Assistant has for this camera; picture_updated_at is when it last changed.",
       $attachments: [{ name: `${id.replace(/[^a-z0-9_]/gi, "_")}.${ext}`, media_type: p.type, data: p.data }] };
   }
   if (name === "home_set") {
