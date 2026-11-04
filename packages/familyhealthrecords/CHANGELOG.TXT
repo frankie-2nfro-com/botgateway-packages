@@ -4,8 +4,12 @@ for the gateway owners - the Portal and the gateway show them as "What's new" be
 store_update.sh --package familyhealthrecords publishes it (dated) and puts the next patch version on top; change
 the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
 
-0.2.2
+0.2.3
 - [Changed and non commited item put here]
+
+0.2.2 (2026-11-04)
+- The AI's health advice now always comes with each summary, in its own "AI advice" box (0.2.1 left it to the assistant,
+  which often wrote none). For inputs read before, press "Read again" to get the advice
 
 0.2.1 (2026-11-04)
 - Choose the date of an input: after picking or dropping files you set the record's day (e.g. an old report added

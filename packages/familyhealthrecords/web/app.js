@@ -24,7 +24,7 @@
       overview: { body: "身體狀況總覽", diet: "飲食總覽", exercise: "運動總覽", mental: "心理總覽", medication: "醫治總覽" },
       lead: { body: "驗血、影像、症狀照片、心電圖、體重與血壓等會整理在這裡。", diet: "飲食記錄、食物相片同營養估算會整理在這裡。", exercise: "運動種類、時間同距離會整理在這裡。",
         mental: "心情變化同睡眠質素會整理在這裡。", medication: "病患、醫生總結、覆診、處方、用藥同疫苗會整理在這裡。" },
-      latestDay: "最近輸入日期", browse: "瀏覽各類資料", nRecords: (n) => `${n} 筆`, aiNote: "由 AI（你的助理）寫，建議未經醫生確認，行動前請先問醫生。", empty: "呢度未有記錄。撳 ＋ 加入。",
+      latestDay: "最近輸入日期", adviceTitle: "AI 建議", browse: "瀏覽各類資料", nRecords: (n) => `${n} 筆`, aiNote: "由 AI（你的助理）寫，建議未經醫生確認，行動前請先問醫生。", empty: "呢度未有記錄。撳 ＋ 加入。",
       addMemberFirst: "請先加入家庭成員（成員）。", st: { queued: "排隊中…", reading: "讀緊…", ready: "", needs_check: "請檢查", failed: "失敗" },
       hub: "新增記錄", hubPhoto: "相片／檔案", hubPhotoSub: "化驗單、醫生信、處方、血壓計、食物相…（PDF / 相片）",
       hubMood: "心情記錄", hubMoodSub: "由一種心情轉到另一種", hubSleep: "睡眠質素", hubSleepSub: "昨晚瞓得點",
@@ -61,7 +61,7 @@
       overview: { body: "Body overview", diet: "Diet overview", exercise: "Exercise overview", mental: "Mind overview", medication: "Care overview" },
       lead: { body: "Blood tests, imaging, symptom photos, ECGs, weight and blood pressure are kept here.", diet: "Meals, food photos and nutrition estimates are kept here.",
         exercise: "Activities, time and distance are kept here.", mental: "Mood changes and sleep quality are kept here.", medication: "Illnesses, doctor summaries, follow-ups, prescriptions, medicines and vaccinations are kept here." },
-      latestDay: "Latest input", browse: "Browse by category", nRecords: (n) => `${n} record${n === 1 ? "" : "s"}`, aiNote: "Written by an AI (your assistant): its advice is not checked by a doctor - ask your doctor before acting on it.", empty: "Nothing here yet. Press ＋ to add.",
+      latestDay: "Latest input", adviceTitle: "AI advice", browse: "Browse by category", nRecords: (n) => `${n} record${n === 1 ? "" : "s"}`, aiNote: "Written by an AI (your assistant): its advice is not checked by a doctor - ask your doctor before acting on it.", empty: "Nothing here yet. Press ＋ to add.",
       addMemberFirst: "Add a family member first (Members).", st: { queued: "waiting…", reading: "being read…", ready: "", needs_check: "please check", failed: "failed" },
       hub: "Add", hubPhoto: "Photo / file", hubPhotoSub: "lab reports, doctor's letters, prescriptions, a BP meter, a meal… (PDF / photo)",
       hubMood: "Mood log", hubMoodSub: "from one mood to another", hubSleep: "Sleep quality", hubSleepSub: "how was last night",
@@ -251,12 +251,14 @@
     v.innerHTML = `<div class="ov"><h1>${esc(t("overview")[a.key])}</h1><p class="lead">${esc(t("lead")[a.key])}</p>
       ${last ? `<h2 class="sec">${esc(t("latestDay"))} (${esc(last.replaceAll("-", "/"))})</h2><div class="latest">${ofDay.map((d) => `<button type="button" data-doc="${d.id}">
         <span class="tm">${esc(time(d))}</span>${esc(nm(cat(d.subs?.[0] || d.category_key)) || "")}${d.subs?.length || d.category_key ? "：" : ""}${esc(d.status === "ready" || !d.reason ? d.summary || d.name : d.reason)} ${status(d)}</button>`).join("")}</div>` : ""}
-      <h2 class="sec">${esc(t("remarkOf"))} <span class="ai" title="${esc(t("aiNote"))}">AI</span></h2>
-      <div class="sumcard">${r.remark ? esc(r.remark.text) : `<span class="muted">${esc(t("noRemark"))}</span>`}</div>
+      <h2 class="sec">${esc(t("remarkOf"))}</h2>
+      <div class="sumcard">${r.remark ? esc(r.remark.text) : `<span class="muted">${esc(t("noRemark"))}</span>`}${r.remark?.advice ? adviceBox(r.remark.advice) : ""}</div>
       <h2 class="sec">${esc(t("browse"))}</h2>
       ${subs.length ? `<div class="subs">${subs.map((c) => `<button type="button" data-sub="${c.key}"><span class="dot" style="background:var(--a-${a.key})"></span>${esc(nm(c))}
         <span class="n">${esc(t("nRecords")(r.counts[c.key]))}</span><span class="chev">›</span></button>`).join("")}</div>` : `<div class="card empty">${esc(t("empty"))}</div>`}</div>`;
   }
+
+  const adviceBox = (x) => `<div class="advice" title="${esc(t("aiNote"))}"><b>💡 ${esc(t("adviceTitle"))}</b><div>${esc(x)}</div></div>`;
 
   // One input as a card: its sub-categories (in this area), status, summary and the values filed here.
   const item = (d, areaKey) => {
@@ -283,7 +285,7 @@
       <p class="muted">${[d.date, d.clinic, d.doctor].filter(Boolean).map(esc).join(" · ")}${d.confidence !== null && d.confidence !== undefined && !fixed ? ` · ${esc(t("confidence")(Math.round(d.confidence * 100)))}` : ""}</p>
       ${d.category_key ? `<p>${esc(t("primary"))}: <span class="tag area" style="--area:var(--a-${d.main_key})">${esc(nm(area(d.main_key)))}</span><span class="tag">${esc(nm(cat(d.category_key)))}</span>
         ${d.also_keys.length ? ` · ${esc(t("also"))}: ${d.also_keys.map((k) => `<span class="tag">${esc(nm(cat(k)))}</span>`).join("")}` : ""}</p>` : ""}
-      ${d.area_remarks.map((r) => `<div class="card rcard" style="--area:var(--a-${r.main_key})"><b>${esc(nm(area(r.main_key)))}</b><p>${esc(r.text)}</p></div>`).join("")}
+      ${d.area_remarks.map((r) => `<div class="card rcard" style="--area:var(--a-${r.main_key})"><b>${esc(nm(area(r.main_key)))}</b><p>${esc(r.text)}</p>${r.advice ? adviceBox(r.advice) : ""}</div>`).join("")}
       ${d.items.length ? `<h3>${esc(t("values"))} (${d.items.length})</h3><div class="scroll"><table><tr><th>${esc(t("what"))}</th><th>${esc(t("value"))}</th><th>${esc(t("range"))}</th><th>${esc(t("when"))}</th></tr>
         ${d.items.map((r) => `<tr><td>${esc(r.title)} <span class="muted">${esc(nm(cat(r.category_key)) || r.kind)}</span></td><td>${esc(val(r))}${flag(r)}</td><td>${esc(range(r))}</td><td>${esc(String(r.observed_at || "").slice(0, 10))}</td></tr>`).join("")}</table></div>` : ""}
       ${d.warnings.length ? `<p class="muted">${esc(t("warnings"))}: ${d.warnings.map(esc).join(" · ")}</p>` : ""}
@@ -421,7 +423,7 @@
     const ago = (d) => t("daysAgo")(Math.max(0, Math.round((Date.parse(today()) - Date.parse(d)) / 86400000)));
     v.innerHTML = `<div class="tl"><div class="rail">${r.days.map((x) => `<button type="button" data-day="${x.day}" class="${x.day === r.day ? "on" : ""}">${esc(x.day)}<small>${esc(ago(x.day))} · ${x.n}</small></button>`).join("")}</div>
       <div><h2 style="margin-top:0">${esc(r.day)} <span class="muted" style="font-size:15px">${esc(ago(r.day))}</span></h2>
-        ${r.remarks.map((x) => `<div class="card rcard" style="--area:var(--a-${x.main_key})"><b>${svgSmall(x.main_key)} ${esc(nm(area(x.main_key)))}</b><p>${esc(x.text)}</p></div>`).join("")}
+        ${r.remarks.map((x) => `<div class="card rcard" style="--area:var(--a-${x.main_key})"><b>${svgSmall(x.main_key)} ${esc(nm(area(x.main_key)))}</b><p>${esc(x.text)}</p>${x.advice ? adviceBox(x.advice) : ""}</div>`).join("")}
         <h3>${esc(t("inputsOfDay"))}</h3><div class="list">${r.items.map((d) => item(d)).join("")}</div></div></div>`;
   }
   const svgSmall = (k) => `<span style="display:inline-block;width:16px;height:16px;vertical-align:-3px;fill:var(--a-${k})">${svg(k)}</span>`;

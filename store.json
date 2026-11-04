@@ -86,6 +86,32 @@
    "version": "0.2.1"
   },
   {
+   "about": "Your family's health in one place, kept on your computer, in five areas: body, diet, exercise, mind and care. Add photos, files, mood and sleep logs or a few words; your assistant files each one with its values, writes a short remark with health advice and keeps a running summary per member; timeline and BMI included. You choose which members it may talk about. Warning: the health advice in the remarks is written by an AI (your assistant), not by a doctor - it can be wrong; consult your doctor before acting on it.",
+   "archive": "dist/familyhealthrecords-0.2.2.tar.gz",
+   "author": "Bot Gateway",
+   "bytes": 42364,
+   "changes": [
+    "The AI's health advice now always comes with each summary, in its own \"AI advice\" box (0.2.1 left it to the assistant, which often wrote none). For inputs read before, press \"Read again\" to get the advice"
+   ],
+   "disclosure": {
+    "ai": {
+     "sends": "each health input you add (a photo, PDF, mood or sleep log, or text), with the member's name and birth year, chronic conditions, running summary and recent values, to file it and write a short remark with health advice",
+     "who": "owner"
+    },
+    "inbox": true,
+    "login": "none",
+    "net": [],
+    "visitors": null
+   },
+   "icon": "🩺",
+   "id": "familyhealthrecords",
+   "license": "Apache-2.0",
+   "name": "FamilyHealthRecords",
+   "sha256": "b33a8fd94528538f4798a4e1eaa2908688e79c1fcc4d99c6519b8a1316ffe0e7",
+   "type": "application",
+   "version": "0.2.2"
+  },
+  {
    "about": "Collect materials for a recipe (screenshots, photos, text, notes); the LLM turns them into a recipe.",
    "archive": "dist/recipes-0.2.0.tar.gz",
    "author": "Bot Gateway",

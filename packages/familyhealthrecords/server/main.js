@@ -15,7 +15,7 @@ const SURE = 0.6;
 const STALE_MS = 30 * 60 * 1000;
 const MEMORY_MAX = 1200, MEMORY_VERSIONS = 10;
 // For the assistant (tools): the remarks hold suggestions an AI wrote - not a doctor's.
-const NOT_ADVICE = "The area remarks include health suggestions written by an AI, not by a doctor: say so, and suggest checking with a doctor before acting on them.";
+const NOT_ADVICE = "ai_advice in the remarks is health advice written by an AI, not by a doctor: say so, and suggest checking with a doctor before acting on it.";
 
 const now = () => new Date().toISOString();
 const today = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
@@ -89,6 +89,13 @@ export function onInstall() {
         run("UPDATE records SET document_id = ? WHERE id = ?", [id, r.id]);
       }
       run("PRAGMA user_version = 2");
+    });
+  }
+  if ((one("PRAGMA user_version")?.user_version || 0) < 3) {
+    // 0.2.2: the AI's advice kept beside each area remark.
+    host.db.transaction(() => {
+      if (!q("PRAGMA table_info(remarks)").some((c) => c.name === "advice")) run("ALTER TABLE remarks ADD COLUMN advice TEXT");
+      run("PRAGMA user_version = 3");
     });
   }
 }
@@ -385,8 +392,10 @@ function save(d, a) {
   }
   // Area remarks only for the areas this input touched.
   const touched = new Set([main, ...also.map(areaOf), ...q("SELECT DISTINCT category_key FROM records WHERE document_id = ?", [d.id]).map((x) => areaOf(x.category_key))]);
-  for (const [k, v] of Object.entries(a.domain_remarks || {})) {
-    if (touched.has(k) && text(v)) run("INSERT INTO remarks (member_id, document_id, main_key, day, text, created) VALUES (?, ?, ?, ?, ?, ?)", [d.member_id, d.id, k, date, text(v, 600), now()]);
+  const advice = a.advice || {};
+  for (const k of new Set([...Object.keys(a.domain_remarks || {}), ...Object.keys(advice)])) {
+    const v = text(a.domain_remarks?.[k], 600), tip = text(advice[k], 400) || null;
+    if (touched.has(k) && (v || tip)) run("INSERT INTO remarks (member_id, document_id, main_key, day, text, advice, created) VALUES (?, ?, ?, ?, ?, ?, ?)", [d.member_id, d.id, k, date, v, tip, now()]);
   }
   if (text(a.situation_update)) setMemory(d.member_id, a.situation_update, d.id, "input");
   const sure = fixed || (a.confidence >= SURE && cat !== "other");
@@ -484,7 +493,7 @@ function area(m, key, category) {
   for (const x of all) for (const s of x.subs) counts[s] = (counts[s] || 0) + 1;
   const remark = one("SELECT * FROM remarks WHERE member_id = ? AND main_key = ? ORDER BY day DESC, id DESC LIMIT 1", [m.id, key]);
   return { area: key, counts, items: category ? all.filter((x) => x.subs.includes(category)) : all,
-    remark: remark && { day: remark.day, text: remark.text, document_id: remark.document_id } };
+    remark: remark && { day: remark.day, text: remark.text, advice: remark.advice, document_id: remark.document_id } };
 }
 
 // The days with inputs (newest first) and, for one day, its area remarks and inputs.
@@ -493,7 +502,7 @@ function timeline(m, d) {
   const pick = day(d)?.slice(0, 10) || days[0]?.day || null;
   return {
     days, day: pick,
-    remarks: pick ? q("SELECT id, main_key, text, document_id FROM remarks WHERE member_id = ? AND day = ? ORDER BY id", [m.id, pick]) : [],
+    remarks: pick ? q("SELECT id, main_key, text, advice, document_id FROM remarks WHERE member_id = ? AND day = ? ORDER BY id", [m.id, pick]) : [],
     items: pick ? q("SELECT * FROM documents WHERE member_id = ? AND doc_date = ? ORDER BY id", [m.id, pick]).map(docView) : [],
   };
 }
@@ -572,7 +581,7 @@ function page(req) {
   if (get && path === "document") {
     const d = getDoc(qs.id);
     return { ...docView(d), items: q("SELECT * FROM records WHERE document_id = ? ORDER BY id", [d.id]).map(recordView),
-      area_remarks: q("SELECT main_key, day, text FROM remarks WHERE document_id = ? ORDER BY id", [d.id]) };
+      area_remarks: q("SELECT main_key, day, text, advice FROM remarks WHERE document_id = ? ORDER BY id", [d.id]) };
   }
   if (get && path === "file") {
     const d = one("SELECT file FROM documents WHERE id = ?", [Number(qs.id)]);
@@ -627,7 +636,7 @@ export function callTool(name, args = {}) {
   }
   const m = visibleMember(args.member);
   if (name === "health_summary") {
-    const remarks = q("SELECT main_key AS area, day, text FROM remarks WHERE member_id = ? ORDER BY day DESC, id DESC LIMIT 30", [m.id]);
+    const remarks = q("SELECT main_key AS area, day, text, advice AS ai_advice FROM remarks WHERE member_id = ? ORDER BY day DESC, id DESC LIMIT 30", [m.id]);
     return { member: m.name, chronic_conditions: json(m.conditions, []), memory: m.memory || "", recent_remarks: remarks, note: NOT_ADVICE };
   }
   if (name === "health_records") {
@@ -656,7 +665,7 @@ export function callTool(name, args = {}) {
     const d = one("SELECT * FROM documents WHERE id = ? AND member_id = ?", [Number(args.id), m.id]);
     if (!d) throw fail(`no input ${args.id} of ${m.name}`);
     const out = { member: m.name, ...docView(d), values: q("SELECT * FROM records WHERE document_id = ? ORDER BY id", [d.id]).map(brief),
-      area_remarks: q("SELECT main_key AS area, day, text FROM remarks WHERE document_id = ?", [d.id]), note: NOT_ADVICE };
+      area_remarks: q("SELECT main_key AS area, day, text, advice AS ai_advice FROM remarks WHERE document_id = ?", [d.id]), note: NOT_ADVICE };
     if (args.picture && d.file && d.media_type.startsWith("image/")) out.$attachments = [{ name: `${m.name}-${d.id}.${TYPES[d.media_type]}`, media_type: d.media_type, data: host.files.read(d.file) }];
     return out;
   }
