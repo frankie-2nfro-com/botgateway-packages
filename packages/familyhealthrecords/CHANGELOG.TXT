@@ -4,8 +4,18 @@ for the gateway owners - the Portal and the gateway show them as "What's new" be
 store_update.sh --package familyhealthrecords publishes it (dated) and puts the next patch version on top; change
 the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
 
-0.2.1
+0.2.2
 - [Changed and non commited item put here]
+
+0.2.1 (2026-11-04)
+- Choose the date of an input: after picking or dropping files you set the record's day (e.g. an old report added
+  now gets the report's day); left empty, your assistant reads it from the file. Mood, sleep, text and height /
+  weight keep the day you choose, and a date changed under "Read again" moves the input to that day
+- Each area now opens on its overview, as in Aera: the latest day's inputs (with their time), the summary and the
+  sub-categories with their number of records - tap one to see its records. The top bar has the menu (☰), the
+  member's name (tap to change member) and ＋
+- The summaries now include health advice from your assistant (AI). It is not checked by a doctor - ask your doctor
+  before acting on it
 
 0.2.0 (2026-11-04)
 - New design after Aera: five areas at the bottom - body, diet, exercise, mind and care - each with its own

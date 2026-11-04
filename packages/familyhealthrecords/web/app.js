@@ -20,7 +20,11 @@
   const T = {
     zh: {
       timeline: "時間線", bmi: "我的 BMI", year: "年度", inbox: "收件箱", members: "成員", lang: "EN",
-      all: "全部", noRemark: "未有狀況摘要 - 加入記錄後，你的助理會寫低。", remarkOf: "狀況摘要", empty: "呢度未有記錄。撳 ＋ 加入。",
+      all: "全部", noRemark: "未有狀況摘要 - 加入記錄後，你的助理會寫低。", remarkOf: "狀況摘要",
+      overview: { body: "身體狀況總覽", diet: "飲食總覽", exercise: "運動總覽", mental: "心理總覽", medication: "醫治總覽" },
+      lead: { body: "驗血、影像、症狀照片、心電圖、體重與血壓等會整理在這裡。", diet: "飲食記錄、食物相片同營養估算會整理在這裡。", exercise: "運動種類、時間同距離會整理在這裡。",
+        mental: "心情變化同睡眠質素會整理在這裡。", medication: "病患、醫生總結、覆診、處方、用藥同疫苗會整理在這裡。" },
+      latestDay: "最近輸入日期", browse: "瀏覽各類資料", nRecords: (n) => `${n} 筆`, aiNote: "由 AI（你的助理）寫，建議未經醫生確認，行動前請先問醫生。", empty: "呢度未有記錄。撳 ＋ 加入。",
       addMemberFirst: "請先加入家庭成員（成員）。", st: { queued: "排隊中…", reading: "讀緊…", ready: "", needs_check: "請檢查", failed: "失敗" },
       hub: "新增記錄", hubPhoto: "相片／檔案", hubPhotoSub: "化驗單、醫生信、處方、血壓計、食物相…（PDF / 相片）",
       hubMood: "心情記錄", hubMoodSub: "由一種心情轉到另一種", hubSleep: "睡眠質素", hubSleepSub: "昨晚瞓得點",
@@ -48,11 +52,16 @@
       versions: "之前版本", why: { input: "記錄後更新", restored: "還原" }, restore: "用返呢個版本", candidates: "助理發現嘅病患（等你確認）", confirmCond: "加入長期病患",
       counts: (m) => `${m.documents} 個記錄 · ${m.records} 個數值 · 助理：${m.ai === "read" ? "可以讀" : "唔准讀"}`,
       delMember: (m) => `刪除 ${m.name} 同佢所有 ${m.documents} 個記錄？刪咗就冇得返轉頭。\n打個名確認（或者用「修改 → 封存」保留資料）：`,
-      dropHere: "放開就加入", born: (y) => `${y} 年出生`,
+      dropHere: "放開就加入", todayBtn: "今日", addN: (n) => `加入 ${n} 個檔案`,
+      fileDateHint: "記錄日期：例如補入舊報告，就揀報告嘅日子。留空 = 由助理喺文件讀出日期（讀唔到就用今日）。", born: (y) => `${y} 年出生`,
     },
     en: {
       timeline: "Timeline", bmi: "My BMI", year: "Year", inbox: "Inbox", members: "Members", lang: "中文",
-      all: "All", noRemark: "No remark yet - your assistant writes one after each input.", remarkOf: "Summary", empty: "Nothing here yet. Press ＋ to add.",
+      all: "All", noRemark: "No remark yet - your assistant writes one after each input.", remarkOf: "Summary",
+      overview: { body: "Body overview", diet: "Diet overview", exercise: "Exercise overview", mental: "Mind overview", medication: "Care overview" },
+      lead: { body: "Blood tests, imaging, symptom photos, ECGs, weight and blood pressure are kept here.", diet: "Meals, food photos and nutrition estimates are kept here.",
+        exercise: "Activities, time and distance are kept here.", mental: "Mood changes and sleep quality are kept here.", medication: "Illnesses, doctor summaries, follow-ups, prescriptions, medicines and vaccinations are kept here." },
+      latestDay: "Latest input", browse: "Browse by category", nRecords: (n) => `${n} record${n === 1 ? "" : "s"}`, aiNote: "Written by an AI (your assistant): its advice is not checked by a doctor - ask your doctor before acting on it.", empty: "Nothing here yet. Press ＋ to add.",
       addMemberFirst: "Add a family member first (Members).", st: { queued: "waiting…", reading: "being read…", ready: "", needs_check: "please check", failed: "failed" },
       hub: "Add", hubPhoto: "Photo / file", hubPhotoSub: "lab reports, doctor's letters, prescriptions, a BP meter, a meal… (PDF / photo)",
       hubMood: "Mood log", hubMoodSub: "from one mood to another", hubSleep: "Sleep quality", hubSleepSub: "how was last night",
@@ -80,7 +89,8 @@
       versions: "Earlier versions", why: { input: "after an input", restored: "put back" }, restore: "Use this version", candidates: "Conditions your assistant found (waiting for you)", confirmCond: "Add to chronic conditions",
       counts: (m) => `${m.documents} inputs · ${m.records} values · assistant: ${m.ai === "read" ? "may read" : "no access"}`,
       delMember: (m) => `Delete ${m.name} with all ${m.documents} inputs? This can't be undone.\nType the name to confirm (or use Edit → Archived to keep them):`,
-      dropHere: "drop to add", born: (y) => `born ${y}`,
+      dropHere: "drop to add", todayBtn: "Today", addN: (n) => `Add ${n} file(s)`,
+      fileDateHint: "The record's date: for an old report added now, pick the report's day. Empty = your assistant reads the date in the file (else today).", born: (y) => `born ${y}`,
     },
   };
   let lang = "zh";
@@ -156,19 +166,37 @@
 
   // --- frame: menu, members, area tabs ----------------------------------------------------------------------
 
+  // The top bar (menu, the member shown - tap to change, ＋) and the area tabs.
   function frame() {
-    const n = st.inbox.files.length;
-    $("menu").innerHTML = [["timeline", t("timeline")], ["bmi", t("bmi")], ["year", t("year")], ["inbox", t("inbox") + (n ? `<span class="count">${n}</span>` : "")], ["members", t("members")]]
-      .map(([k, l]) => `<button type="button" data-view="${k}" class="${view === k ? "on" : ""}">${l}</button>`).join("") + `<button type="button" data-lang>${t("lang")}</button>`;
     const ms = active();
     if (!ms.some((m) => m.id === who)) who = ms[0]?.id ?? null;
-    $("people").innerHTML = ms.map((m) => `<button type="button" class="person ${m.id === who ? "on" : ""}" data-who="${m.id}">
-      <span class="dot" style="background:${esc(m.color)}"></span>${esc(m.name)}${busyOf(m.id) ? '<span class="busy">⏳</span>' : ""}</button>`).join("");
-    $("people").classList.toggle("hidden", view === "members" || view === "inbox" || ms.length < 1);
+    const m = me();
+    $("whoBtn").innerHTML = m ? `${esc(m.name)}${busyOf(m.id) ? "<small>⏳</small>" : ""}${ms.length > 1 ? "<small>▾</small>" : ""}` : "FamilyHealthRecords";
     $("areas").innerHTML = st.areas.map((a) => `<button type="button" data-view="${a.key}" class="${view === a.key ? "on" : ""}">${svg(a.key)}<span>${esc(nm(a))}</span></button>`).join("");
-    $("fab").classList.toggle("hidden", !ms.length);
-    $("notAdvice").textContent = st.not_advice || "";
+    $("plus").classList.toggle("hidden", !m);
     document.documentElement.lang = lang === "zh" ? "zh-Hant" : "en";
+    if (!$("drawer").classList.contains("hidden")) drawer();
+  }
+
+  // The menu: the other pages, the members (to change), the language.
+  function drawer() {
+    const n = st.inbox.files.length;
+    const item = (k, label, extra = "") => `<button type="button" data-view="${k}" class="${view === k ? "on" : ""}">${esc(label)}${extra}</button>`;
+    $("drawerBox").innerHTML = `${st.areas.map((a) => item(a.key, nm(a))).join("")}<h3></h3>
+      ${item("timeline", t("timeline"))}${item("bmi", t("bmi"))}${item("year", t("year"))}${item("inbox", t("inbox"), n ? `<span class="count">${n}</span>` : "")}${item("members", t("members"))}
+      ${active().length > 1 ? `<h3>${esc(t("member"))}</h3>${active().map((m) => `<button type="button" data-who="${m.id}" class="${m.id === who ? "on" : ""}"><span class="dot" style="background:${esc(m.color)}"></span>${esc(m.name)}</button>`).join("")}` : ""}
+      <h3></h3><button type="button" data-lang>${esc(t("lang") === "EN" ? "English" : "中文")}</button>`;
+    $("drawer").classList.remove("hidden");
+  }
+  const closeDrawer = () => $("drawer").classList.add("hidden");
+
+  // Tap on the member's name: the members to change to.
+  function whoSheet() {
+    const ms = active();
+    if (ms.length < 2) return go("members");
+    sheet(`<div class="sheethead"><h2>${esc(t("member"))}</h2><button type="button" class="btn" data-close>${esc(t("close"))}</button></div>
+      <div class="hub">${ms.map((m) => `<button type="button" data-who="${m.id}"><span class="ico" style="background:${esc(m.color)}22;color:${esc(m.color)}">●</span>
+        <span><b>${esc(m.name)}</b><small>${esc(t("rel")[m.relation] || "")}${m.birth_year ? ` · ${esc(t("born")(m.birth_year))}` : ""}</small></span></button>`).join("")}</div>`);
   }
 
   async function load() {
@@ -204,16 +232,30 @@
 
   // --- an area: its summary, sub-categories and inputs ---------------------------------------------------------
 
+  // An area (Aera): its overview - the latest day's inputs, the latest summary with the AI's advice, the
+  // sub-categories with records; a sub-category opens its inputs.
   async function areaView(v, m) {
     const a = area(view) || st.areas[0];
     view = a.key;
     const r = await api(`area?member=${m.id}&area=${a.key}${sub ? `&category=${sub}` : ""}`);
-    const cats = st.categories.filter((c) => c.area === a.key);
-    v.innerHTML = `<div class="card hero" style="--area:var(--a-${a.key})"><h2>${svg(a.key)}${esc(nm(a))} · ${esc(t("remarkOf"))}</h2>
-        ${r.remark ? `<p class="remark">${esc(r.remark.text)}</p><p class="muted" style="margin:6px 0 0;font-size:13px">${esc(r.remark.day)}</p>` : `<p class="remark muted">${esc(t("noRemark"))}</p>`}</div>
-      ${cats.length > 1 ? `<div class="chips"><button type="button" class="chip ${sub ? "" : "on"}" data-sub="">${esc(t("all"))}</button>
-        ${cats.map((c) => `<button type="button" class="chip ${sub === c.key ? "on" : ""} ${r.counts[c.key] ? "" : "zero"}" data-sub="${c.key}">${esc(nm(c))}${r.counts[c.key] ? `<b>${r.counts[c.key]}</b>` : ""}</button>`).join("")}</div>` : ""}
-      ${r.items.length ? `<div class="list">${r.items.map((d) => item(d, a.key)).join("")}</div>` : `<div class="card empty">${esc(t("empty"))}</div>`}`;
+    if (sub) {
+      v.innerHTML = `<div class="ov"><button type="button" class="back" data-sub="">‹ ${esc(t("overview")[a.key])}</button>
+        <h1>${esc(nm(cat(sub)))}</h1><p class="lead">${esc(t("nRecords")(r.items.length))}</p>
+        ${r.items.length ? `<div class="list">${r.items.map((d) => item(d, a.key)).join("")}</div>` : `<div class="card empty">${esc(t("empty"))}</div>`}</div>`;
+      return;
+    }
+    const last = r.items[0]?.date;
+    const ofDay = r.items.filter((d) => d.date === last);
+    const time = (d) => { const x = new Date(d.created); return isNaN(x) ? "" : `${String(x.getHours()).padStart(2, "0")}:${String(x.getMinutes()).padStart(2, "0")}`; };
+    const subs = st.categories.filter((c) => c.area === a.key && r.counts[c.key]);
+    v.innerHTML = `<div class="ov"><h1>${esc(t("overview")[a.key])}</h1><p class="lead">${esc(t("lead")[a.key])}</p>
+      ${last ? `<h2 class="sec">${esc(t("latestDay"))} (${esc(last.replaceAll("-", "/"))})</h2><div class="latest">${ofDay.map((d) => `<button type="button" data-doc="${d.id}">
+        <span class="tm">${esc(time(d))}</span>${esc(nm(cat(d.subs?.[0] || d.category_key)) || "")}${d.subs?.length || d.category_key ? "：" : ""}${esc(d.status === "ready" || !d.reason ? d.summary || d.name : d.reason)} ${status(d)}</button>`).join("")}</div>` : ""}
+      <h2 class="sec">${esc(t("remarkOf"))} <span class="ai" title="${esc(t("aiNote"))}">AI</span></h2>
+      <div class="sumcard">${r.remark ? esc(r.remark.text) : `<span class="muted">${esc(t("noRemark"))}</span>`}</div>
+      <h2 class="sec">${esc(t("browse"))}</h2>
+      ${subs.length ? `<div class="subs">${subs.map((c) => `<button type="button" data-sub="${c.key}"><span class="dot" style="background:var(--a-${a.key})"></span>${esc(nm(c))}
+        <span class="n">${esc(t("nRecords")(r.counts[c.key]))}</span><span class="chev">›</span></button>`).join("")}</div>` : `<div class="card empty">${esc(t("empty"))}</div>`}</div>`;
   }
 
   // One input as a card: its sub-categories (in this area), status, summary and the values filed here.
@@ -259,7 +301,7 @@
         ${d.input === "file" ? `<a href="api/file?id=${d.id}&download=1"><button type="button" class="btn">${esc(t("download"))}</button></a>` : ""}
         <button type="button" class="btn danger" data-act="delete">${esc(t("del"))}</button>
       </div>
-      <p class="muted" style="font-size:12px">${esc(st.not_advice)}</p>`);
+`);
     $("sheet").dataset.doc = d.id;
   }
 
@@ -336,7 +378,21 @@
     } catch (e) { toast(e.message, true); }
   }
 
-  async function addFiles(list) {
+  // Files picked or dropped: first their date (an old document added now gets its own day; empty = the day the
+  // assistant reads in it, else today), then they are added.
+  let pending = [];
+  function pickedFiles(list) {
+    if (!me()) return toast(t("addMemberFirst"), true);
+    if (!list.length) return;
+    pending = list;
+    sheet(`${head(t("hubPhoto"))}<ul>${list.map((f) => `<li>${esc(f.name)} <span class="muted">${(f.size / 1048576).toFixed(1)} MB</span></li>`).join("")}</ul>
+      <div class="row"><label class="f">${esc(t("date"))}<input type="date" id="fDate" max="${today()}"></label>
+        <button type="button" class="btn" id="fToday">${esc(t("todayBtn"))}</button></div>
+      <p class="muted" style="margin:0">${esc(t("fileDateHint"))}</p>
+      <div class="row"><button type="button" class="btn primary" id="fAdd">${esc(t("addN")(list.length))}</button><button type="button" class="btn" data-close>${esc(t("cancel"))}</button></div>`);
+  }
+
+  async function addFiles(list, date) {
     const m = me();
     if (!m) return toast(t("addMemberFirst"), true);
     closeSheet();
@@ -345,9 +401,9 @@
       toast(`${f.name}: ${t("preparing")}`);
       try {
         const p = await prepare(f, f.name, f.type);
-        try { await api("upload", { member_id: m.id, ...p }); } catch (e) {
+        try { await api("upload", { member_id: m.id, ...p, date }); } catch (e) {
           if (!e.message.startsWith("DUPLICATE") || !confirm(`${e.message.slice(11)}\n\n${t("again")}`)) throw e;
-          await api("upload", { member_id: m.id, ...p, force: true });
+          await api("upload", { member_id: m.id, ...p, date, force: true });
         }
         done++;
       } catch (e) { toast(e.message.replace(/^DUPLICATE: /, ""), true); }
@@ -515,9 +571,15 @@
   document.addEventListener("click", async (e) => {
     const el = e.target;
     if (el.closest("[data-close]") || el.id === "sheet") return closeSheet();
+    if (el.id === "drawer") return closeDrawer();
+    if (el.closest("#menuBtn")) return drawer();
+    if (el.closest("#whoBtn")) return whoSheet();
+    if (el.closest("#plus")) return hub();
+    if (el.closest("#drawer")) closeDrawer();
     const vb = el.closest("[data-view]");
     if (vb) return go(vb.dataset.view);
     if (el.closest("[data-lang]")) {
+      closeDrawer();
       lang = lang === "zh" ? "en" : "zh";
       try { localStorage.setItem("fhr.lang", lang); } catch { }
       frame();
@@ -526,6 +588,7 @@
     const p = el.closest("[data-who]");
     if (p) {
       who = Number(p.dataset.who);
+      closeSheet();
       try { localStorage.setItem("fhr.member", who); } catch { }
       frame();
       return render();
@@ -538,7 +601,8 @@
     if (d) { e.preventDefault(); if (d.dataset.doc !== "null") openDoc(d.dataset.doc); return; }
     const a = el.closest("[data-act]");
     if (a) return docAction(a.dataset.act);
-    if (el.id === "fab") return hub();
+    if (el.id === "fToday") { $("fDate").value = today(); return; }
+    if (el.id === "fAdd") return addFiles(pending, $("fDate").value || undefined);
     const hb = el.closest("[data-hub]");
     if (hb) { if ($("sheet").classList.contains("hidden")) hub(); return hubPanel(hb.dataset.hub); }
     const pk = el.closest("[data-pick]");
@@ -587,13 +651,13 @@
     }
   });
   document.addEventListener("change", (e) => {
-    if (e.target.id === "pick") { addFiles([...e.target.files]); e.target.value = ""; }
+    if (e.target.id === "pick") { pickedFiles([...e.target.files]); e.target.value = ""; }
     if (e.target.id === "yearPick") render();
   });
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeSheet(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") { closeSheet(); closeDrawer(); } });
   // Files dropped anywhere on the page go to the member shown.
   document.addEventListener("dragover", (e) => { if (me() && e.dataTransfer?.types?.includes("Files")) e.preventDefault(); });
-  document.addEventListener("drop", (e) => { if (me() && e.dataTransfer?.files?.length) { e.preventDefault(); addFiles([...e.dataTransfer.files]); } });
+  document.addEventListener("drop", (e) => { if (me() && e.dataTransfer?.files?.length) { e.preventDefault(); pickedFiles([...e.dataTransfer.files]); } });
 
   load().catch((e) => { $("view").innerHTML = `<div class="note bad">${esc(e.message)}</div>`; });
 })();

@@ -14,7 +14,8 @@ const SURE = 0.6;
 // A run with no answer after this long (the gateway restarted, the bot was away) is failed; the next input goes on.
 const STALE_MS = 30 * 60 * 1000;
 const MEMORY_MAX = 1200, MEMORY_VERSIONS = 10;
-const NOT_ADVICE = "A personal archive of what was recorded - not medical advice. 個人記錄，並非醫療建議。";
+// For the assistant (tools): the remarks hold suggestions an AI wrote - not a doctor's.
+const NOT_ADVICE = "The area remarks include health suggestions written by an AI, not by a doctor: say so, and suggest checking with a doctor before acting on them.";
 
 const now = () => new Date().toISOString();
 const today = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
@@ -201,8 +202,10 @@ function addFile(b) {
   const fp = fingerprint(data);
   const dup = one("SELECT original_name, created FROM documents WHERE member_id = ? AND fingerprint = ?", [m.id, fp]);
   if (dup && !b.force) throw fail(`DUPLICATE: ${m.name} already has this file (${dup.original_name}, added ${dup.created.slice(0, 10)})`);
-  const id = insertDoc(m, { input: "file", name: text(b.name, 200) || `document.${ext}`, media_type: type, fingerprint: fp, date: day(b.date)?.slice(0, 10) || today(),
-    source: b.source === "inbox" ? "inbox" : "page" });
+  // The owner's date (e.g. an old document added now) wins over the one the assistant reads; none = the assistant's.
+  const owner = ownerDay(b.date);
+  const id = insertDoc(m, { input: "file", name: text(b.name, 200) || `document.${ext}`, media_type: type, fingerprint: fp, date: owner || today(),
+    note: owner ? { dated: true } : null, source: b.source === "inbox" ? "inbox" : "page" });
   const file = `doc-${id}.${ext}`;
   try {
     const info = host.files.write(file, data, "base64");
@@ -216,6 +219,13 @@ function addFile(b) {
 }
 
 const label = (list, key) => list.find((x) => x[0] === key);
+// A day the owner gave: YYYY-MM-DD, not in the future.
+function ownerDay(v) {
+  const d = day(v)?.slice(0, 10);
+  if (!d) return null;
+  if (d > today()) throw fail("the date can't be in the future");
+  return d;
+}
 
 // {member_id, input: text|mood|sleep|height|weight, date, text | from,to | quality | value, note} -> the input (queued).
 // Mood, sleep, height and weight are recorded at once by the program (the page needs no bot for them, e.g. BMI);
@@ -224,29 +234,29 @@ function addEntry(b) {
   const m = member(b.member_id);
   const kind = INPUTS.includes(b.input) && b.input !== "file" ? b.input : null;
   if (!kind) throw fail("unknown input");
-  const date = day(b.date)?.slice(0, 10) || today();
+  const date = ownerDay(b.date) || today();
   const note = text(b.note, 2000) || null;
   let f, rec = null;
   if (kind === "text") {
     const t = text(b.text, 4000);
     if (!t) throw fail("write something first");
-    f = { name: t.slice(0, 60), note: { text: t } };
+    f = { name: t.slice(0, 60), note: { text: t, dated: true } };
   } else if (kind === "mood") {
     const from = label(MOODS, b.from), to = label(MOODS, b.to);
     if (!to) throw fail("choose a mood");
-    f = { name: `${from ? from[2] + " → " : ""}${to[2]}`, note: { from: from?.[0] || null, to: to[0], note }, main_key: "mental", category_key: "mood" };
+    f = { name: `${from ? from[2] + " → " : ""}${to[2]}`, note: { from: from?.[0] || null, to: to[0], note, dated: true }, main_key: "mental", category_key: "mood" };
     rec = { kind: "mood", title: "心情", value_text: f.name, extras: { from: from?.[2] || null, to: to[2], note } };
   } else if (kind === "sleep") {
     const s = label(SLEEP, b.quality);
     if (!s) throw fail("choose the sleep quality");
-    f = { name: s[2], note: { quality: s[0], note }, main_key: "mental", category_key: "sleep" };
+    f = { name: s[2], note: { quality: s[0], note, dated: true }, main_key: "mental", category_key: "sleep" };
     rec = { kind: "sleep", title: "睡眠質素", value_text: s[2], extras: { quality: s[2], note } };
   } else {
     const v = Number(b.value);
     const ok = kind === "height" ? v >= 40 && v <= 260 : v >= 2 && v <= 400;
     if (!ok) throw fail(kind === "height" ? "height: 40 - 260 cm" : "weight: 2 - 400 kg");
     const unit = kind === "height" ? "cm" : "kg", title = kind === "height" ? "身高" : "體重";
-    f = { name: `${title} ${Math.round(v * 10) / 10} ${unit}`, note: { value: v, unit }, main_key: "body", category_key: kind };
+    f = { name: `${title} ${Math.round(v * 10) / 10} ${unit}`, note: { value: v, unit, dated: true }, main_key: "body", category_key: kind };
     rec = { kind: `vital_${kind}`, title, value: v, unit };
   }
   const id = insertDoc(m, { ...f, input: kind, date, source: `manual_${kind}`, summary: kind === "text" ? null : f.name });
@@ -306,7 +316,8 @@ function read(id) {
   const d = getDoc(id);
   const m = member(d.member_id);
   const note = json(d.note, {}) || {};
-  const input = { kind: d.input, name: d.original_name, media_type: d.media_type, day: d.doc_date || today(), remarks: d.remarks, category_hint: note.category_hint || null };
+  const input = { kind: d.input, name: d.original_name, media_type: d.media_type, day: d.doc_date || today(), owner_day: note.dated ? d.doc_date : null,
+    remarks: d.remarks, category_hint: note.category_hint || null };
   const data = { member: { name: m.name, birth_year: m.birth_year, relation: m.relation }, health_context: context(m, d.id),
     input: { kind: d.input, date: input.day, remarks: d.remarks || undefined,
       text: d.input === "text" ? note.text : d.input === "height" || d.input === "weight" ? d.original_name : undefined,
@@ -340,12 +351,13 @@ function save(d, a) {
   run("DELETE FROM records WHERE document_id = ? AND source = 'ai'", [d.id]);
   run("DELETE FROM remarks WHERE document_id = ?", [d.id]);
   const fixed = structured(d);
+  const dated = fixed || !!(json(d.note, {}) || {}).dated;
   // Mood / sleep / height / weight keep the sub-category the program gave them.
   const cat = fixed ? d.category_key : CATEGORY_KEYS.includes(a.category_key) ? a.category_key : "other";
   const main = areaOf(cat);
   const also = fixed ? [] : [...new Set((a.also_category_keys || []).filter((k) => CATEGORY_KEYS.includes(k) && k !== cat))];
-  // The owner's own entries keep the day the owner gave.
-  const date = (fixed && d.doc_date) || day(a.recorded_at)?.slice(0, 10) || d.doc_date || today();
+  // A day the owner gave (own entries, a dated file) is kept; else the day the assistant read.
+  const date = (dated && d.doc_date) || day(a.recorded_at)?.slice(0, 10) || d.doc_date || today();
   const warnings = (a.warnings || []).map((w) => text(w, 200));
   if (!a.is_health_input) {
     run("UPDATE documents SET status = 'needs_check', reason = ?, main_key = ?, category_key = ?, also_keys = '[]', summary = COALESCE(?, summary), confidence = ?, warnings = ?, updated = ? WHERE id = ?",
@@ -404,6 +416,13 @@ function readAgain(b) {
   }
   const note = json(d.note, {}) || {};
   note.category_hint = CATEGORY_KEYS.includes(b.category) && !structured(d) ? b.category : null;
+  // A date changed here becomes the owner's date (the program's own records move with it).
+  const owner = ownerDay(b.date);
+  if (owner && owner !== d.doc_date) {
+    note.dated = true;
+    run("UPDATE documents SET doc_date = ? WHERE id = ?", [owner, d.id]);
+    run("UPDATE records SET observed_at = ? WHERE document_id = ? AND source = 'input'", [owner, d.id]);
+  }
   run("UPDATE documents SET status = 'queued', reason = NULL, run = NULL, remarks = ?, note = ?, updated = ? WHERE id = ?", [text(b.remarks, 2000) || null, JSON.stringify(note), now(), d.id]);
   pump(to);
   return docView(getDoc(d.id));
@@ -515,7 +534,7 @@ function page(req) {
   if (get && path === "state") {
     pumpAll();
     return { members: q("SELECT * FROM members ORDER BY archived, created").map(memberView), areas: AREAS, categories: CATEGORIES, relations: RELATIONS,
-      moods: MOODS, sleep: SLEEP, conditions: CONDITIONS, not_advice: NOT_ADVICE, inbox: inboxList(),
+      moods: MOODS, sleep: SLEEP, conditions: CONDITIONS, inbox: inboxList(),
       busy: q("SELECT member_id, count(*) AS n FROM documents WHERE status IN ('queued', 'reading') GROUP BY member_id") };
   }
   if (!get && path === "members") return saveMember(b);

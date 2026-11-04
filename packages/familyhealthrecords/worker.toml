@@ -1,8 +1,8 @@
 type = "application"
 id = "familyhealthrecords"
 name = "FamilyHealthRecords"
-version = "0.2.0"
-about = "Your family's health in one place, kept on your computer, in five areas: body, diet, exercise, mind and care. Add photos, files, mood and sleep logs or a few words; your assistant files each one with its values, writes a short remark and keeps a running summary per member; timeline and BMI included. You choose which members it may talk about. A personal archive - not medical advice."
+version = "0.2.1"
+about = "Your family's health in one place, kept on your computer, in five areas: body, diet, exercise, mind and care. Add photos, files, mood and sleep logs or a few words; your assistant files each one with its values, writes a short remark with health advice and keeps a running summary per member; timeline and BMI included. You choose which members it may talk about. Warning: the health advice in the remarks is written by an AI (your assistant), not by a doctor - it can be wrong; consult your doctor before acting on it."
 author = "Bot Gateway"
 license = "Apache-2.0"
 timeout_secs = 60
@@ -13,7 +13,7 @@ timeout_secs = 60
 main = "server/main.js"
 icon = "🩺"
 ai = "owner"
-ai_sends = "each health input you add (a photo, PDF, mood or sleep log, or text), with the member's name and birth year, chronic conditions, running summary and recent values, to file it and write a short remark"
+ai_sends = "each health input you add (a photo, PDF, mood or sleep log, or text), with the member's name and birth year, chronic conditions, running summary and recent values, to file it and write a short remark with health advice"
 login = "none"
 inbox = true
 

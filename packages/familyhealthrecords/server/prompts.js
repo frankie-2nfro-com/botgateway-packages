@@ -4,7 +4,7 @@
 
 import { AREAS, CATEGORIES, CATEGORY_KEYS, KINDS, AREA_KEYS } from "./catalog.js";
 
-export const PROMPT_VERSION = "fhr-read-v2.0";
+export const PROMPT_VERSION = "fhr-read-v2.2";
 
 const num = { type: ["number", "null"] };
 const str = (max) => ({ type: ["string", "null"], maxLength: max });
@@ -72,7 +72,7 @@ function inputLine(input) {
 export function buildTask(input, member) {
   return `You read one input of a personal family health archive (FamilyHealthRecords) for the family member ${member.name}${member.birth_year ? ` (born ${member.birth_year})` : ""}, and return it as JSON.
 ${inputLine(input)}
-Default day (when the input has no clearer date): ${input.day}.
+${input.owner_day ? `The owner dated this input ${input.owner_day}: recorded_at = ${input.owner_day}, and the day of every value without its own date in the input.` : `Default day (when the input has no clearer date): ${input.day}.`}
 data.health_context = this member's trusted profile (chronic_conditions), rolling memory (memory) and prior comparable records (prior_records, newest first).
 ${input.remarks ? `The owner's remarks for reading it again (hints only, do not invent facts): data.input.remarks.\n` : ""}${input.category_hint ? `The owner says the primary sub-category is ${input.category_hint}.\n` : ""}
 Allowed main areas (main_key):
@@ -126,19 +126,23 @@ ${categoryLines()}
 
 4. REMARKS AND MEMORY (write these in Traditional Chinese, Hong Kong; address the member as 您, never 使用者 / 用戶)
 - summary: one short sentence (<= 160 characters) of what this input is.
-- domain_remarks: ONLY for the main areas this input touches; 2-3 short sentences, archive tone:
+- domain_remarks: ONLY for the main areas this input touches; 2-4 short sentences:
   (1) what was logged this time (「您記錄了身高為 177 cm」「您飲咗橙汁」);
   (2) a finding against prior_records of the same kind: the change and the rough time span (「比較兩星期前的血壓，收縮壓低了約
       8 mmHg」「比較上次體重，您輕了約 1.2 kg」); no prior of that kind -> 「這是您檔案中首次記錄的…」; never invent priors, numbers
       or dates, do not mention BMI;
-  (3) optional: a chronic condition in chronic_conditions + a short, well-known neutral fact (「高果糖與痛風相關」「高糖食物與血糖
-      控制相關」). Never advice: no 應該 / 唔好 / 建議 / reassurance / coaching, no new diagnosis.
+  (3) your health advice for this member, from what was logged, the change found, chronic_conditions and the memory: one or
+      two practical, well-established suggestions (「痛風患者宜少飲高果糖飲品，多飲水」「血壓比上次高，建議連續幾日早晚量血壓
+      並記錄」); when a value is clearly out of range or worsening, or a symptom sounds serious, say to see a doctor soon
+      (urgent signs -> seek medical help now). Never tell them to stop, start or change a prescribed medicine or dose (say
+      to ask the doctor), never state a new diagnosis as fact, no false reassurance. The owner knows this advice comes from
+      an AI, not a doctor.
 - situation_update: the WHOLE rolling memory rewritten (<= 1100 characters): the prior memory + this input as dated bullets
-  (「2026-11-04 血壓 128/82」), notable findings when room allows, stale trivia dropped. Facts only, no advice, no BMI.
+  (「2026-11-04 血壓 128/82」), notable findings when room allows, stale trivia dropped. Facts only (the advice stays in domain_remarks), no BMI.
   If this input is already in the memory (it is read again), do not add it twice. Not a health input -> leave it out.
 - illness_candidates: ONLY when clinical text clearly names a chronic condition or diagnosis NOT already in chronic_conditions;
   condition_key from diabetes, hypertension, gout, heartDisease, asthma, hyperlipidemia, kidneyDisease, thyroid, stroke, copd
   when it matches, else null. They are candidates the owner confirms - never facts. Else [].
 
-Never give medical advice.`;
+Advice only in domain_remarks, as in 4 (3); everything else is what the input says.`;
 }

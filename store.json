@@ -58,6 +58,34 @@
    "version": "0.2.0"
   },
   {
+   "about": "Your family's health in one place, kept on your computer, in five areas: body, diet, exercise, mind and care. Add photos, files, mood and sleep logs or a few words; your assistant files each one with its values, writes a short remark with health advice and keeps a running summary per member; timeline and BMI included. You choose which members it may talk about. Warning: the health advice in the remarks is written by an AI (your assistant), not by a doctor - it can be wrong; consult your doctor before acting on it.",
+   "archive": "dist/familyhealthrecords-0.2.1.tar.gz",
+   "author": "Bot Gateway",
+   "bytes": 41548,
+   "changes": [
+    "Choose the date of an input: after picking or dropping files you set the record's day (e.g. an old report added now gets the report's day); left empty, your assistant reads it from the file. Mood, sleep, text and height / weight keep the day you choose, and a date changed under \"Read again\" moves the input to that day",
+    "Each area now opens on its overview, as in Aera: the latest day's inputs (with their time), the summary and the sub-categories with their number of records - tap one to see its records. The top bar has the menu (☰), the member's name (tap to change member) and ＋",
+    "The summaries now include health advice from your assistant (AI). It is not checked by a doctor - ask your doctor before acting on it"
+   ],
+   "disclosure": {
+    "ai": {
+     "sends": "each health input you add (a photo, PDF, mood or sleep log, or text), with the member's name and birth year, chronic conditions, running summary and recent values, to file it and write a short remark with health advice",
+     "who": "owner"
+    },
+    "inbox": true,
+    "login": "none",
+    "net": [],
+    "visitors": null
+   },
+   "icon": "🩺",
+   "id": "familyhealthrecords",
+   "license": "Apache-2.0",
+   "name": "FamilyHealthRecords",
+   "sha256": "6582fd263ab58190245c3fd5f203c60ead8c79f63a38b5cf14e47b7ce0e96c45",
+   "type": "application",
+   "version": "0.2.1"
+  },
+  {
    "about": "Collect materials for a recipe (screenshots, photos, text, notes); the LLM turns them into a recipe.",
    "archive": "dist/recipes-0.2.0.tar.gz",
    "author": "Bot Gateway",

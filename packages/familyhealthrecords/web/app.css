@@ -18,7 +18,7 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; }
 body {
-  color: var(--ink); font: 15px/1.55 var(--ui); min-height: 100vh; padding-bottom: 84px;
+  color: var(--ink); font: 15px/1.55 var(--ui); min-height: 100vh; padding-bottom: 90px;
   background:
     radial-gradient(1100px 560px at 8% -8%, rgba(94, 184, 239, 0.22), transparent 55%),
     radial-gradient(900px 520px at 95% 0%, rgba(255, 200, 87, 0.22), transparent 50%),
@@ -32,24 +32,46 @@ h1, h2, h3, .display { font-family: var(--display); font-weight: 600; }
 h2 { font-size: 20px; margin: 18px 0 10px; }
 h3 { font-size: 16px; margin: 14px 0 8px; }
 
-/* top bar */
-.top { position: sticky; top: 0; z-index: 10; background: var(--sea); color: #fff; box-shadow: 0 2px 12px rgba(11, 127, 110, 0.25); }
-.bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 16px; max-width: 1100px; margin: 0 auto; flex-wrap: wrap; }
-.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.brand h1 { font-size: 19px; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.logo { font-size: 22px; }
-.menu { display: flex; gap: 4px; flex-wrap: wrap; }
-.menu button { border: 0; background: rgba(255, 255, 255, 0.14); color: #fff; padding: 6px 11px; border-radius: 999px; cursor: pointer; font: inherit; font-size: 14px; }
-.menu button.on { background: #fff; color: var(--sea-deep); }
-.menu .count { background: var(--sun); color: var(--ink); border-radius: 9px; padding: 0 6px; font-size: 12px; margin-left: 4px; }
-.people { display: flex; gap: 6px; overflow-x: auto; padding: 0 16px 10px; max-width: 1100px; margin: 0 auto; scrollbar-width: none; }
-.person { white-space: nowrap; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.45); background: transparent; color: #fff; padding: 4px 12px; cursor: pointer; font: inherit; font-size: 14px; }
-.person .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; border: 1px solid #fff; }
-.person.on { background: #fff; color: var(--sea-deep); border-color: #fff; }
-.person .busy { margin-left: 4px; }
+/* top bar: menu, the member shown, add */
+.top { position: sticky; top: 0; z-index: 10; background: var(--sea); color: #fff; box-shadow: 0 2px 12px rgba(11, 127, 110, 0.25); padding-top: env(safe-area-inset-top); }
+.bar { display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; height: 58px; padding: 0 8px; max-width: 1100px; margin: 0 auto; }
+.topbtn { width: 44px; height: 44px; border: 0; background: none; color: #fff; cursor: pointer; border-radius: 12px; display: grid; place-items: center; }
+.topbtn:hover { background: rgba(255, 255, 255, 0.14); }
+.topbtn svg { width: 28px; height: 28px; fill: currentColor; }
+.who { justify-self: center; border: 0; background: none; color: #fff; font: 600 22px/1.2 var(--ui); cursor: pointer; padding: 6px 12px; border-radius: 12px; max-width: 100%;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.who:hover { background: rgba(255, 255, 255, 0.14); }
+.who small { font-size: 14px; opacity: 0.85; margin-left: 4px; }
+.drawer { position: fixed; inset: 0; z-index: 25; background: rgba(12, 30, 28, 0.45); }
+.drawerbox { position: absolute; top: 0; bottom: 0; left: 0; width: min(300px, 85vw); background: var(--paper); padding: calc(16px + env(safe-area-inset-top)) 12px 16px;
+  display: flex; flex-direction: column; gap: 4px; overflow-y: auto; box-shadow: 4px 0 20px rgba(0, 0, 0, 0.2); }
+.drawerbox h3 { margin: 12px 10px 4px; font-size: 13px; color: var(--ink-soft); font-family: var(--ui); }
+.drawerbox button { text-align: left; border: 0; background: none; color: var(--ink); font: inherit; font-size: 16px; padding: 11px 12px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+.drawerbox button:hover, .drawerbox button.on { background: var(--mist); color: var(--sea-deep); }
+.drawerbox .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.drawerbox .count { margin-left: auto; background: var(--sun); color: var(--ink); border-radius: 9px; padding: 0 7px; font-size: 12px; }
+
+/* area overview (Aera): title, latest inputs, the summary, the sub-categories */
+.ov h1 { font-size: 30px; margin: 4px 0 6px; }
+.ov .lead { color: var(--ink-soft); margin: 0 0 22px; }
+.ov h2.sec { color: var(--sea-deep); font-family: var(--ui); font-weight: 700; font-size: 18px; margin: 22px 0 10px; display: flex; align-items: center; gap: 8px; }
+.latest { display: grid; gap: 2px; }
+.latest button { text-align: left; border: 0; background: none; font: inherit; color: var(--ink); padding: 6px 0; cursor: pointer; }
+.latest button:hover { color: var(--sea-deep); }
+.latest .tm { color: var(--ink-soft); margin-right: 6px; font-variant-numeric: tabular-nums; }
+.sumcard { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 16px 18px; white-space: pre-wrap; line-height: 1.75; }
+.ai { font-size: 11px; font-weight: 600; background: var(--sun); color: var(--ink); border-radius: 6px; padding: 1px 6px; }
+.subs { display: grid; }
+.subs button { display: flex; align-items: center; gap: 14px; border: 0; border-bottom: 1px solid var(--line); background: none; font: inherit; font-size: 17px; color: var(--ink);
+  padding: 15px 4px; cursor: pointer; text-align: left; }
+.subs button:last-child { border-bottom: 0; }
+.subs button:hover { color: var(--sea-deep); }
+.subs .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--sea); flex: none; }
+.subs .n { margin-left: auto; color: var(--ink-soft); font-size: 15px; }
+.subs .chev { color: var(--ink-soft); font-size: 20px; }
+.back { border: 0; background: none; color: var(--sea-deep); font: inherit; cursor: pointer; padding: 4px 0; margin-bottom: 6px; }
 
 .main { max-width: 1100px; margin: 0 auto; padding: 16px 16px 24px; }
-.foot { max-width: 1100px; margin: 0 auto; padding: 0 16px 20px; font-size: 12px; color: var(--ink-soft); }
 
 /* bottom area tabs + add button */
 .areas { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; display: flex; justify-content: center; background: var(--card);
@@ -58,9 +80,6 @@ h3 { font-size: 16px; margin: 14px 0 8px; }
   display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 2px; border-radius: 10px; }
 .areas button svg { width: 24px; height: 24px; fill: currentColor; }
 .areas button.on { color: var(--sea-deep); font-weight: 600; background: var(--mist); }
-.fab { position: fixed; right: max(18px, calc(50% - 530px)); bottom: calc(78px + env(safe-area-inset-bottom)); z-index: 11; width: 56px; height: 56px; border-radius: 50%;
-  border: 0; background: var(--sea); color: #fff; font-size: 30px; line-height: 1; cursor: pointer; box-shadow: 0 6px 18px var(--glow), 0 2px 6px rgba(0, 0, 0, 0.18); }
-.fab:hover { background: var(--sea-deep); }
 
 /* cards */
 .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
@@ -148,13 +167,12 @@ label.f { display: grid; gap: 4px; font-size: 13px; color: var(--ink-soft); }
 .pick { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 12px; }
 .preview { max-width: 100%; max-height: 60vh; border-radius: 12px; display: block; margin: 8px auto; }
 
-.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(150px + env(safe-area-inset-bottom)); z-index: 40; background: var(--ink); color: var(--paper);
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(90px + env(safe-area-inset-bottom)); z-index: 40; background: var(--ink); color: var(--paper);
   padding: 9px 16px; border-radius: 999px; max-width: calc(100% - 32px); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2); }
 .toast.bad { background: var(--bad); color: #fff; }
 
 @media (max-width: 640px) {
-  .brand h1 { font-size: 16px; }
-  .menu button { padding: 5px 9px; font-size: 13px; }
+  .ov h1 { font-size: 26px; }
   .tl { grid-template-columns: 1fr; }
   .rail { position: static; max-height: none; display: flex; overflow-x: auto; }
   .rail button { white-space: nowrap; }
