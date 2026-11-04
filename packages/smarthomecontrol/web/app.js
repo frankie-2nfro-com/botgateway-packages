@@ -36,7 +36,7 @@
     el.className = "conn " + (c === "live" ? "ok" : c === "connecting" || c === "reconnecting" ? "wait" : "bad");
   }
 
-  // --- one card -------------------------------------------------------------------------------------
+  // --- one part of a device -------------------------------------------------------------------------------------
 
   const fmt = (d) => {
     const u = d.attrs.unit_of_measurement;
@@ -102,7 +102,9 @@
 
   const snapUrl = (id) => `api/snapshot?id=${encodeURIComponent(id)}&t=${Date.now()}`;
 
-  function card(d) {
+  // One entity (what Home Assistant switches or reads) inside a device's panel: its state, controls and the
+  // assistant's access.
+  function ent(d) {
     // High risk: "may control" stays in the list, greyed, with the reason (it never just disappears).
     const why = HIGH_RISK_KIND(d.kind) ? "never for locks / water heaters" : "untick high risk first";
     const ai = $("showAi").checked ? `<div class="ai">Assistant: <select data-ai="1">
@@ -111,41 +113,102 @@
         <option value="control" ${d.ai === "control" ? "selected" : ""} ${d.high_risk ? "disabled" : ""}>may control${d.high_risk ? ` (${why})` : ""}</option></select>
         ${HIGH_RISK_KIND(d.kind) ? '<span class="muted">high risk</span>' : `<label class="check"><input type="checkbox" data-risk="1" ${d.high_risk ? "checked" : ""}> high risk</label>`}</div>` : "";
     const busy = pending.has(d.id);
-    return `<div class="card ${ON.includes(d.state) ? "is-on" : ""} ${d.state === "unavailable" ? "off-line" : ""}" id="c-${esc(d.id)}" data-id="${esc(d.id)}">
-      <div class="head"><span class="name" title="${esc(d.id)}">${esc(d.name)}</span>${d.ai !== "off" ? `<span class="badge" title="the assistant ${d.ai === "control" ? "may control" : "may read"} it">🤖${d.ai === "control" ? "" : "👁"}</span>` : ""}</div>
-      ${d.device && d.device !== d.name ? `<div class="dev">${esc(d.device)}</div>` : ""}
-      <div class="state">${busy ? "…" : esc(fmt(d))}</div>
-      <div class="ctl">${d.state === "unavailable" ? "" : controls(d)}</div>${ai}</div>`;
+    return `<div class="ent ${ON.includes(d.state) ? "is-on" : ""} ${d.state === "unavailable" ? "off-line" : ""}" id="e-${esc(d.id)}" data-id="${esc(d.id)}">
+      <div class="head"><span class="name" title="${esc(d.id)}">${esc(short(d))}</span>${d.ai !== "off" ? `<span class="badge" title="the assistant ${d.ai === "control" ? "may control" : "may read"} it">🤖${d.ai === "control" ? "" : "👁"}</span>` : ""}
+        <span class="state">${busy ? "…" : esc(fmt(d))}</span></div>
+      ${d.state === "unavailable" ? "" : `<div class="ctl">${controls(d)}</div>`}${ai}</div>`;
   }
   const HIGH_RISK_KIND = (k) => k === "lock" || k === "water_heater";
+  // Home Assistant names an entity "<device> <what>": inside the device's panel the device's name is left out.
+  const short = (d) => d.device && d.name.startsWith(d.device + " ") ? d.name.slice(d.device.length + 1) : d.name;
+  const PICTURE = (k) => k === "camera" || k === "image";
 
-  // --- the page ---------------------------------------------------------------------------------------
+  // --- devices: an entity's device (Home Assistant's device; an entity without one is its own) -------------
+
+  const keyOf = (d) => `${d.room || "No room"}|${d.device || d.id}`;
+  function groups() {
+    const g = new Map();
+    for (const d of devices.values()) {
+      const k = keyOf(d);
+      if (!g.has(k)) g.set(k, { key: k, room: d.room || "No room", name: d.device || d.name, ents: [] });
+      g.get(k).ents.push(d);
+    }
+    for (const x of g.values()) x.ents.sort((a, b) => a.name.localeCompare(b.name));
+    return g;
+  }
+  // The tile shows its main part: the first that switches something, else the first reading.
+  const MAIN = ["light", "climate", "media_player", "cover", "fan", "vacuum", "humidifier", "lock", "water_heater", "switch",
+    "input_boolean", "camera", "event", "sensor", "binary_sensor"];
+  const rank = (d) => { const i = MAIN.indexOf(d.kind); return i < 0 ? MAIN.length : i; };
+  const mainOf = (g) => [...g.ents].sort((a, b) => rank(a) - rank(b))[0];
+  const ICON = { light: "💡", switch: "🔌", input_boolean: "🔘", fan: "🌀", climate: "❄️", cover: "🪟", media_player: "📺", vacuum: "🧹",
+    humidifier: "💧", lock: "🔒", water_heater: "♨️", select: "☰", number: "🔢", button: "⏺", scene: "🎬", sensor: "📈",
+    binary_sensor: "📍", weather: "⛅", camera: "📷", image: "🖼", event: "🔔" };
+
+  function tile(g, withRoom) {
+    const m = mainOf(g), off = g.ents.every((d) => d.state === "unavailable"), ai = g.ents.some((d) => d.ai !== "off");
+    return `<button type="button" class="tile ${ON.includes(m.state) ? "is-on" : ""} ${off ? "off-line" : ""}" data-key="${esc(g.key)}">
+      <span class="ticon">${ICON[m.kind] || "•"}</span>
+      <span class="tname">${esc(g.name)}${ai ? ' <span class="badge" title="the assistant may see some of it">🤖</span>' : ""}</span>
+      <span class="state">${off ? "unavailable" : esc(fmt(m))}</span>
+      <span class="muted tmore">${withRoom ? esc(g.room) + " · " : ""}${g.ents.length} ${g.ents.length === 1 ? "part" : "parts"}</span></button>`;
+  }
+
+  // --- the page: pictures on top, a tab per room, the room's devices; a device opens its panel ---------------
+
+  let room = "";
+  try { room = localStorage.getItem("shc.room") || ""; } catch { }
+  let open = null;
 
   function render() {
-    const q = $("search").value.trim().toLowerCase(), kind = $("kind").value;
-    const list = [...devices.values()].filter((d) => (!kind || d.kind === kind)
-      && (!q || `${d.name} ${d.id} ${d.room} ${d.device}`.toLowerCase().includes(q)));
-    const rooms = new Map();
-    for (const d of list) {
-      const r = d.room || "No room";
-      if (!rooms.has(r)) rooms.set(r, []);
-      rooms.get(r).push(d);
+    const all = groups(), q = $("search").value.trim().toLowerCase(), kind = $("kind").value;
+    // Pictures: every camera / picture.
+    const pics = [...devices.values()].filter((d) => PICTURE(d.kind) && d.state !== "unavailable").sort((a, b) => a.name.localeCompare(b.name));
+    $("cams").classList.toggle("hidden", !pics.length);
+    if ($("cams").dataset.ids !== pics.map((d) => d.id).join()) {
+      $("cams").dataset.ids = pics.map((d) => d.id).join();
+      $("cams").innerHTML = pics.map((d) => `<figure class="cam"><img class="snap" data-snap="${esc(d.id)}" alt="${esc(d.name)}" src="${snapUrl(d.id)}" title="click to enlarge">
+        <figcaption>${esc(d.name)} <span class="muted">${esc(d.room)}</span></figcaption></figure>`).join("");
     }
+    // Rooms.
+    const rooms = new Map();
+    for (const g of all.values()) rooms.set(g.room, (rooms.get(g.room) || 0) + 1);
     const names = [...rooms.keys()].sort((a, b) => (a === "No room") - (b === "No room") || a.localeCompare(b));
-    $("rooms").innerHTML = names.length ? names.map((r) => {
-      // A device's parts (e.g. an air-con and its thermometer) stay next to each other.
-      const ds = rooms.get(r).sort((a, b) => (a.device || a.name).localeCompare(b.device || b.name) || a.name.localeCompare(b.name));
-      return `<section class="room"><h2>${esc(r)} <span class="muted">${ds.length}</span></h2><div class="cards">${ds.map(card).join("")}</div></section>`;
-    }).join("") : '<p class="muted">No devices match.</p>';
+    if (!rooms.has(room)) room = names[0] || "";
+    $("roomtabs").innerHTML = names.map((r) => `<button type="button" class="rtab ${r === room && !q ? "on" : ""}" data-room="${esc(r)}">${esc(r)} <span class="muted">${rooms.get(r)}</span></button>`).join("");
+    // Its devices (a search looks in every room).
+    const list = [...all.values()].filter((g) => (q ? true : g.room === room)
+      && (!kind || g.ents.some((d) => d.kind === kind))
+      && (!q || g.ents.some((d) => `${d.name} ${d.id} ${d.room} ${d.device}`.toLowerCase().includes(q))))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    $("rooms").innerHTML = list.length ? `<div class="tiles">${list.map((g) => tile(g, !!q)).join("")}</div>` : '<p class="muted">No devices match.</p>';
+    if (open) sheet();
   }
+
+  // A device's panel: its pictures, what it switches, what it reads.
+  function sheet() {
+    const g = groups().get(open), box = $("sheet");
+    if (!g) { closeSheet(); return; }
+    const pics = g.ents.filter((d) => PICTURE(d.kind)), rest = g.ents.filter((d) => !PICTURE(d.kind));
+    const acts = rest.filter((d) => d.actions.length), data = rest.filter((d) => !d.actions.length);
+    const part = (title, ds) => ds.length ? `<h3>${title}</h3><div class="ents">${ds.map(ent).join("")}</div>` : "";
+    box.innerHTML = `<div class="sheetbox"><div class="bighead"><b>${esc(g.name)}</b> <span class="muted">${esc(g.room)}</span>
+      <button type="button" id="sheetClose">Close</button></div>
+      ${part("Pictures", pics)}${part("Controls", acts)}${part("Readings", data)}</div>`;
+    box.classList.remove("hidden");
+  }
+  function closeSheet() { open = null; $("sheet").classList.add("hidden"); $("sheet").innerHTML = ""; }
 
   function update(d) {
     if (d.gone) { devices.delete(d.id); render(); return; }
+    const before = devices.get(d.id);
     devices.set(d.id, d);
-    const el = document.getElementById("c-" + d.id);
+    if (!before || keyOf(before) !== keyOf(d) || (PICTURE(d.kind) && (before.state === "unavailable") !== (d.state === "unavailable"))) { render(); return; }
+    const t = document.querySelector(`.tile[data-key="${CSS.escape(keyOf(d))}"]`);
+    if (t) t.outerHTML = tile(groups().get(keyOf(d)), !!$("search").value.trim());
+    const el = document.getElementById("e-" + d.id);
     // Not while the owner is moving one of its controls.
-    if (el && el.contains(document.activeElement) && document.activeElement.matches("input[type=range]")) return;
-    if (el) el.outerHTML = card(d); else render();
+    if (el && !(el.contains(document.activeElement) && document.activeElement.matches("input[type=range]"))) el.outerHTML = ent(d);
   }
 
   async function load(path = "state") {
@@ -194,7 +257,7 @@
     if (document.hidden) return;
     for (const img of document.querySelectorAll("img[data-snap]")) {
       const r = img.getBoundingClientRect();
-      if (r.bottom < 0 || r.top > innerHeight || img.dataset.loading) continue;
+      if (!r.width || r.bottom < 0 || r.top > innerHeight || img.dataset.loading) continue;
       img.dataset.loading = "1";
       const next = new Image();
       next.onload = () => { img.src = next.src; delete img.dataset.loading; img.classList.remove("nopic"); };
@@ -213,10 +276,21 @@
 
   document.addEventListener("click", (e) => {
     if (e.target.id === "bigClose" || e.target.id === "big") { $("big").classList.add("hidden"); $("big").innerHTML = ""; return; }
-    const pic = e.target.closest(".card img[data-snap]");
+    if (e.target.id === "sheetClose" || e.target.id === "sheet") { closeSheet(); return; }
+    const pic = e.target.closest("img.snap[data-snap]");
     if (pic) { const d = devices.get(pic.dataset.snap); bigPicture(pic.dataset.snap, d ? d.name : pic.dataset.snap); return; }
     const b = e.target.closest("button[data-act]");
-    if (b) act(b.closest(".card").dataset.id, b.dataset.act);
+    if (b) { act(b.closest(".ent").dataset.id, b.dataset.act); return; }
+    const tl = e.target.closest(".tile");
+    if (tl) { open = tl.dataset.key; sheet(); return; }
+    const rt = e.target.closest(".rtab");
+    if (rt) {
+      room = rt.dataset.room;
+      try { localStorage.setItem("shc.room", room); } catch { }
+      $("search").value = "";
+      render();
+      return;
+    }
     const t = e.target.closest(".tab");
     if (t) {
       document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("on", x === t));
@@ -225,11 +299,15 @@
       if (t.dataset.tab === "history") history();
     }
   });
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (!$("big").classList.contains("hidden")) { $("big").classList.add("hidden"); $("big").innerHTML = ""; } else if (open) closeSheet();
+  });
   document.addEventListener("input", (e) => {
     if (e.target.matches("input[type=range]")) e.target.nextElementSibling.textContent = e.target.value;
   });
   document.addEventListener("change", async (e) => {
-    const el = e.target, c = el.closest(".card");
+    const el = e.target, c = el.closest(".ent");
     if (c && el.dataset.act) return act(c.dataset.id, el.dataset.act, el.type === "range" ? Number(el.value) : el.value);
     if (c && (el.dataset.ai || el.dataset.risk)) {
       const ai = c.querySelector("[data-ai]").value, risk = c.querySelector("[data-risk]");

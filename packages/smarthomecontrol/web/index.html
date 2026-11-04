@@ -18,8 +18,10 @@
 <main class="main">
   <div id="note"></div>
   <section id="home">
+    <div id="cams" class="cams hidden"></div>
+    <div id="roomtabs" class="roomtabs"></div>
     <div class="tools">
-      <input id="search" type="search" placeholder="Search devices…">
+      <input id="search" type="search" placeholder="Search devices (all rooms)…">
       <select id="kind"><option value="">All kinds</option></select>
       <label class="check"><input type="checkbox" id="showAi"> Assistant access</label>
       <button type="button" id="reload" title="read rooms and devices from Home Assistant again">Reload</button>
@@ -28,6 +30,7 @@
   </section>
   <section id="history" class="hidden"><div id="hist"></div></section>
 </main>
+<div id="sheet" class="sheet hidden"></div>
 <div id="big" class="big hidden"></div>
 <div id="toast" class="toast hidden"></div>
 <script src="app.js"></script>
