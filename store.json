@@ -27,6 +27,37 @@
    "version": "0.1.0"
   },
   {
+   "about": "Your family's health in one place, kept on your computer, in five areas: body, diet, exercise, mind and care. Add photos, files, mood and sleep logs or a few words; your assistant files each one with its values, writes a short remark and keeps a running summary per member; timeline and BMI included. You choose which members it may talk about. A personal archive - not medical advice.",
+   "archive": "dist/familyhealthrecords-0.2.0.tar.gz",
+   "author": "Bot Gateway",
+   "bytes": 38864,
+   "changes": [
+    "New design after Aera: five areas at the bottom - body, diet, exercise, mind and care - each with its own sub-categories (blood test, blood pressure, food, sleep, prescription, follow-up ...). One input can be filed under several, e.g. a doctor's letter under doctor summary, prescription and follow-up",
+    "Add more than files with ＋: mood (from → to), sleep quality, height / weight and text records with quick templates (blood pressure, blood sugar ...)",
+    "Your assistant now also writes a short remark per area, compared with the earlier values (\"比較兩星期前的血壓…\"), and keeps a running summary per member. Inputs of one member are read one after another; the last 10 versions of the summary are kept and can be put back",
+    "Chronic conditions per member (Members); a condition your assistant finds in a doctor's letter waits for you to confirm it",
+    "Timeline (the days with inputs and that day's remarks) and My BMI (from the latest height and weight)",
+    "Chinese / English on the page; a new tool health_summary for your assistant; what was kept in 0.1.0 stays"
+   ],
+   "disclosure": {
+    "ai": {
+     "sends": "each health input you add (a photo, PDF, mood or sleep log, or text), with the member's name and birth year, chronic conditions, running summary and recent values, to file it and write a short remark",
+     "who": "owner"
+    },
+    "inbox": true,
+    "login": "none",
+    "net": [],
+    "visitors": null
+   },
+   "icon": "🩺",
+   "id": "familyhealthrecords",
+   "license": "Apache-2.0",
+   "name": "FamilyHealthRecords",
+   "sha256": "9c4e54313b4b94e9ab01885bfebe05b6e0a53cf38839002544caa3e5f38180b7",
+   "type": "application",
+   "version": "0.2.0"
+  },
+  {
    "about": "Collect materials for a recipe (screenshots, photos, text, notes); the LLM turns them into a recipe.",
    "archive": "dist/recipes-0.2.0.tar.gz",
    "author": "Bot Gateway",

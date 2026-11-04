@@ -1,19 +1,19 @@
 type = "application"
 id = "familyhealthrecords"
 name = "FamilyHealthRecords"
-version = "0.1.0"
-about = "Your family's health documents in one place, kept on your computer: blood tests, doctor's letters, prescriptions, blood pressure ... per family member. Your assistant reads each document and files its date and values by year; you choose which members it may talk about. A personal archive - not medical advice."
+version = "0.2.0"
+about = "Your family's health in one place, kept on your computer, in five areas: body, diet, exercise, mind and care. Add photos, files, mood and sleep logs or a few words; your assistant files each one with its values, writes a short remark and keeps a running summary per member; timeline and BMI included. You choose which members it may talk about. A personal archive - not medical advice."
 author = "Bot Gateway"
 license = "Apache-2.0"
 timeout_secs = 60
 
-# Its own program (app_familyhealthrecord_requirements.txt part B): server/main.js in the gateway's sandbox; its page is
-# web/. Local page only (no website); files from the phone come through the inbox folder the owner chooses.
+# Its own program (app_familyhealthrecord_requirements.txt parts B and C, after Aera): server/main.js in the gateway's
+# sandbox; its page is web/. Local page only (no website); files from the phone come through the inbox folder the owner chooses.
 [app]
 main = "server/main.js"
 icon = "🩺"
 ai = "owner"
-ai_sends = "each health document you add (a photo or PDF), with the member's name and birth year, to read its date, category and values"
+ai_sends = "each health input you add (a photo, PDF, mood or sleep log, or text), with the member's name and birth year, chronic conditions, running summary and recent values, to file it and write a short remark"
 login = "none"
 inbox = true
 
@@ -21,39 +21,47 @@ inbox = true
 [[tools]]
 name = "health_members"
 title = "Family members"
-description = "The family members the owner lets the assistant read: id, name, relation, birth year, number of documents. Their records are a personal archive of what the documents say - not medical advice."
+description = "The family members the owner lets the assistant read: id, name, relation, birth year, number of inputs. Their records are a personal archive - not medical advice."
 read_only = true
 input_schema = { type = "object", properties = {} }
 example = {}
 
 [[tools]]
+name = "health_summary"
+title = "Health summary"
+description = "A member's chronic conditions (set by the owner), the running health summary and the newest area remarks (body, diet, exercise, mental, medication = care). Start here for \"how is Mum doing?\"."
+read_only = true
+input_schema = { type = "object", required = ["member"], properties = { member = { type = "string", description = "a member's name or id from health_members" } } }
+example = { member = "Mum" }
+
+[[tools]]
 name = "health_records"
 title = "Health records"
-description = "A member's recorded values (newest first, at most 300): lab results with units and reference ranges and flags, blood pressure (extras systolic / diastolic / pulse), weight, glucose, medications, visits, vaccinations ... Narrow with kind (lab, blood_pressure, pulse, weight, height, glucose, temperature, medication, visit, vaccination, imaging, food, note), title (e.g. HbA1c), from / to (YYYY-MM-DD). Quote values as recorded; give no medical advice."
+description = "A member's records (newest first, at most 300): lab results with units, reference ranges and flags, blood pressure (extras systolic / diastolic / pulse), weight, height, glucose, medications, visits, vaccinations, food, exercise, mood, sleep, notes. Narrow with kind (vital_bp, vital_weight, vital_height, vital_glucose, lab_result, visit, medication, food, vaccination, imaging, note, mood, sleep, exercise), area (body, diet, exercise, mental, medication), title (e.g. HbA1c), from / to (YYYY-MM-DD). Quote values as recorded; give no medical advice."
 read_only = true
-input_schema = { type = "object", required = ["member"], properties = { member = { type = "string", description = "a member's name or id from health_members" }, kind = { type = "string" }, title = { type = "string" }, from = { type = "string" }, to = { type = "string" } } }
-example = { member = "Mum", kind = "blood_pressure" }
+input_schema = { type = "object", required = ["member"], properties = { member = { type = "string" }, kind = { type = "string" }, area = { type = "string" }, title = { type = "string" }, from = { type = "string" }, to = { type = "string" } } }
+example = { member = "Mum", kind = "vital_bp" }
 
 [[tools]]
 name = "health_latest"
 title = "Latest values"
-description = "The latest value of each test / measurement of a member (optionally only a kind or a title), with its date and source document. For questions like \"what was Dad's last HbA1c?\"."
+description = "The latest value of each test / measurement of a member (optionally only a kind or a title), with its date and source input. For questions like \"what was Dad's last HbA1c?\"."
 read_only = true
 input_schema = { type = "object", required = ["member"], properties = { member = { type = "string" }, kind = { type = "string" }, title = { type = "string" } } }
-example = { member = "Mum", kind = "lab" }
+example = { member = "Mum", kind = "lab_result" }
 
 [[tools]]
 name = "health_documents"
-title = "Documents"
-description = "A member's documents (newest 100): id, name, category, date, a short summary."
+title = "Inputs"
+description = "A member's inputs (newest 100): id, input (file, text, mood, sleep, height, weight), name, area, sub-category, date, a short summary."
 read_only = true
 input_schema = { type = "object", required = ["member"], properties = { member = { type = "string" } } }
 example = { member = "Mum" }
 
 [[tools]]
 name = "health_document"
-title = "One document"
-description = "One document of a member: its summary and every value read from it; picture = true also sends the photo itself (images only) as a file of the answer."
+title = "One input"
+description = "One input of a member: its summary, area remarks and every record read from it; picture = true also sends the photo itself (images only) as a file of the answer."
 read_only = true
 input_schema = { type = "object", required = ["member", "id"], properties = { member = { type = "string" }, id = { type = "integer" }, picture = { type = "boolean" } } }
 example = { member = "Mum", id = 1 }

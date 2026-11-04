@@ -4,8 +4,21 @@ for the gateway owners - the Portal and the gateway show them as "What's new" be
 store_update.sh --package familyhealthrecords publishes it (dated) and puts the next patch version on top; change
 the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
 
-0.1.1
+0.2.1
 - [Changed and non commited item put here]
+
+0.2.0 (2026-11-04)
+- New design after Aera: five areas at the bottom - body, diet, exercise, mind and care - each with its own
+  sub-categories (blood test, blood pressure, food, sleep, prescription, follow-up ...). One input can be filed under
+  several, e.g. a doctor's letter under doctor summary, prescription and follow-up
+- Add more than files with ＋: mood (from → to), sleep quality, height / weight and text records with quick templates
+  (blood pressure, blood sugar ...)
+- Your assistant now also writes a short remark per area, compared with the earlier values ("比較兩星期前的血壓…"),
+  and keeps a running summary per member. Inputs of one member are read one after another; the last 10 versions of the
+  summary are kept and can be put back
+- Chronic conditions per member (Members); a condition your assistant finds in a doctor's letter waits for you to confirm it
+- Timeline (the days with inputs and that day's remarks) and My BMI (from the latest height and weight)
+- Chinese / English on the page; a new tool health_summary for your assistant; what was kept in 0.1.0 stays
 
 0.1.0 (2026-11-04)
 - First version: your family's health documents per member, on your computer. Add photos or PDFs on the page or

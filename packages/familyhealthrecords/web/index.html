@@ -1,53 +1,24 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="referrer" content="no-referrer">
 <title>FamilyHealthRecords</title>
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
 <header class="top">
-  <div class="brand"><span class="logo">🩺</span><h1>FamilyHealthRecords</h1></div>
-  <nav class="nav">
-    <button type="button" class="tab on" data-tab="documents">Documents</button>
-    <button type="button" class="tab" data-tab="records">Records</button>
-    <button type="button" class="tab" data-tab="year">Year</button>
-    <button type="button" class="tab" data-tab="inbox">Inbox <span id="inboxCount" class="count hidden"></span></button>
-    <button type="button" class="tab" data-tab="members">Members</button>
-  </nav>
+  <div class="bar">
+    <div class="brand"><span class="logo">🩺</span><h1>FamilyHealthRecords</h1></div>
+    <nav class="menu" id="menu"></nav>
+  </div>
+  <div id="people" class="people"></div>
 </header>
-<div id="people" class="people"></div>
-<main class="main">
-  <section id="documents">
-    <div class="tools">
-      <label class="primary-btn">＋ Add documents<input id="pick" type="file" multiple accept="image/*,application/pdf,.heic,.heif" hidden></label>
-      <span class="muted">Photos or PDFs of blood tests, doctor's letters, prescriptions, blood pressure ... They are made smaller (text stays readable) and read by your assistant.</span>
-    </div>
-    <div id="docs"></div>
-  </section>
-  <section id="records" class="hidden">
-    <div class="tools">
-      <select id="recYear"></select>
-      <select id="recKind"><option value="">All kinds</option></select>
-      <button type="button" id="addRec">＋ Enter a value</button>
-    </div>
-    <div id="recForm" class="panel hidden"></div>
-    <div id="recs"></div>
-  </section>
-  <section id="year" class="hidden">
-    <div class="tools"><select id="yearPick"></select></div>
-    <div id="yearView"></div>
-  </section>
-  <section id="inbox" class="hidden"><div id="inboxView"></div></section>
-  <section id="members" class="hidden">
-    <div class="tools"><button type="button" id="addMember">＋ Add a member</button></div>
-    <div id="memberForm" class="panel hidden"></div>
-    <div id="memberList"></div>
-  </section>
-  <p id="notAdvice" class="foot muted"></p>
-</main>
+<main class="main" id="view"></main>
+<p id="notAdvice" class="foot"></p>
+<button type="button" id="fab" class="fab" aria-label="add">＋</button>
+<nav class="areas" id="areas"></nav>
 <div id="sheet" class="sheet hidden"></div>
 <div id="toast" class="toast hidden"></div>
 <script src="app.js"></script>
