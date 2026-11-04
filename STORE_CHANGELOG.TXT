@@ -6,8 +6,12 @@ Portal) and puts the next patch version on top. Package changes go into packages
 kit/ changes only for something meant for every application: a change for one application stays in that
 package (its own kit copy), so it is published with --package alone and no other application needs a retest.
 
-1.0.7
+1.0.8
 - [Changed and non commited item put here]
+
+1.0.7 (2026-11-04)
+- The store index's disclosure says when an application reads an inbox folder the owner chooses
+  (disclosure.inbox, from [app] inbox = true)
 
 1.0.6 (2026-11-03)
 - Store index: an application's disclosure lists the service on BotGateway's internal network it uses ([[app.local]],
