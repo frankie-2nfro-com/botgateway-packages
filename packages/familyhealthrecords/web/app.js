@@ -304,7 +304,8 @@
         <button type="button" class="btn danger" data-act="delete">${esc(t("del"))}</button>
       </div>
 `);
-    $("sheet").dataset.doc = d.id;
+    // Not data-doc on the sheet: that would make every button in it open the input again.
+    $("sheet").dataset.open = d.id;
   }
 
   function sheet(html) {
@@ -314,13 +315,13 @@
   const closeSheet = () => { $("sheet").classList.add("hidden"); $("sheet").innerHTML = ""; };
 
   async function docAction(act) {
-    const id = Number($("sheet").dataset.doc);
+    const id = Number($("sheet").dataset.open);
     try {
       if (act === "delete") {
         if (!confirm(t("delInput"))) return;
         await api("documents/delete", { id });
       } else if (act === "read") {
-        await api("documents/read", { id, member_id: Number($("dMember").value), category: $("dCat")?.value || "", remarks: $("dRemarks").value });
+        await api("documents/read", { id, member_id: Number($("dMember").value), category: $("dCat")?.value || "", date: $("dDate").value, remarks: $("dRemarks").value });
       } else if (act === "confirm") {
         await api("documents/confirm", { id, category: $("dCat")?.value || "", date: $("dDate").value });
       }
