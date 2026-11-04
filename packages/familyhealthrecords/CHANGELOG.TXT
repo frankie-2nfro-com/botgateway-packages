@@ -1,0 +1,15 @@
+FamilyHealthRecords - change log
+The top section is the coming version (no date): write each change below it as "- ...", in words
+for the gateway owners - the Portal and the gateway show them as "What's new" before an update.
+store_update.sh --package familyhealthrecords publishes it (dated) and puts the next patch version on top; change
+the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
+
+0.1.1
+- [Changed and non commited item put here]
+
+0.1.0 (2026-11-04)
+- First version: your family's health documents per member, on your computer. Add photos or PDFs on the page or
+  put them into the inbox folder (a sub-folder named after a member files them to that member); photos are made
+  smaller without losing readable text. Your assistant reads each document (date, category, values with units and
+  ranges); unclear ones wait for you to check. Records by year, values entered by hand, and read-only tools for
+  the members you allow (needs gateway 1.1.22: storage and inbox)
