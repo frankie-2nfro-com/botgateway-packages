@@ -6,8 +6,14 @@ Portal) and puts the next patch version on top. Package changes go into packages
 kit/ changes only for something meant for every application: a change for one application stays in that
 package (its own kit copy), so it is published with --package alone and no other application needs a retest.
 
-1.0.9
+1.0.10
 - [Changed and non commited item put here]
+
+1.0.9 (2026-11-05)
+- [app] triggers = ["name"] in worker.toml: the application's triggers (hook/<name>), checked when packing and
+  listed in its disclosure - the Portal offers the offline inbox only for an application with some
+- App kit login page: it is now the application's password on the owner's computer (gateway 1.1.24), so it
+  says "This application needs its password" / 「此應用程式需要密碼」
 
 1.0.8 (2026-11-05)
 - A package's description in more languages: [about_lang] in worker.toml (e.g. zh-Hant = "..."), checked when

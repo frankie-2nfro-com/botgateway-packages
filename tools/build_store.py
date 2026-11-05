@@ -79,8 +79,9 @@ def disclosure(m: dict):
     """What the Portal shows before an application is picked (app_hosting_requirements.txt 3.5,
     app_sandbox_requirements.txt 3): what it sends to the owner's bot and who may cause it, its login,
     what visitors of its website may do, which other websites it may reach and which service on BotGateway's
-    internal network it uses ([[app.local]]) and whether it reads an inbox folder the owner chooses
-    (inbox = true). Taken from [app]; the
+    internal network it uses ([[app.local]]), whether it reads an inbox folder the owner chooses
+    (inbox = true) and its triggers (triggers = ["clip"]: webhooks at hook/<name>; the Portal offers the
+    Offline inbox only for an application with some). Taken from [app]; the
     gateway shows the same from the installed manifest and enforces ai / net / login."""
     app = m.get("app") or {}
     ai = None
@@ -94,7 +95,20 @@ def disclosure(m: dict):
     # It reads (and moves to done/ / rejected/) files the owner puts into a folder the owner chooses.
     if app.get("inbox"):
         out["inbox"] = True
+    if app.get("triggers"):
+        out["triggers"] = app["triggers"]
     return out
+
+
+TRIGGER = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+
+
+def triggers_error(m: dict):
+    """[app] triggers: a list of trigger names (hook/<name>), checked when packing. None = fine."""
+    t = (m.get("app") or {}).get("triggers", [])
+    if not isinstance(t, list) or not all(isinstance(x, str) and TRIGGER.match(x) for x in t) or len(t) > 20:
+        return "[app] triggers must be a list of at most 20 names (letters, digits, - and _), e.g. [\"clip\"]"
+    return None
 
 
 LANG_CODE = re.compile(r"^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$")
@@ -155,6 +169,8 @@ def main():
             sys.exit(f"{folder.name}: license = \"Apache-2.0\" is required (store packages are open source)")
         if isinstance(about_lang(m), str):
             sys.exit(f"{folder.name}: {about_lang(m)}")
+        if triggers_error(m):
+            sys.exit(f"{folder.name}: {triggers_error(m)}")
         data = pack(folder)
         target = dist / f"{m['id']}-{m['version']}.tar.gz"
         if target.exists():

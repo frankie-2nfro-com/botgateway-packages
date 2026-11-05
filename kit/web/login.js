@@ -1,13 +1,13 @@
-// App kit - the website's login page (login.html). The gateway checks the password (sitepass.rs): this posts it
-// to ../_gw/login and goes where the gateway says (back to the page the visitor opened). Languages: add one to
-// WORDS (the key is the kit's language code, as the app's `languages`); the page uses the visitor's kit language
+// App kit - the application's login page (login.html). The gateway checks the password (apppass.rs): this posts
+// it to ../_gw/login and goes where the gateway says (back to the page the owner opened). Languages: add one to
+// WORDS (the key is the kit's language code, as the app's `languages`); the page uses the browser's kit language
 // (kit-lang, chosen on the app's own pages), else the browser's, else English.
 "use strict";
 (() => {
   const WORDS = {
-    en: { need: "This website needs a password.", label: "Password", go: "Log in", wrong: "Wrong password.",
+    en: { need: "This application needs its password.", label: "Password", go: "Log in", wrong: "Wrong password.",
       wait: "Too many tries - please wait 15 minutes.", bad: "Could not log in - please try again." },
-    zh: { need: "此網站需要密碼。", label: "密碼", go: "登入", wrong: "密碼不正確。",
+    zh: { need: "此應用程式需要密碼。", label: "密碼", go: "登入", wrong: "密碼不正確。",
       wait: "錯誤太多次，請 15 分鐘後再試。", bad: "未能登入，請再試。" },
   };
   const NAMES = { en: "EN", zh: "中文" };
