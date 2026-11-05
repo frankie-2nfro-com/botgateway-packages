@@ -6,8 +6,15 @@ Portal) and puts the next patch version on top. Package changes go into packages
 kit/ changes only for something meant for every application: a change for one application stays in that
 package (its own kit copy), so it is published with --package alone and no other application needs a retest.
 
-1.0.8
+1.0.9
 - [Changed and non commited item put here]
+
+1.0.8 (2026-11-05)
+- A package's description in more languages: [about_lang] in worker.toml (e.g. zh-Hant = "..."), checked when
+  packing, listed as about_lang in the store index - the Portal and the Applications page show it (relay 1.1.7)
+- App kit: the website's login page (kit/web/login.html, login.js, login.css - English and 中文, more languages
+  in login.js). The gateway (1.1.23) shows it when the owner sets a password for the website and checks the
+  password itself. An application copies them into its web/kit/ and sets its look in its own web/login-look.css
 
 1.0.7 (2026-11-04)
 - The store index's disclosure says when an application reads an inbox folder the owner chooses

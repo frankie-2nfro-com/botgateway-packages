@@ -97,6 +97,23 @@ def disclosure(m: dict):
     return out
 
 
+LANG_CODE = re.compile(r"^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$")
+
+
+def about_lang(m: dict):
+    """The description in more languages ([about_lang] in worker.toml, e.g. zh-Hant = "..."): the Portal and the
+    Applications page show the visitor's language, else `about` (English). Checked when packing."""
+    out = m.get("about_lang") or {}
+    if not isinstance(out, dict):
+        return "[about_lang] must be a table: <language code> = \"text\""
+    for k, v in out.items():
+        if not LANG_CODE.match(k):
+            return f"[about_lang] {k}: not a language code (e.g. zh-Hant, ja, fr)"
+        if not isinstance(v, str) or not v.strip() or len(v) > 2000:
+            return f"[about_lang] {k}: 1-2000 characters of text"
+    return out
+
+
 MAX_ICON = 16 * 1024
 
 
@@ -136,6 +153,8 @@ def main():
             sys.exit(f"{folder.name}: worker.toml id must be '{folder.name}'")
         if m.get("license") != "Apache-2.0":
             sys.exit(f"{folder.name}: license = \"Apache-2.0\" is required (store packages are open source)")
+        if isinstance(about_lang(m), str):
+            sys.exit(f"{folder.name}: {about_lang(m)}")
         data = pack(folder)
         target = dist / f"{m['id']}-{m['version']}.tar.gz"
         if target.exists():
@@ -153,6 +172,8 @@ def main():
         entries.append({"id": m["id"], "version": m["version"], "type": m.get("type", "worker"), "name": m["name"],
                         "about": m.get("about", ""), "author": m.get("author", ""), "license": m["license"],
                         "archive": f"dist/{a.name}", "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)})
+        if isinstance(about_lang(m), dict) and about_lang(m):
+            entries[-1]["about_lang"] = about_lang(m)
         if changes.get(m["id"], {}).get(m["version"]):
             entries[-1]["changes"] = changes[m["id"]][m["version"]]
         if m.get("type") == "application":
