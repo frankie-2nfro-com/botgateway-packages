@@ -1,7 +1,8 @@
 // App kit - the application's login page (login.html). The gateway checks the password (apppass.rs): this posts
 // it to ../_gw/login and goes where the gateway says (back to the page the owner opened). Languages: add one to
 // WORDS (the key is the kit's language code, as the app's `languages`); the page uses the browser's kit language
-// (kit-lang, chosen on the app's own pages), else the browser's, else English.
+// (kit-lang, chosen on the app's own pages), else the language the app's page was shown in (its <html lang>,
+// kept by the gateway's watch.js), else the browser's, else English.
 "use strict";
 (() => {
   const WORDS = {
@@ -14,8 +15,10 @@
   const $ = (id) => document.getElementById(id);
   let saved = "";
   try { saved = localStorage.getItem("kit-lang") || ""; } catch (_) { }
+  let page = "";
+  try { page = (localStorage.getItem("botgw-lang:" + location.pathname.replace(/_gw\/login$/, "")) || "").slice(0, 2).toLowerCase(); } catch (_) { }
   const browser = (navigator.language || "").slice(0, 2).toLowerCase();
-  let lang = WORDS[saved] ? saved : WORDS[browser] ? browser : "en";
+  let lang = WORDS[saved] ? saved : WORDS[page] ? page : WORDS[browser] ? browser : "en";
   const show = () => {
     const w = WORDS[lang];
     document.documentElement.lang = lang === "zh" ? "zh-Hant" : lang;
