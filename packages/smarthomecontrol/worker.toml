@@ -1,11 +1,15 @@
 type = "application"
 id = "smarthomecontrol"
 name = "SmartHomeControl"
-version = "0.1.4"
+version = "0.1.5"
 about = "One page for your whole home through Home Assistant: every room and device with its state, live, and the controls that fit it (lights, plugs, fans, air-con, curtains, TVs, vacuums ...). You choose per device what your assistant may see or switch; locks and heaters are never switched by the assistant."
 author = "Bot Gateway"
 license = "Apache-2.0"
 timeout_secs = 30
+
+# The description in more languages (the Portal and the Applications page; else `about`, English).
+[about_lang]
+zh-Hant = "透過 Home Assistant，一頁看盡全屋：每個房間和裝置的即時狀態，以及合適的控制（燈、插座、風扇、冷氣、窗簾、電視、吸塵機……）。你可以逐個裝置決定助理可以查看或開關；門鎖和暖爐永遠不會由助理開關。"
 
 # Its own program (app_smarthomecontrol_requirements.txt): server/main.js in the gateway's sandbox; its page is web/.
 # It speaks only to the owner's Home Assistant (address + token in Config), never to the internet, and has no website.

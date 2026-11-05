@@ -4,8 +4,11 @@ for the gateway owners - the Portal and the gateway show them as "What's new" be
 store_update.sh --package smarthomecontrol publishes it (dated) and puts the next patch version on top; change
 the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
 
-0.1.5
+0.1.6
 - [Changed and non commited item put here]
+
+0.1.5 (2026-11-05)
+- Its description in 中文 too: the Portal and the Applications page show it in your language
 
 0.1.4 (2026-11-04)
 - New page layout: the cameras' pictures on top, a tab per room, one tile per device (its main state); click a device to see all its parts - pictures, controls and readings - and the assistant's access to each
