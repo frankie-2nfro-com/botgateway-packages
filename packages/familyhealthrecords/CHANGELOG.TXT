@@ -4,8 +4,11 @@ for the gateway owners - the Portal and the gateway show them as "What's new" be
 store_update.sh --package familyhealthrecords publishes it (dated) and puts the next patch version on top; change
 the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
 
-0.2.4
+0.2.5
 - [Changed and non commited item put here]
+
+0.2.4 (2026-11-05)
+- Its description in 中文 too: the Portal and the Applications page show it in your language
 
 0.2.3 (2026-11-04)
 - Fixed: "Read again", "Delete" and "It is right" in an input's panel did nothing (the panel only opened again);

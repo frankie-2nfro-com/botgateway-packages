@@ -1,11 +1,15 @@
 type = "application"
 id = "familyhealthrecords"
 name = "FamilyHealthRecords"
-version = "0.2.3"
+version = "0.2.4"
 about = "Your family's health in one place, kept on your computer, in five areas: body, diet, exercise, mind and care. Add photos, files, mood and sleep logs or a few words; your assistant files each one with its values, writes a short remark with health advice and keeps a running summary per member; timeline and BMI included. You choose which members it may talk about. Warning: the health advice in the remarks is written by an AI (your assistant), not by a doctor - it can be wrong; consult your doctor before acting on it."
 author = "Bot Gateway"
 license = "Apache-2.0"
 timeout_secs = 60
+
+# The description in more languages (the Portal and the Applications page; else `about`, English).
+[about_lang]
+zh-Hant = "把家人的健康資料集中一處，全部存在你的電腦，分為五個範疇：身體情況、飲食、運動、心理及醫治。加入相片、檔案、心情及睡眠記錄或幾句文字；你的助理會把每項輸入歸類並記下數值，寫一段附健康建議的簡短評語，並為每位成員保留持續更新的摘要；另有時間線及 BMI。你可以決定助理可談及哪些成員。注意：評語中的健康建議由 AI（你的助理）撰寫，並非醫生意見，可能有誤；行動前請先諮詢醫生。"
 
 # Its own program (app_familyhealthrecord_requirements.txt parts B and C, after Aera): server/main.js in the gateway's
 # sandbox; its page is web/. Local page only (no website); files from the phone come through the inbox folder the owner chooses.
