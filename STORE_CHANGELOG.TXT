@@ -6,8 +6,12 @@ Portal) and puts the next patch version on top. Package changes go into packages
 kit/ changes only for something meant for every application: a change for one application stays in that
 package (its own kit copy), so it is published with --package alone and no other application needs a retest.
 
-1.0.10
+1.0.11
 - [Changed and non commited item put here]
+
+1.0.10 (2026-11-05)
+- App kit login page: without a language chosen in the kit, it uses the language the application's page was
+  shown in (kept by gateway 1.1.26), before the browser's
 
 1.0.9 (2026-11-05)
 - [app] triggers = ["name"] in worker.toml: the application's triggers (hook/<name>), checked when packing and
