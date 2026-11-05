@@ -1,0 +1,36 @@
+/* App kit - the website's login page (login.html). An app sets its look in its own web/login-look.css:
+   :root { --look-accent: ...; --look-paper: ...; --look-font: ...; } */
+:root {
+  --accent: var(--look-accent, #3b6df0);
+  --bg: var(--look-paper, #f6f7f9);
+  --card: #fff;
+  --text: #26231f;
+  --muted: color-mix(in srgb, var(--text) 55%, var(--bg));
+  --line: color-mix(in srgb, var(--text) 16%, var(--bg));
+  --bad: #c2412d;
+  --font: var(--look-font, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --accent: color-mix(in srgb, var(--look-accent, #6f95ff) 75%, #fff); --bg: #1a1917; --card: #24221f; --text: #eeeae4; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg); color: var(--text);
+  font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.hidden { display: none !important; }
+.login { position: relative; width: 100%; max-width: 380px; margin: 16px; padding: 32px 28px 24px; background: var(--card); border: 1px solid var(--line);
+  border-radius: 16px; box-shadow: 0 6px 24px rgba(0, 0, 0, .06); text-align: center; }
+.lock { font-size: 34px; line-height: 1; margin-bottom: 10px; }
+h1 { margin: 0 0 4px; font: 600 22px/1.25 var(--font); overflow-wrap: anywhere; }
+p { margin: 0 0 20px; color: var(--muted); }
+form { text-align: left; }
+label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+input { width: 100%; font: inherit; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: inherit; }
+input:focus { outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent); border-color: var(--accent); }
+button[type=submit] { margin-top: 14px; width: 100%; font: 600 15px/1 system-ui, sans-serif; padding: 13px; border: 0; border-radius: 10px;
+  background: var(--accent); color: #fff; cursor: pointer; }
+button[type=submit]:disabled { opacity: .6; cursor: default; }
+.err { min-height: 1.5em; margin-top: 10px; color: var(--bad); font-size: 14px; text-align: center; }
+.langs { position: absolute; top: 12px; right: 12px; display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.langs button { border: 0; background: transparent; color: var(--muted); font: 600 12px/1 system-ui, sans-serif; padding: 6px 10px; cursor: pointer; }
+.langs button.on { background: var(--accent); color: #fff; }

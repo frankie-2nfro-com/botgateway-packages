@@ -1,11 +1,15 @@
 type = "application"
 id = "recipes"
 name = "Recipes"
-version = "0.5.11"
+version = "0.5.12"
 about = "Your recipe book: collect screenshots, photos and notes as materials; the assistant writes the finished recipe from them - cover photo, ingredients you can scale, the method with step pictures. Its website shows the recipes you publish."
 author = "Bot Gateway"
 license = "Apache-2.0"
 timeout_secs = 30
+
+# The description in more languages (the Portal and the Applications page; else `about`, English).
+[about_lang]
+zh-Hant = "你的食譜書：把截圖、相片和筆記收集成素材，由助理寫成完整食譜 - 封面相、可按份量調整的材料、附步驟相片的做法。它的網站會展示你發佈的食譜。"
 
 # Its own program (app_sandbox_requirements.txt): server/main.js runs in the gateway's sandbox, built on
 # the app kit (kit/, copied from botgateway-packages/kit); its pages are web/.

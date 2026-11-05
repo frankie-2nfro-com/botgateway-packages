@@ -4,8 +4,12 @@ for the gateway owners - the Portal and the gateway show them as "What's new" be
 store_update.sh --package recipes publishes it (dated) and puts the next patch version on top; change
 the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
 
-0.5.12
+0.5.13
 - [Changed and non commited item put here]
+
+0.5.12 (2026-11-05)
+- Its description in 中文 too: the Portal and the Applications page show it in your language
+- Its website can have a password (gateway 1.1.23): the login page is in the recipes' look, in English and 中文
 
 0.5.11 (2026-11-01)
 - Each of its tools has a sample (`example`): the gateway's Simulator and Send test start from it (gateway 1.1.11)
