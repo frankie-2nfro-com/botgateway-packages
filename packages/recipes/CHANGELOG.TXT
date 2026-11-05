@@ -4,8 +4,12 @@ for the gateway owners - the Portal and the gateway show them as "What's new" be
 store_update.sh --package recipes publishes it (dated) and puts the next patch version on top; change
 the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
 
-0.5.13
+0.5.14
 - [Changed and non commited item put here]
+
+0.5.13 (2026-11-05)
+- Its login page is for the application's password on your computer (gateway 1.1.24), no longer the website's
+- Lists its trigger (clip), so the Portal shows its Inbox
 
 0.5.12 (2026-11-05)
 - Its description in 中文 too: the Portal and the Applications page show it in your language
