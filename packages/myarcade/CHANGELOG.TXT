@@ -4,8 +4,12 @@ for the gateway owners - the Portal and the gateway show them as "What's new" be
 store_update.sh --package myarcade publishes it (dated) and puts the next patch version on top; change
 the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
 
-0.1.3
+0.1.4
 - [Changed and non commited item put here]
+
+0.1.3 (2026-11-06)
+- The prompt you copy now tells the AI tool where to work, how to test the game without MyArcade, and what to do if it can't make image
+  files or write files at all. The page reminds you to open an empty project in the tool first.
 
 0.1.2 (2026-11-06)
 - Make a game in any AI tool, also when your gateway's client is a remote bot: copy the whole prompt, paste it into Cursor or

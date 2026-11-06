@@ -35,7 +35,11 @@ export function fullPrompt({ job, description, comment, errors, current }) {
   ];
   if (comment) parts.push(`This is a new version of an existing game. Keep what works. The owner asks: ${comment}`);
   if (errors?.length) parts.push(`Your last pack was refused by MyArcade's checks. Fix exactly these:\n${errors.map((e) => `- ${e}`).join("\n")}`);
-  parts.push(`Deliver: build the game (npm and a bundler are fine; game.js must end up as one ES module with no imports) and put the finished pack, with flat file names, in one folder called myarcade-job-${job}. It holds only the pack: game.json, game.js, the cover and any assets, no source and no node_modules. Keep your source elsewhere in the project. Then tell the owner the folder's full path: the owner uploads that folder to MyArcade, which runs its checks. Before you finish, go through the "Done means" list and report each item honestly, saying which you could not run.`);
+  parts.push(`Where to work: this text is all you get from MyArcade; it has no project, SDK or test tool for you. Work in the folder or project the owner has open here. If there is none, ask the owner to open a new empty one first.
+
+Deliver: put the finished pack, with flat file names, in one folder called myarcade-job-${job}, at the top of that project. It holds only the pack: game.json, game.js, the cover and any assets, no source and no node_modules. Keep your source outside it. game.js must end up as one ES module with no imports: use npm and a bundler if they are available here, or write plain JavaScript if not. If you can't make image or sound files here, draw in code and synthesise sound instead, and say so. Then tell the owner the folder's full path: the owner uploads that folder to MyArcade, which runs its checks.
+
+Test before you deliver: outside the pack, write a small HTML page with one canvas that calls mount(canvas, host) with a stand-in host as in section 4, and run it in a browser if you can. Before you finish, go through the "Done means" list and report each item honestly, saying which you could not run. If you can't write files here at all, say so at once, and give each file's whole text for the owner to save into that folder.`);
   if (current) parts.push(`The current game.json:\n${JSON.stringify(current.game_json)}\n\nThe current game.js${current.game_js === null ? " is too big to include: work from your own project." : `:\n${current.game_js}`}`);
   parts.push(`--- SPECIFICATION ---\n${SPEC}`);
   return parts.join("\n\n");
