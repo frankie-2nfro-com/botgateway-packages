@@ -54,6 +54,8 @@
       delMember: (m) => `刪除 ${m.name} 同佢所有 ${m.documents} 個記錄？刪咗就冇得返轉頭。\n打個名確認（或者用「修改 → 封存」保留資料）：`,
       dropHere: "放開就加入", todayBtn: "今日", addN: (n) => `加入 ${n} 個檔案`,
       fileDateHint: "記錄日期：例如補入舊報告，就揀報告嘅日子。留空 = 由助理喺文件讀出日期（讀唔到就用今日）。", born: (y) => `${y} 年出生`,
+      trayWait: "⏳ 你的助理整理緊", trayLook: "⚠️ 要你睇吓", trayDone: "✓ 啱啱整理好", filed: "✓ 已整理", clearDone: "清除已完成", hide: "收起", show: "打開",
+      trayN: (w, a, d) => [w && `${w} 個整理緊`, a && `${a} 個要你睇`, d && `${d} 個啱啱整理好`].filter(Boolean).join(" · "),
     },
     en: {
       timeline: "Timeline", bmi: "My BMI", year: "Year", inbox: "Inbox", members: "Members", lang: "中文",
@@ -91,6 +93,8 @@
       delMember: (m) => `Delete ${m.name} with all ${m.documents} inputs? This can't be undone.\nType the name to confirm (or use Edit → Archived to keep them):`,
       dropHere: "drop to add", todayBtn: "Today", addN: (n) => `Add ${n} file(s)`,
       fileDateHint: "The record's date: for an old report added now, pick the report's day. Empty = your assistant reads the date in the file (else today).", born: (y) => `born ${y}`,
+      trayWait: "⏳ Your assistant is filing", trayLook: "⚠️ Please have a look", trayDone: "✓ Just filed", filed: "✓ filed", clearDone: "Clear the filed", hide: "Hide", show: "Show",
+      trayN: (w, a, d) => [w && `${w} being filed`, a && `${a} to look at`, d && `${d} just filed`].filter(Boolean).join(" · "),
     },
   };
   let lang = "zh";
@@ -99,9 +103,12 @@
   const nm = (x) => (x ? x.name[lang === "zh" ? 1 : 0] : "");
   const opt = (arr) => arr[lang === "zh" ? 2 : 1];
 
-  let st = { members: [], areas: [], categories: [], inbox: { files: [] }, busy: [] };
-  let who = null, view = "body", sub = null, poll = null, tlDay = null;
-  try { who = Number(localStorage.getItem("fhr.member")) || null; view = localStorage.getItem("fhr.view") || "body"; } catch { }
+  let st = { members: [], areas: [], categories: [], inbox: { files: [] }, busy: [], pending: [] };
+  let who = null, view = "body", sub = null, poll = null, tlDay = null, trayOpen = true, seen = [];
+  try {
+    who = Number(localStorage.getItem("fhr.member")) || null; view = localStorage.getItem("fhr.view") || "body";
+    trayOpen = localStorage.getItem("fhr.tray") !== "closed"; seen = JSON.parse(localStorage.getItem("fhr.seen") || "[]");
+  } catch { }
 
   async function api(path, body) {
     const r = await fetch("api/" + path, body === undefined ? { headers: { "x-botgateway": "1" } }
@@ -175,7 +182,40 @@
     $("areas").innerHTML = st.areas.map((a) => `<button type="button" data-view="${a.key}" class="${view === a.key ? "on" : ""}">${svg(a.key)}<span>${esc(nm(a))}</span></button>`).join("");
     $("plus").classList.toggle("hidden", !m);
     document.documentElement.lang = lang === "zh" ? "zh-Hant" : "en";
+    tray();
     if (!$("drawer").classList.contains("hidden")) drawer();
+  }
+
+  // The tray under the top bar, on every page: the inputs (of all members) waiting or being read, those that
+  // failed or are to check (until dealt with) and those just filed (until cleared) - so an input added is never
+  // out of sight while it has no area yet.
+  const waiting = (d) => d.status === "queued" || d.status === "reading";
+  function tray() {
+    const list = st.pending.filter((d) => d.status !== "ready" || !seen.includes(d.id));
+    const el = $("tray");
+    el.classList.toggle("hidden", !list.length);
+    if (!list.length) return;
+    const w = list.filter(waiting).length, look = list.filter((d) => d.status === "failed" || d.status === "needs_check").length, done = list.length - w - look;
+    const many = active().length > 1;
+    const hubName = { text: "hubText", mood: "hubMood", sleep: "hubSleep", height: "height", weight: "weight" };
+    const label = (d) => (d.status === "ready" && d.summary) || (d.input === "text" && d.note?.text ? d.note.text.slice(0, 60) : d.name || t(hubName[d.input] || "hubPhoto"));
+    const row = (d) => {
+      const m = st.members.find((x) => x.id === d.member_id);
+      const right = d.status === "ready" ? `<span class="st-ready">${esc(t("filed"))}${d.main_key ? ` · ${esc(nm(area(d.main_key)))}` : ""}</span>` : status(d);
+      return `<div class="trow"><button type="button" class="tdoc" data-doc="${d.id}"><span class="tthumb">${thumb(d)}</span>
+          <span class="tbody"><span class="tname">${many && m ? `<span class="dot" style="background:${esc(m.color)}"></span>${esc(m.name)} · ` : ""}${esc(label(d))}</span>
+          ${d.reason && d.status !== "ready" ? `<span class="treason">${esc(d.reason)}</span>` : ""}</span>${right}</button>
+        ${d.status === "ready" ? `<button type="button" class="tx" data-seen="${d.id}" aria-label="${esc(t("close"))}">✕</button>` : ""}</div>`;
+    };
+    el.innerHTML = `<div class="trayhead"><b>${esc(w ? t("trayWait") : look ? t("trayLook") : t("trayDone"))}</b><span class="muted">${esc(t("trayN")(w, look, done))}</span>
+        ${done && trayOpen ? `<button type="button" class="link" data-seen="all">${esc(t("clearDone"))}</button>` : ""}
+        <button type="button" class="link" data-tray>${esc(trayOpen ? t("hide") : t("show"))}</button></div>
+      ${trayOpen ? `<div class="trows">${list.map(row).join("")}</div>` : ""}`;
+  }
+  function markSeen(id) {
+    seen = [...seen, ...(id === "all" ? st.pending.filter((d) => d.status === "ready").map((d) => d.id) : [Number(id)])].slice(-300);
+    try { localStorage.setItem("fhr.seen", JSON.stringify(seen)); } catch { }
+    tray();
   }
 
   // The menu: the other pages, the members (to change), the language.
@@ -209,17 +249,30 @@
   async function render() {
     clearTimeout(poll);
     try { localStorage.setItem("fhr.view", view); } catch { }
-    const v = $("view");
-    if (view === "members") return members(v);
-    if (view === "inbox") return inbox(v);
-    const m = me();
-    if (!m) { v.innerHTML = `<div class="card empty">${esc(t("addMemberFirst"))}</div>`; return; }
-    if (view === "timeline") await timeline(v, m);
+    const v = $("view"), m = me();
+    if (view === "members") await members(v);
+    else if (view === "inbox") await inbox(v);
+    else if (!m) v.innerHTML = `<div class="card empty">${esc(t("addMemberFirst"))}</div>`;
+    else if (view === "timeline") await timeline(v, m);
     else if (view === "bmi") await bmi(v, m);
     else if (view === "year") await year(v, m);
     else await areaView(v, m);
-    // While the member's inputs are being read: look again.
-    if (busyOf(m.id)) poll = setTimeout(async () => { st = await api("state"); frame(); render(); }, 4000);
+    watch();
+  }
+
+  // While inputs wait or are being read: look again every 4 seconds - the tray each time, the page only when an
+  // input changed (and not the members or inbox pages, which may have a form open).
+  const sig = () => st.pending.map((d) => `${d.id}:${d.status}`).join();
+  function watch() {
+    clearTimeout(poll);
+    if (!st.pending.some(waiting)) return;
+    const was = sig();
+    poll = setTimeout(async () => {
+      try { st = await api("state"); } catch { return watch(); }
+      frame();
+      if (sig() !== was && view !== "members" && view !== "inbox") render().catch(() => watch());
+      else watch();
+    }, 4000);
   }
 
   function go(next) {
@@ -574,6 +627,13 @@
   document.addEventListener("click", async (e) => {
     const el = e.target;
     if (el.closest("[data-close]") || el.id === "sheet") return closeSheet();
+    const sn = el.closest("[data-seen]");
+    if (sn) return markSeen(sn.dataset.seen);
+    if (el.closest("[data-tray]")) {
+      trayOpen = !trayOpen;
+      try { localStorage.setItem("fhr.tray", trayOpen ? "open" : "closed"); } catch { }
+      return tray();
+    }
     if (el.id === "drawer") return closeDrawer();
     if (el.closest("#menuBtn")) return drawer();
     if (el.closest("#whoBtn")) return whoSheet();

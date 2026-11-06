@@ -167,6 +167,35 @@
    "version": "0.2.4"
   },
   {
+   "about": "Your family's health in one place, kept on your computer, in five areas: body, diet, exercise, mind and care. Add photos, files, mood and sleep logs or a few words; your assistant files each one with its values, writes a short remark with health advice and keeps a running summary per member; timeline and BMI included. You choose which members it may talk about. Warning: the health advice in the remarks is written by an AI (your assistant), not by a doctor - it can be wrong; consult your doctor before acting on it.",
+   "about_lang": {
+    "zh-Hant": "把家人的健康資料集中一處，全部存在你的電腦，分為五個範疇：身體情況、飲食、運動、心理及醫治。加入相片、檔案、心情及睡眠記錄或幾句文字；你的助理會把每項輸入歸類並記下數值，寫一段附健康建議的簡短評語，並為每位成員保留持續更新的摘要；另有時間線及 BMI。你可以決定助理可談及哪些成員。注意：評語中的健康建議由 AI（你的助理）撰寫，並非醫生意見，可能有誤；行動前請先諮詢醫生。"
+   },
+   "archive": "dist/familyhealthrecords-0.2.5.tar.gz",
+   "author": "Bot Gateway",
+   "bytes": 44973,
+   "changes": [
+    "A tray under the top bar on every page shows what your assistant is working on: waiting, being read, failed or to check (until you deal with it) and just filed (with its area, until you clear it) - for every member. Press one to open it; the tray can be hidden. Before, a new input only showed as a short message"
+   ],
+   "disclosure": {
+    "ai": {
+     "sends": "each health input you add (a photo, PDF, mood or sleep log, or text), with the member's name and birth year, chronic conditions, running summary and recent values, to file it and write a short remark with health advice",
+     "who": "owner"
+    },
+    "inbox": true,
+    "login": "none",
+    "net": [],
+    "visitors": null
+   },
+   "icon": "🩺",
+   "id": "familyhealthrecords",
+   "license": "Apache-2.0",
+   "name": "FamilyHealthRecords",
+   "sha256": "440554b5802a0d91319b4ab5ce9109d015797d700bcbf68bc40acdb4a1ca7ee0",
+   "type": "application",
+   "version": "0.2.5"
+  },
+  {
    "about": "Your home's things in one place, kept on your computer: what you own, where it is (rooms, cupboards, boxes), its receipts, warranty cards and manuals. Add photos or files and your assistant reads them - what it is, brand, model, serial number, price, shop, purchase date and warranty - and writes useful notes; search and filter by place, category, warranty or receipt, see which warranties end soon and ask questions like \"where is the drill?\". For your own use only: no website.",
    "about_lang": {
     "zh-Hant": "把家中物品集中一處，全部存在你的電腦：你擁有甚麼、放在哪裏（房間、櫃、箱）、它的單據、保養卡及說明書。加入相片或檔案，你的助理會讀出物品資料 - 是甚麼、品牌、型號、序號、價錢、商店、購買日期及保養期 - 並寫下有用的提示；可按地方、類別、保養或單據搜尋及篩選，看到哪些保養快到期，亦可以問「電鑽放了在哪裏？」。只供自己使用：沒有網站。"

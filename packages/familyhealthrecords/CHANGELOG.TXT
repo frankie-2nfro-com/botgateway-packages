@@ -4,8 +4,13 @@ for the gateway owners - the Portal and the gateway show them as "What's new" be
 store_update.sh --package familyhealthrecords publishes it (dated) and puts the next patch version on top; change
 the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
 
-0.2.5
+0.2.6
 - [Changed and non commited item put here]
+
+0.2.5 (2026-11-06)
+- A tray under the top bar on every page shows what your assistant is working on: waiting, being read, failed or
+  to check (until you deal with it) and just filed (with its area, until you clear it) - for every member. Press one
+  to open it; the tray can be hidden. Before, a new input only showed as a short message
 
 0.2.4 (2026-11-05)
 - Its description in 中文 too: the Portal and the Applications page show it in your language

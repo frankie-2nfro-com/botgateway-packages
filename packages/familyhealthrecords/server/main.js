@@ -13,6 +13,8 @@ const INPUTS = ["file", "text", "mood", "sleep", "height", "weight"];
 const SURE = 0.6;
 // A run with no answer after this long (the gateway restarted, the bot was away) is failed; the next input goes on.
 const STALE_MS = 30 * 60 * 1000;
+// The page's "being read" tray also shows inputs filed in the last RECENT_MS.
+const RECENT_MS = 15 * 60 * 1000;
 const MEMORY_MAX = 1200, MEMORY_VERSIONS = 10;
 // For the assistant (tools): the remarks hold suggestions an AI wrote - not a doctor's.
 const NOT_ADVICE = "ai_advice in the remarks is health advice written by an AI, not by a doctor: say so, and suggest checking with a doctor before acting on it.";
@@ -170,7 +172,7 @@ const stale = (d) => d.status === "reading" && Date.now() - Date.parse(d.run_at 
 const docView = (d) => d && ({ id: d.id, member_id: d.member_id, input: d.input, name: d.original_name, media_type: d.media_type, size: d.size,
   main_key: d.main_key, category_key: d.category_key, also_keys: json(d.also_keys, []), date: d.doc_date, clinic: d.clinic, doctor: d.doctor,
   summary: d.summary, note: json(d.note), confidence: d.confidence, warnings: json(d.warnings, []), remarks: d.remarks,
-  status: d.status, reason: d.reason, source: d.source, created: d.created });
+  status: d.status, reason: d.reason, source: d.source, created: d.created, updated: d.updated });
 
 const recordView = (r) => ({ id: r.id, member_id: r.member_id, document_id: r.document_id, kind: r.kind, category_key: r.category_key, title: r.title,
   observed_at: r.observed_at, value: r.value, value_text: r.value_text, unit: r.unit, ref_low: r.ref_low, ref_high: r.ref_high, flag: r.flag,
@@ -544,7 +546,11 @@ function page(req) {
     pumpAll();
     return { members: q("SELECT * FROM members ORDER BY archived, created").map(memberView), areas: AREAS, categories: CATEGORIES, relations: RELATIONS,
       moods: MOODS, sleep: SLEEP, conditions: CONDITIONS, inbox: inboxList(),
-      busy: q("SELECT member_id, count(*) AS n FROM documents WHERE status IN ('queued', 'reading') GROUP BY member_id") };
+      busy: q("SELECT member_id, count(*) AS n FROM documents WHERE status IN ('queued', 'reading') GROUP BY member_id"),
+      // The tray: waiting, being read, failed or to check (until the owner deals with them), and just filed.
+      pending: q(`SELECT * FROM documents WHERE status IN ('queued', 'reading', 'failed', 'needs_check') OR (status = 'ready' AND updated > ?)
+        ORDER BY CASE status WHEN 'reading' THEN 0 WHEN 'queued' THEN 1 WHEN 'failed' THEN 2 WHEN 'needs_check' THEN 3 ELSE 4 END, id DESC LIMIT 60`,
+        [new Date(Date.now() - RECENT_MS).toISOString()]).map(docView) };
   }
   if (!get && path === "members") return saveMember(b);
   if (!get && path === "members/delete") return deleteMember(b.id, b.confirm);

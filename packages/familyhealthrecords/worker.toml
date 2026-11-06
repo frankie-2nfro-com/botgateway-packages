@@ -1,7 +1,7 @@
 type = "application"
 id = "familyhealthrecords"
 name = "FamilyHealthRecords"
-version = "0.2.4"
+version = "0.2.5"
 about = "Your family's health in one place, kept on your computer, in five areas: body, diet, exercise, mind and care. Add photos, files, mood and sleep logs or a few words; your assistant files each one with its values, writes a short remark with health advice and keeps a running summary per member; timeline and BMI included. You choose which members it may talk about. Warning: the health advice in the remarks is written by an AI (your assistant), not by a doctor - it can be wrong; consult your doctor before acting on it."
 author = "Bot Gateway"
 license = "Apache-2.0"
