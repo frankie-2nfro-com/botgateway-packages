@@ -26,6 +26,21 @@ export function aiTask({ description, comment, retry }) {
   return lines.join("\n");
 }
 
+// The whole brief as one text, for a tool that is not connected to this gateway (a remote bot is its client, say): the owner
+// pastes it, and brings the folder back with the file picker on the job.
+export function fullPrompt({ job, description, comment, errors, current }) {
+  const parts = [
+    "Make an original browser game for MyArcade, following the specification below exactly.",
+    `The game: ${description}`,
+  ];
+  if (comment) parts.push(`This is a new version of an existing game. Keep what works. The owner asks: ${comment}`);
+  if (errors?.length) parts.push(`Your last pack was refused by MyArcade's checks. Fix exactly these:\n${errors.map((e) => `- ${e}`).join("\n")}`);
+  parts.push(`Deliver: build the game (npm and a bundler are fine; game.js must end up as one ES module with no imports) and put the finished pack, with flat file names, in one folder called myarcade-job-${job}. It holds only the pack: game.json, game.js, the cover and any assets, no source and no node_modules. Keep your source elsewhere in the project. Then tell the owner the folder's full path: the owner uploads that folder to MyArcade, which runs its checks. Before you finish, go through the "Done means" list and report each item honestly, saying which you could not run.`);
+  if (current) parts.push(`The current game.json:\n${JSON.stringify(current.game_json)}\n\nThe current game.js${current.game_js === null ? " is too big to include: work from your own project." : `:\n${current.game_js}`}`);
+  parts.push(`--- SPECIFICATION ---\n${SPEC}`);
+  return parts.join("\n\n");
+}
+
 // Told to a local AI app or IDE that has the tools (arcade_job_get).
 export const HOW_TO_DELIVER = `Work on your own project. Tell MyArcade how it is going with arcade_job_progress as you go; the owner watches.
 Small pack: send each file's text with arcade_job_put_file (long files in parts), then arcade_job_done.

@@ -3,7 +3,7 @@
 // sandboxed frame (`sandbox_pages`). This program only stores the files, checks them and answers who may have them.
 import { checkPack, ID, NAME, TYPES } from "./check.js";
 import { DEMOS } from "./demos.js";
-import { aiTask, GAME_SCHEMA, HOW_TO_DELIVER, SPEC } from "./prompts.js";
+import { aiTask, fullPrompt, GAME_SCHEMA, HOW_TO_DELIVER, SPEC } from "./prompts.js";
 
 export const STATEMENT_VERSION = 1;
 
@@ -357,6 +357,9 @@ function removeGameFiles(game, version) {
   }
 }
 
+/** Above this a game's code stays out of the copied prompt: the tool works from its own project. */
+const MAX_PROMPT_CODE = 200 * 1024;
+
 function admin(path, b) {
   let m;
   if (path === "state") return adminState();
@@ -371,10 +374,24 @@ function admin(path, b) {
     return { job };
   }
   if (path === "import") return { job: newJob("import", "working", "Imported") };
-  if ((m = path.match(/^jobs\/(\d+)\/(file|done|retry|remove)$/))) {
+  if ((m = path.match(/^jobs\/(\d+)\/(file|clear|prompt|done|retry|remove)$/))) {
     const job = Number(m[1]);
     const row = one("SELECT * FROM jobs WHERE id = ?", [job]);
     if (!row) refuse("no such job");
+    if (m[2] === "prompt") {
+      if (row.mode !== "ide") refuse("this job is not made in an IDE");
+      let current = null;
+      if (row.base_game) {
+        current = currentPack(row.base_game, row.base_version);
+        if (current.game_js.length > MAX_PROMPT_CODE) current.game_js = null;
+      }
+      return { prompt: fullPrompt({ job, description: row.description, comment: row.comment, errors: json(row.errors, []), current }) };
+    }
+    if (m[2] === "clear") {
+      // A new try: what an earlier folder left must not count.
+      clearStaged(job);
+      return { ok: true };
+    }
     if (m[2] === "file") {
       stage(job, text(b.name, 200), String(b.data ?? ""), "base64");
       return { ok: true };

@@ -6,16 +6,19 @@
       lobby: "Open the lobby", warnTitle: "Publishing a game is your own decision and your own risk.",
       warn: "Do not publish copies of existing games, their names, characters, art, music or look. You answer for what you publish; 2nfro and the makers of Bot Gateway do not check games.",
       make: "Make a game", describe: "Describe the game you want", describeHint: "What the player does, how it is won or lost, how it should look. An idea of your own, not a copy of a game that exists.", describeFirst: "Describe the game in the box first.",
-      auto: "Make it now (your application's LLM)", ide: "Make it in my IDE (bigger games)",
+      auto: "Make it now (your application's LLM)", ide: "Make it in my AI tool (bigger games)",
       autoHint: "\"Make it now\" takes about 6 minutes and uses your LLM's quota. Ask Claude's Timeout must be at least 600 seconds (Workers). A game with pictures or sounds, or anything bigger, is for your IDE.",
       jobs: "In the making", noJobs: "Nothing is being made.",
       games: "Games", noGames: "No games yet.", players: "Players", noPlayers: "Nobody has signed up yet.", import: "Import a game pack (for games made elsewhere)",
       importHint: "Choose all the files of one pack (game.json, game.js, cover ...).", importBtn: "Choose files",
       test: "Test", publish: "Publish", unpublish: "Unpublish", remove: "Delete", deleteGame: "Delete game", change: "Ask for changes", retry: "Ask again", dismiss: "Dismiss",
       live: "public", draft: "draft", earlier: "not public", off: "not public", plays: "plays", cancel: "Cancel", save: "Save",
-      stWaiting: "Waiting for your IDE", stWorking: "Your IDE is working", stAsking: "Waiting for your LLM (minutes)", stReady: "Ready to test", stErrors: "The checks found problems", stFailed: "Failed",
-      copyLine: "Paste this into Cursor, Claude Code or another AI tool connected to this gateway:", copy: "Copy", copied: "Copied",
-      ideSetup: "The tool needs this gateway's MCP connection (Dashboard, Client). Big builds also need the inbox folder chosen once in this application's Config.",
+      stWaiting: "Waiting for your AI tool", stWorking: "Your IDE is working", stAsking: "Waiting for your LLM (minutes)", stReady: "Ready to test", stErrors: "The checks found problems", stFailed: "Failed",
+      step1: "1. Copy the prompt and paste it into Cursor or another AI tool.", copyPrompt: "Copy the prompt", copied: "Copied", showPrompt: "Copy this prompt:",
+      step2: "2. When it has made the folder myarcade-job-{job}, choose that folder here. The checks run at once.", chooseFolder: "Choose the game's folder", uploading: "Uploading ...",
+      mcpLine: "Is your AI tool connected to this gateway by MCP (Dashboard, Client)? Then this one line is enough, and you see its progress here:", copy: "Copy",
+      ideAgain: "Copy the fix prompt, paste it into the same AI tool, and choose the folder again.", copyFix: "Copy the fix prompt",
+      changeNow: "Make it now (LLM)", changeIde: "In my IDE",
       publishTitle: "Publish", publishBody: "Anyone on the internet can then play this version. The website itself must also be published in the gateway.",
       statement: "I publish this game on my own decision. I have the rights to everything in it, including its name, code, art, music, characters and look, and it does not copy or imitate another game. I alone bear all risk and responsibility for it, including any claim by others. 2nfro and the makers of Bot Gateway do not check games, and take no responsibility for them or for what happens because of them.",
       warnings: "Warnings", changeTitle: "What should change?", confirmDelete: "Delete this for good? Its plays and scores go with it.", confirmVersion: "Delete this version for good?",
@@ -26,16 +29,19 @@
       lobby: "開啟大廳", warnTitle: "發佈遊戲由你決定，風險亦由你承擔。",
       warn: "請勿發佈現有遊戲的抄襲版本，或使用其名稱、角色、美術、音樂或外觀。你須為所發佈的內容負責；2nfro 及 Bot Gateway 的製作者不會檢查遊戲。",
       make: "製作遊戲", describe: "描述你想要的遊戲", describeHint: "玩家做甚麼、如何勝負、想要怎樣的外觀。請用你自己的構思，不要抄襲現有遊戲。", describeFirst: "請先在輸入框描述遊戲。",
-      auto: "立即製作（應用程式的 LLM）", ide: "在 IDE 製作（較大的遊戲）",
+      auto: "立即製作（應用程式的 LLM）", ide: "在 AI 工具製作（較大的遊戲）",
       autoHint: "「立即製作」約需 6 分鐘，並會用你的 LLM 額度。Ask Claude 的 Timeout 必須至少 600 秒（Workers）。有圖片或音效、或規模較大的遊戲，請用 IDE。",
       jobs: "製作中", noJobs: "目前沒有製作中的遊戲。",
       games: "遊戲", noGames: "還沒有遊戲。", players: "玩家", noPlayers: "還沒有人登記。", import: "匯入遊戲包（其他地方做好的遊戲）",
       importHint: "選擇同一個遊戲包的所有檔案（game.json、game.js、封面等）。", importBtn: "選擇檔案",
       test: "測試", publish: "發佈", unpublish: "下架", remove: "刪除", deleteGame: "刪除遊戲", change: "要求修改", retry: "再試一次", dismiss: "移除",
       live: "公開中", draft: "草稿", earlier: "未公開", off: "未公開", plays: "次遊玩", cancel: "取消", save: "儲存",
-      stWaiting: "等待你的 IDE", stWorking: "IDE 製作中", stAsking: "等待 LLM（需時數分鐘）", stReady: "可以測試", stErrors: "檢查發現問題", stFailed: "失敗",
-      copyLine: "把這句貼到已連接此閘道的 Cursor、Claude Code 或其他 AI 工具：", copy: "複製", copied: "已複製",
-      ideSetup: "工具需要連接此閘道的 MCP（Dashboard → Client）。較大的打包檔還要在此應用程式的 Config 選一次收件資料夾。",
+      stWaiting: "等待你的 AI 工具", stWorking: "IDE 製作中", stAsking: "等待 LLM（需時數分鐘）", stReady: "可以測試", stErrors: "檢查發現問題", stFailed: "失敗",
+      step1: "1. 複製 prompt，貼到 Cursor 或其他 AI 工具。", copyPrompt: "複製 prompt", copied: "已複製", showPrompt: "請複製這段 prompt：",
+      step2: "2. 工具做好 myarcade-job-{job} 資料夾後，在這裏選擇該資料夾。系統會立即檢查。", chooseFolder: "選擇遊戲資料夾", uploading: "上載中……",
+      mcpLine: "你的 AI 工具已經用 MCP 連接此閘道（Dashboard → Client）？那麼只要這一句，還可以在這裏看到進度：", copy: "複製",
+      ideAgain: "複製修正 prompt，貼到同一個 AI 工具，然後再選擇資料夾。", copyFix: "複製修正 prompt",
+      changeNow: "立即製作（LLM）", changeIde: "在 IDE 製作",
       publishTitle: "發佈", publishBody: "發佈後，互聯網上任何人都可以玩這個版本。網站本身也要在閘道發佈。",
       statement: "本人自行決定發佈此遊戲。本人擁有遊戲內所有內容（包括名稱、程式碼、美術、音樂、角色及外觀）的權利，遊戲亦沒有抄襲或模仿其他遊戲。一切風險及責任（包括他人提出的任何申索）概由本人獨自承擔。2nfro 及 Bot Gateway 的製作者不會檢查遊戲，亦不會就遊戲或因遊戲引致的任何事情負責。",
       warnings: "警告", changeTitle: "要改甚麼？", confirmDelete: "永久刪除？遊玩次數及分數也會一併刪除。", confirmVersion: "永久刪除這個版本？",
@@ -111,6 +117,15 @@
       el("button", { type: "button", class: "main", onclick: () => close(field.value.trim() ? field.value : null) }, t("save"))));
   });
 
+  const changeBox = () => ask((d, close) => {
+    const field = el("textarea", {});
+    const send = (mode) => { if (field.value.trim()) close({ comment: field.value, mode }); else field.focus(); };
+    d.append(el("h3", {}, t("changeTitle")), field, el("div", { class: "actions" },
+      el("button", { type: "button", onclick: () => close(null) }, t("cancel")),
+      el("button", { type: "button", onclick: () => send("ide") }, t("changeIde")),
+      el("button", { type: "button", class: "main", onclick: () => send("llm") }, t("changeNow"))));
+  });
+
   // The statement (requirements 5.2): for every game and every version; the program checks it again.
   const publishBox = (title, version) => ask((d, close) => {
     const go = el("button", { type: "button", class: "main", disabled: true, onclick: () => close(true) }, t("publish"));
@@ -119,6 +134,58 @@
       el("label", { class: "tick" }, tick, el("span", {}, t("statement"))),
       el("div", { class: "actions" }, el("button", { type: "button", onclick: () => close(false) }, t("cancel")), go));
   });
+
+  // The folder of a game made elsewhere comes back through one picker outside the page's redraws.
+  const folderPicker = el("input", { type: "file", hidden: true, webkitdirectory: true, multiple: true });
+  document.body.append(folderPicker);
+  let pickingJob = null;
+  let uploadingJob = null;
+  folderPicker.addEventListener("change", async () => {
+    const job = pickingJob;
+    const files = [...folderPicker.files].filter((f) => !f.name.startsWith("."));
+    folderPicker.value = "";
+    if (!job || !files.length) return;
+    uploadingJob = job;
+    render();
+    try {
+      show("");
+      await api(`jobs/${job}/clear`);
+      for (const file of files) await api(`jobs/${job}/file`, { name: file.name, data: await asBase64(file) });
+      await api(`jobs/${job}/done`);
+    } catch (e) {
+      show(e.message);
+    }
+    uploadingJob = null;
+    await load();
+    render();
+  });
+
+  const asBase64 = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
+    reader.onerror = () => reject(new Error(file.name));
+    reader.readAsDataURL(file);
+  });
+
+  async function copyPrompt(job, button) {
+    try {
+      show("");
+      const { prompt } = await api(`jobs/${job}/prompt`);
+      try {
+        await navigator.clipboard.writeText(prompt);
+        button.textContent = t("copied");
+      } catch {
+        // The browser refused the clipboard (no secure address, say): the text to copy by hand.
+        await ask((d, close) => {
+          const area = el("textarea", { readOnly: true, value: prompt, style: "min-height:260px" });
+          d.append(el("h3", {}, t("showPrompt")), area, el("div", { class: "actions" }, el("button", { type: "button", class: "main", onclick: () => close(true) }, t("save"))));
+          setTimeout(() => area.select(), 0);
+        });
+      }
+    } catch (e) {
+      show(e.message);
+    }
+  }
 
   // --- the page --------------------------------------------------------------------------------------------------------
 
@@ -159,15 +226,7 @@
       try {
         show("");
         const { job } = await api("import");
-        for (const file of files) {
-          const data = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
-            reader.onerror = () => reject(new Error(file.name));
-            reader.readAsDataURL(file);
-          });
-          await api(`jobs/${job}/file`, { name: file.name, data });
-        }
+        for (const file of files) await api(`jobs/${job}/file`, { name: file.name, data: await asBase64(file) });
         await api(`jobs/${job}/done`);
       } catch (e) {
         show(e.message);
@@ -188,13 +247,18 @@
         const card = el("div", { class: "card" },
           el("div", { class: "row" }, el("span", { class: `badge${job.state === "errors" || job.state === "failed" ? " bad" : ""}` }, t(states[job.state] || "stWorking")),
             el("span", { class: "grow" }, job.comment ? `${job.description} — ${job.comment}` : job.description)),
-          job.mode === "ide" && job.state === "waiting" ? el("div", {},
-            el("p", { class: "muted" }, t("copyLine")),
+          job.mode === "ide" && ["waiting", "errors"].includes(job.state) ? el("div", {},
+            el("p", {}, job.state === "errors" ? t("ideAgain") : t("step1")),
+            el("button", { type: "button", class: "main", onclick: (event) => copyPrompt(job.id, event.target) }, job.state === "errors" ? t("copyFix") : t("copyPrompt")),
+            el("p", {}, t("step2", { job: job.id })),
+            uploadingJob === job.id ? el("p", { class: "muted", role: "status" }, t("uploading"))
+              : el("button", { type: "button", onclick: () => { pickingJob = job.id; folderPicker.click(); } }, t("chooseFolder"))) : null,
+          job.mode === "ide" && job.state === "waiting" ? el("details", {}, el("summary", {}, "MCP"),
+            el("p", { class: "muted" }, t("mcpLine")),
             el("div", { class: "row" }, el("div", { class: "line grow" }, line),
               el("button", { type: "button", onclick: async (event) => {
                 try { await navigator.clipboard.writeText(line); event.target.textContent = t("copied"); } catch { /* it can be selected by hand */ }
-              } }, t("copy"))),
-            el("p", { class: "muted" }, t("ideSetup"))) : null,
+              } }, t("copy")))) : null,
           job.notes.length ? el("ul", { class: "plain muted" }, job.notes.slice(-6).map((n) => el("li", {}, n.note ? `${n.step}: ${n.note}` : n.step))) : null,
           job.errors.length ? el("ul", { class: "plain error" }, job.errors.map((e) => el("li", {}, e))) : null,
           job.state === "failed" && job.mode === "llm" ? el("p", { class: "muted" }, t("failedHint")) : null,
@@ -228,8 +292,8 @@
                 if (await publishBox(title, v.version)) await act(`games/${game.id}/publish`, { version: v.version, agreed: true, statement: state.statement });
               } }, t("publish")) : el("button", { type: "button", onclick: () => act(`games/${game.id}/unpublish`) }, t("unpublish")),
               el("button", { type: "button", onclick: async () => {
-                const comment = await inputBox(t("changeTitle"));
-                if (comment) await act("jobs", { description: `${title}: ${manifest?.text?.en?.blurb || ""}`, comment, mode: "llm", base_game: game.id, base_version: v.version });
+                const change = await changeBox();
+                if (change) await act("jobs", { description: `${title}: ${manifest?.text?.en?.blurb || ""}`, comment: change.comment, mode: change.mode, base_game: game.id, base_version: v.version });
               } }, t("change")),
               v.version !== game.live_version && game.versions.length > 1 ? el("button", { type: "button", class: "ghost danger", onclick: async () => {
                 if (await confirmBox(t("confirmVersion"), t("remove"))) await act(`games/${game.id}/remove-version`, { version: v.version });
@@ -281,7 +345,8 @@
       show(e.message);
     }
     // Live while something is being made: its steps and its result appear by themselves.
-    if (state?.jobs.some((j) => ["waiting", "working", "asking"].includes(j.state))) timer = setTimeout(load, 3000);
+    // Not while a folder goes up: the upload ends with its own redraw.
+    if (!uploadingJob && state?.jobs.some((j) => ["waiting", "working", "asking"].includes(j.state))) timer = setTimeout(load, 3000);
   }
 
   $("lang").addEventListener("click", () => {
