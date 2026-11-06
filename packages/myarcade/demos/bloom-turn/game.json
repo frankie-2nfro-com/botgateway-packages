@@ -1,0 +1,77 @@
+{
+ "spec": 1,
+ "id": "bloom-turn",
+ "version": "1.0.0",
+ "kind": "2d",
+ "engine": "canvas",
+ "entry": "game.js",
+ "cover": "cover.svg",
+ "stage": "wide",
+ "tags": [
+  "puzzle",
+  "solo"
+ ],
+ "text": {
+  "en": {
+   "title": "Bloom Turn",
+   "blurb": "Turn 2 by 2 blocks of tiles until four of a colour touch in a square and bloom. You have 30 turns to reach each level's target.",
+   "howto": "Arrows or WASD move · Space or X turn clockwise · Z turn back · P pause · Mouse: click turns, right-click turns back · Touch: tap a block, tap it again to turn"
+  },
+  "zh-TW": {
+   "title": "綻放轉轉",
+   "blurb": "旋轉 2×2 的方塊，讓四片同色磁磚拼成正方形並綻放。每關有 30 回合可以達成目標分數。",
+   "howto": "方向鍵或 WASD 移動 · 空白鍵或 X 順時針旋轉 · Z 逆時針旋轉 · P 暫停 · 滑鼠：左鍵順轉、右鍵逆轉 · 觸控：點選方塊，再點一次旋轉"
+  }
+ },
+ "panel": [
+  "score",
+  "level",
+  {
+   "key": "turns",
+   "label": {
+    "en": "Turns",
+    "zh-TW": "回合"
+   }
+  },
+  {
+   "key": "goal",
+   "label": {
+    "en": "Target",
+    "zh-TW": "目標"
+   }
+  }
+ ],
+ "pad": [
+  {
+   "action": "left",
+   "label": "left"
+  },
+  {
+   "action": "right",
+   "label": "right"
+  },
+  {
+   "action": "up",
+   "label": "up"
+  },
+  {
+   "action": "down",
+   "label": "down"
+  },
+  {
+   "action": "ccw",
+   "label": {
+    "en": "Turn ↺",
+    "zh-TW": "逆轉 ↺"
+   }
+  },
+  {
+   "action": "cw",
+   "label": {
+    "en": "Turn ↻",
+    "zh-TW": "順轉 ↻"
+   }
+  }
+ ],
+ "max_score": 9999999
+}

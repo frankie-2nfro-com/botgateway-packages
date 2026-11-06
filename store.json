@@ -260,6 +260,35 @@
    "version": "0.1.1"
   },
   {
+   "about": "Your own public web arcade. Describe a game on your local page; your assistant or your IDE makes it from a built-in game specification; test it and, if you like it, publish it. Visitors sign up and play, with play counts and leaderboards. Publishing a game is your own decision and your own responsibility. Games run in a sandboxed frame in the visitor's browser.",
+   "about_lang": {
+    "zh-Hant": "你自己的公開網上遊戲機中心。在本機頁面描述遊戲，由助理或 IDE 按內置規格製作；測試後，滿意就發佈。訪客可以登記及遊玩，並設有遊玩次數及排行榜。是否發佈遊戲由你決定，責任亦由你承擔。遊戲在訪客瀏覽器的隔離框架內執行。"
+   },
+   "archive": "dist/myarcade-0.1.0.tar.gz",
+   "author": "Bot Gateway",
+   "bytes": 345115,
+   "changes": [
+    "First version: your own public web arcade. Describe a game on your local page and your assistant or IDE makes it; test it, and publish it if you like it. Visitors sign up, play, and see play counts and leaderboards. Two demo games are included, not public until you publish them. Needs gateway 1.1.27 or newer."
+   ],
+   "disclosure": {
+    "ai": {
+     "sends": "the description of a game you ask for, the game specification, and when you ask for changes that game's code; to write the game. Only you can start it.",
+     "who": "owner"
+    },
+    "inbox": true,
+    "login": "own",
+    "net": [],
+    "visitors": "sign up, log in, play the games you published, see play counts and leaderboards"
+   },
+   "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+CiAgPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzA5MDgwZiIvPgogIDxyZWN0IHg9IjUiIHk9IjYiIHdpZHRoPSI5IiBoZWlnaHQ9IjkiIGZpbGw9IiNlMmZmNTUiLz4KICA8cmVjdCB4PSIxNiIgeT0iNiIgd2lkdGg9IjkiIGhlaWdodD0iOSIgZmlsbD0iIzNkZTFmZiIvPgogIDxyZWN0IHg9IjE2IiB5PSIxNyIgd2lkdGg9IjkiIGhlaWdodD0iOSIgZmlsbD0iI2ZmM2Q3ZiIvPgogIDxyZWN0IHg9IjUiIHk9IjE3IiB3aWR0aD0iOSIgaGVpZ2h0PSI5IiBmaWxsPSIjZmZjMTRkIi8+Cjwvc3ZnPgo=",
+   "id": "myarcade",
+   "license": "Apache-2.0",
+   "name": "MyArcade",
+   "sha256": "36263b38e282fcd42c706ad748d6d7b55c45385ec8c323be4b6fe14342ff0283",
+   "type": "application",
+   "version": "0.1.0"
+  },
+  {
    "about": "Collect materials for a recipe (screenshots, photos, text, notes); the LLM turns them into a recipe.",
    "archive": "dist/recipes-0.2.0.tar.gz",
    "author": "Bot Gateway",

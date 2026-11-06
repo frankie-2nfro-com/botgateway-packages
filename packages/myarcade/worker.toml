@@ -1,0 +1,76 @@
+type = "application"
+id = "myarcade"
+name = "MyArcade"
+version = "0.1.0"
+about = "Your own public web arcade. Describe a game on your local page; your assistant or your IDE makes it from a built-in game specification; test it and, if you like it, publish it. Visitors sign up and play, with play counts and leaderboards. Publishing a game is your own decision and your own responsibility. Games run in a sandboxed frame in the visitor's browser."
+author = "Bot Gateway"
+license = "Apache-2.0"
+timeout_secs = 60
+
+[about_lang]
+zh-Hant = "你自己的公開網上遊戲機中心。在本機頁面描述遊戲，由助理或 IDE 按內置規格製作；測試後，滿意就發佈。訪客可以登記及遊玩，並設有遊玩次數及排行榜。是否發佈遊戲由你決定，責任亦由你承擔。遊戲在訪客瀏覽器的隔離框架內執行。"
+
+# Its own program (DOCUMENTATIONS/app_myarcade_requirements.txt): server/main.js in the gateway's sandbox. web/ is BUILT from source/
+# (webgames/gamekit/build-arcade.mjs): do not edit it. frame.html is where a game's code runs: no origin, no network, no API.
+# Needs gateway 1.1.27 or newer (sandbox_pages, login = "own", host.crypto.passwordHash, host.crypto.random).
+[app]
+main = "server/main.js"
+icon = "web/favicon.svg"
+ai = "owner"
+ai_sends = "the description of a game you ask for, the game specification, and when you ask for changes that game's code; to write the game. Only you can start it."
+visitors = "sign up, log in, play the games you published, see play counts and leaderboards"
+login = "own"
+inbox = true
+sandbox_pages = ["frame.html"]
+
+# What the gateway's client may do (a local AI app or an IDE): make drafts. There is no tool for publishing.
+[[tools]]
+name = "arcade_jobs"
+title = "Games waiting to be made"
+description = "The game jobs the owner has made for an AI app or IDE on the MyArcade page: id, description, what the owner asks, state."
+read_only = true
+input_schema = { type = "object", properties = {} }
+example = {}
+
+[[tools]]
+name = "arcade_job_get"
+title = "Receive a game job"
+description = "Call this first for a job: it tells the owner the brief was received, and answers with everything needed: the owner's description, the whole game specification (follow it exactly), how to deliver, and any errors from an earlier try."
+input_schema = { type = "object", required = ["job"], properties = { job = { type = "integer" } } }
+example = { job = 1 }
+
+[[tools]]
+name = "arcade_job_progress"
+title = "Report progress"
+description = "Tell the owner how a job is going, shown on the MyArcade page. Call it as each step starts or ends."
+input_schema = { type = "object", required = ["job", "step"], properties = { job = { type = "integer" }, step = { type = "string" }, note = { type = "string" } } }
+example = { job = 1, step = "Writing the game loop" }
+
+[[tools]]
+name = "arcade_job_put_file"
+title = "Send a text file of the game"
+description = "Send the text of one file of the game pack (game.json, game.js, cover.svg). A long file in parts: part 0 starts the file, part 1, 2 ... add to it. Binary files and big bundles can't go through a tool: use arcade_job_import."
+input_schema = { type = "object", required = ["job", "name", "data"], properties = { job = { type = "integer" }, name = { type = "string" }, part = { type = "integer" }, data = { type = "string" } } }
+example = { job = 1, name = "game.json", part = 0, data = "{}" }
+
+[[tools]]
+name = "arcade_job_import"
+title = "Take a built game from the inbox"
+description = "Take the game pack's files from a folder inside the application's inbox folder (the owner chose it in the application's Config). Copy the files in first, flat. An answer with state \"wait\" means try again after retry_after_seconds."
+input_schema = { type = "object", required = ["job", "folder"], properties = { job = { type = "integer" }, folder = { type = "string" } } }
+example = { job = 1, folder = "job-1" }
+
+[[tools]]
+name = "arcade_job_done"
+title = "All files sent"
+description = "Say that everything is sent. The checks run at once: the answer lists errors to fix and send again, or says that the draft is ready for the owner to test. Nothing is published."
+input_schema = { type = "object", required = ["job"], properties = { job = { type = "integer" } } }
+example = { job = 1 }
+
+[[tools]]
+name = "arcade_project_get"
+title = "Get a game's code"
+description = "game.json and game.js of a game on MyArcade (its newest version, or the one asked for), to improve it."
+read_only = true
+input_schema = { type = "object", required = ["game"], properties = { game = { type = "string" }, version = { type = "string" } } }
+example = { game = "bloom-turn" }

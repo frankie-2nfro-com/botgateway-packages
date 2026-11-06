@@ -1,0 +1,13 @@
+MyArcade - change log
+The top section is the coming version (no date): write each change below it as "- ...", in words
+for the gateway owners - the Portal and the gateway show them as "What's new" before an update.
+store_update.sh --package myarcade publishes it (dated) and puts the next patch version on top; change
+the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
+
+0.1.1
+- [Changed and non commited item put here]
+
+0.1.0 (2026-11-06)
+- First version: your own public web arcade. Describe a game on your local page and your assistant or IDE makes it; test it, and
+  publish it if you like it. Visitors sign up, play, and see play counts and leaderboards. Two demo games are included, not
+  public until you publish them. Needs gateway 1.1.27 or newer.

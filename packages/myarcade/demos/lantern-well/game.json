@@ -1,0 +1,54 @@
+{
+ "spec": 1,
+ "id": "lantern-well",
+ "version": "1.0.0",
+ "kind": "2d",
+ "engine": "canvas",
+ "entry": "game.js",
+ "cover": "cover.svg",
+ "stage": "standard",
+ "tags": [
+  "action",
+  "solo"
+ ],
+ "text": {
+  "en": {
+   "title": "Lantern Well",
+   "blurb": "Carry a small flame up a black well. Slip through the moving shutters and catch sparks; every 12 sparks rekindle a lost flame.",
+   "howto": "Hold Space, ↑ or Rise to climb · Let go to sink · Enter or Space starts · P pause"
+  },
+  "zh-TW": {
+   "title": "燈火深井",
+   "blurb": "帶著一盞小燈飛上漆黑的深井。穿過移動的閘板、收集火花；每 12 顆火花可以補回一點燈火。",
+   "howto": "按住空白鍵、↑ 或「上升」往上飛 · 放開就下沉 · Enter 或空白鍵開始 · P 暫停"
+  }
+ },
+ "panel": [
+  "score",
+  "level",
+  {
+   "key": "sparks",
+   "label": {
+    "en": "Sparks",
+    "zh-TW": "火花"
+   }
+  },
+  {
+   "key": "flame",
+   "label": {
+    "en": "Flame",
+    "zh-TW": "燈火"
+   }
+  }
+ ],
+ "pad": [
+  {
+   "action": "rise",
+   "label": {
+    "en": "Rise",
+    "zh-TW": "上升"
+   }
+  }
+ ],
+ "max_score": 1000000
+}
