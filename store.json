@@ -167,6 +167,41 @@
    "version": "0.2.4"
   },
   {
+   "about": "Your home's things in one place, kept on your computer: what you own, where it is (rooms, cupboards, boxes), its receipts, warranty cards and manuals. Add photos or files and your assistant reads them - what it is, brand, model, serial number, price, shop, purchase date and warranty - and writes useful notes; search and filter by place, category, warranty or receipt, see which warranties end soon and ask questions like \"where is the drill?\". For your own use only: no website.",
+   "about_lang": {
+    "zh-Hant": "把家中物品集中一處，全部存在你的電腦：你擁有甚麼、放在哪裏（房間、櫃、箱）、它的單據、保養卡及說明書。加入相片或檔案，你的助理會讀出物品資料 - 是甚麼、品牌、型號、序號、價錢、商店、購買日期及保養期 - 並寫下有用的提示；可按地方、類別、保養或單據搜尋及篩選，看到哪些保養快到期，亦可以問「電鑽放了在哪裏？」。只供自己使用：沒有網站。"
+   },
+   "archive": "dist/homethingy-0.1.0.tar.gz",
+   "author": "Bot Gateway",
+   "bytes": 49624,
+   "changes": [
+    "First version: your home's things - what you own, where it is (places within places: rooms, cupboards, boxes), its receipts, warranty cards and manuals - kept on your computer, for your own use only (no website)",
+    "Add photos or PDFs (or drop them on the page): your assistant reads them - name, category, brand, model, serial number, price, shop, purchase date and warranty - and writes useful notes (how to claim the warranty, care). What you typed is never overwritten; other things on the same receipt can be added with one press",
+    "Search as you type, filter by category, place, status, warranty and receipt; cards or a list; export to CSV",
+    "Warranty page: what ends soon, what is still covered; lent out, put away, being repaired or gone",
+    "Ask: \"where is the drill?\" - your assistant answers from your list",
+    "Photos from the phone through the inbox folder (a sub-folder named after a place puts them there)",
+    "Hide an item or a whole place from the assistant; the assistant's tools only read"
+   ],
+   "disclosure": {
+    "ai": {
+     "sends": "the photos and files you add for an item (the thing itself, receipts, warranty cards, manuals) with what is known about it and your list of places, to read its details and write notes; and when you use Ask, your question with the list of your items (not those you hide from the assistant)",
+     "who": "owner"
+    },
+    "inbox": true,
+    "login": "none",
+    "net": [],
+    "visitors": null
+   },
+   "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiMyZjZiNTUiLz48cGF0aCBkPSJNMzIgMTMgNTEgMjguNVY0OWEzIDMgMCAwIDEtMyAzSDE2YTMgMyAwIDAgMS0zLTNWMjguNVoiIGZpbGw9IiNmNWVmZTQiLz48cGF0aCBkPSJNMTEgMjkuNSAzMiAxMmwyMSAxNy41IiBmaWxsPSJub25lIiBzdHJva2U9IiNlOWE4M2IiIHN0cm9rZS13aWR0aD0iNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PHJlY3QgeD0iMjAiIHk9IjMyIiB3aWR0aD0iMjQiIGhlaWdodD0iMTUiIHJ4PSIyLjUiIGZpbGw9IiNkNmIwN2MiLz48cmVjdCB4PSIyMCIgeT0iMzIiIHdpZHRoPSIyNCIgaGVpZ2h0PSI0LjUiIHJ4PSIxLjUiIGZpbGw9IiNiZjkzNWEiLz48cmVjdCB4PSIyOSIgeT0iMzIiIHdpZHRoPSI2IiBoZWlnaHQ9IjgiIGZpbGw9IiNmNWVmZTQiIG9wYWNpdHk9Ii43NSIvPjwvc3ZnPgo=",
+   "id": "homethingy",
+   "license": "Apache-2.0",
+   "name": "Home Thingy",
+   "sha256": "89b311e493009b81f2037941856e434afb597b20571cfb24d1ead7ea6def655c",
+   "type": "application",
+   "version": "0.1.0"
+  },
+  {
    "about": "Collect materials for a recipe (screenshots, photos, text, notes); the LLM turns them into a recipe.",
    "archive": "dist/recipes-0.2.0.tar.gz",
    "author": "Bot Gateway",

@@ -1,0 +1,20 @@
+Home Thingy - change log
+The top section is the coming version (no date): write each change below it as "- ...", in words
+for the gateway owners - the Portal and the gateway show them as "What's new" before an update.
+store_update.sh --package homethingy publishes it (dated) and puts the next patch version on top; change
+the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
+
+0.1.1
+- [Changed and non commited item put here]
+
+0.1.0 (2026-11-06)
+- First version: your home's things - what you own, where it is (places within places: rooms, cupboards, boxes),
+  its receipts, warranty cards and manuals - kept on your computer, for your own use only (no website)
+- Add photos or PDFs (or drop them on the page): your assistant reads them - name, category, brand, model, serial
+  number, price, shop, purchase date and warranty - and writes useful notes (how to claim the warranty, care).
+  What you typed is never overwritten; other things on the same receipt can be added with one press
+- Search as you type, filter by category, place, status, warranty and receipt; cards or a list; export to CSV
+- Warranty page: what ends soon, what is still covered; lent out, put away, being repaired or gone
+- Ask: "where is the drill?" - your assistant answers from your list
+- Photos from the phone through the inbox folder (a sub-folder named after a place puts them there)
+- Hide an item or a whole place from the assistant; the assistant's tools only read

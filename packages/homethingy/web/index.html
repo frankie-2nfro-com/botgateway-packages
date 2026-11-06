@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<title>Home Thingy</title>
+<link rel="icon" href="icon.svg">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="app">
+  <aside class="side" id="side"></aside>
+  <div class="main">
+    <header class="top">
+      <button type="button" class="brand mob" data-view="home" aria-label="Home Thingy"><img src="icon.svg" alt=""></button>
+      <label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <input id="q" type="search" autocomplete="off" spellcheck="false"></label>
+      <button type="button" class="add" id="addBtn"><span>＋</span><b id="addLabel"></b></button>
+    </header>
+    <main class="view" id="view"></main>
+  </div>
+  <nav class="tabs" id="tabs"></nav>
+</div>
+<div id="panel" class="panel hidden" aria-live="polite"><div class="panelbox" id="panelBox"></div></div>
+<div id="sheet" class="sheet hidden"><div class="sheetbox" id="sheetBox"></div></div>
+<div id="drop" class="drop hidden"><div id="dropText"></div></div>
+<div id="toast" class="toast hidden"></div>
+<script src="app.js"></script>
+</body>
+</html>

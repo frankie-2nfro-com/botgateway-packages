@@ -1,0 +1,56 @@
+type = "application"
+id = "homethingy"
+name = "Home Thingy"
+version = "0.1.0"
+about = "Your home's things in one place, kept on your computer: what you own, where it is (rooms, cupboards, boxes), its receipts, warranty cards and manuals. Add photos or files and your assistant reads them - what it is, brand, model, serial number, price, shop, purchase date and warranty - and writes useful notes; search and filter by place, category, warranty or receipt, see which warranties end soon and ask questions like \"where is the drill?\". For your own use only: no website."
+author = "Bot Gateway"
+license = "Apache-2.0"
+timeout_secs = 60
+
+# The description in more languages (the Portal and the Applications page; else `about`, English).
+[about_lang]
+zh-Hant = "把家中物品集中一處，全部存在你的電腦：你擁有甚麼、放在哪裏（房間、櫃、箱）、它的單據、保養卡及說明書。加入相片或檔案，你的助理會讀出物品資料 - 是甚麼、品牌、型號、序號、價錢、商店、購買日期及保養期 - 並寫下有用的提示；可按地方、類別、保養或單據搜尋及篩選，看到哪些保養快到期，亦可以問「電鑽放了在哪裏？」。只供自己使用：沒有網站。"
+
+# Its own program (DOCUMENTATIONS/app_homethingy_requirements.txt): server/main.js in the gateway's sandbox; its page is
+# web/ (its own design; the login page from the app kit in web/kit/). Local page only (no website); photos from the
+# phone come through the inbox folder the owner chooses.
+[app]
+main = "server/main.js"
+icon = "web/icon.svg"
+ai = "owner"
+ai_sends = "the photos and files you add for an item (the thing itself, receipts, warranty cards, manuals) with what is known about it and your list of places, to read its details and write notes; and when you use Ask, your question with the list of your items (not those you hide from the assistant)"
+login = "none"
+inbox = true
+
+# What the client's LLM may do: read only, never the items and places the owner hides from it.
+[[tools]]
+name = "home_find"
+title = "Find things"
+description = "Search the household's things: query (words in the name, brand, model, serial, shop, notes, tags, place or category), place (a place's name, path or id from home_places - includes the places inside it), category (electronics, appliance, furniture, kitchen, tools, clothing, valuables, documents, books, toys, sports, care, garden, vehicle, collectibles, other), status (have, stored, lent, repair, gone, all - default: all but gone), warranty (active, soon, expired, none). Answers each item's id, name, place, brand, model, purchase date, price, warranty end and whether a receipt is kept. For \"where is the drill?\" or \"what did we buy at IKEA?\"."
+read_only = true
+input_schema = { type = "object", properties = { query = { type = "string" }, place = { type = "string" }, category = { type = "string" }, status = { type = "string" }, warranty = { type = "string" } } }
+example = { query = "drill" }
+
+[[tools]]
+name = "home_item"
+title = "One thing"
+description = "One item with every detail: serial and order numbers, warranty months and end, notes, the assistant's tips (how to claim its warranty, care) and its files (photos, receipts, warranty cards, manuals). picture = true also sends its photo (as a file of the answer)."
+read_only = true
+input_schema = { type = "object", required = ["id"], properties = { id = { type = "integer" }, picture = { type = "boolean" } } }
+example = { id = 1 }
+
+[[tools]]
+name = "home_places"
+title = "Places"
+description = "The household's places (rooms, cupboards, boxes - a place may be inside another, shown as a path like \"Bedroom › Wardrobe › Top shelf\") with how many things are in each."
+read_only = true
+input_schema = { type = "object", properties = {} }
+example = {}
+
+[[tools]]
+name = "home_warranty"
+title = "Warranties ending"
+description = "Things whose warranty ends within `days` (default 60) or ended in the last 30 days, soonest first, with days_left. For \"is the fridge still under warranty?\" use home_find + home_item."
+read_only = true
+input_schema = { type = "object", properties = { days = { type = "integer" } } }
+example = { days = 60 }

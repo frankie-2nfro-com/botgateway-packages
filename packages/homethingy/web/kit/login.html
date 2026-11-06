@@ -1,0 +1,31 @@
+<!doctype html>
+<!-- App kit - the application's login page (botgateway-packages/kit/web; copy kit/web/ into a package's web/kit/).
+     The gateway shows it when the owner set a password for the application, before its pages on the owner's computer
+     (DOCUMENTATIONS/package_store_requirements.txt 2.1), and checks the password itself: this page only asks for it. %APP_NAME% becomes the application's name.
+     Its look: the app's own web/login-look.css (--look-accent, --look-paper, --look-font; not in web/kit/, so a new kit
+     keeps it); its words: login.js. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>%APP_NAME%</title>
+<link rel="stylesheet" href="../kit/login.css">
+<link rel="stylesheet" href="../login-look.css">
+</head>
+<body>
+<main class="login">
+  <div class="langs hidden" id="langs"></div>
+  <div class="lock" aria-hidden="true">🔒</div>
+  <h1>%APP_NAME%</h1>
+  <p id="need"></p>
+  <form id="login">
+    <label for="password" id="label"></label>
+    <input id="password" type="password" autocomplete="current-password" autofocus required>
+    <button type="submit" id="go"></button>
+    <div class="err" id="err" role="alert"></div>
+  </form>
+</main>
+<script src="../kit/login.js"></script>
+</body>
+</html>
