@@ -1,7 +1,7 @@
 type = "application"
 id = "homethingy"
 name = "Home Thingy"
-version = "0.1.0"
+version = "0.1.1"
 about = "Your home's things in one place, kept on your computer: what you own, where it is (rooms, cupboards, boxes), its receipts, warranty cards and manuals. Add photos or files and your assistant reads them - what it is, brand, model, serial number, price, shop, purchase date and warranty - and writes useful notes; search and filter by place, category, warranty or receipt, see which warranties end soon and ask questions like \"where is the drill?\". For your own use only: no website."
 author = "Bot Gateway"
 license = "Apache-2.0"

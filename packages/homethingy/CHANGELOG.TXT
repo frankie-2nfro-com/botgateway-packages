@@ -4,8 +4,13 @@ for the gateway owners - the Portal and the gateway show them as "What's new" be
 store_update.sh --package homethingy publishes it (dated) and puts the next patch version on top; change
 the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
 
-0.1.1
+0.1.2
 - [Changed and non commited item put here]
+
+0.1.1 (2026-11-06)
+- Adding a thing: say where exactly it is (the spot, e.g. "left wardrobe, 2nd shelf") and notes of your own beside
+  the place; the hint for your assistant is folded under "Something your assistant should know?". "No photo - type
+  it in" keeps what you already typed
 
 0.1.0 (2026-11-06)
 - First version: your home's things - what you own, where it is (places within places: rooms, cupboards, boxes),

@@ -53,7 +53,7 @@
       spotHint: "例如：頂層抽屜", tagsHint: "用逗號分開", months: (m) => (m % 12 === 0 ? `${m / 12} 年` : `${m} 個月`), wFrom: (d) => `由 ${d}`,
       addT: "加物品", addToT: (n) => `加相／檔去「${n}」`, zoneB: "揀相或者檔案", zoneS: "或者拖入嚟 - 物品本身、單據、保養卡、說明書（相片／PDF）",
       modeOne: "全部係同一件物品", modeOneS: "例如物品相 + 單據 + 保養卡", modeEach: "每個檔係一件物品", modeEachS: "例如一次過影晒成個櫃",
-      optPlace: "放喺邊（可選）", optName: "名（可選）", optHint: "俾助理嘅提示（可選）", addGo: (n) => `加入 ${n} 個檔案`, manual: "唔用相，自己打",
+      optPlace: "放喺邊（可選）", optName: "名（可選）", optHint: "俾助理嘅提示（可選）", optSpot: "位置（可選）", addSpotHint: "例如：左邊衣櫃第二格", optNotes: "備註（可選）", notesHint: "例如：阿媽送嘅、用 AA 電池", hintMore: "有嘢想助理知？", hintHint: "例如：單據係 2023 年嘅；呢張單淨係計部機", addGo: (n) => `加入 ${n} 個檔案`, manual: "唔用相，自己打",
       preparing: "準備緊…", uploading: (i, n) => `上載緊 ${i}／${n}…`, addedOk: "已加入 - 你嘅助理會整理", again: "照樣再加？",
       dropHere: "放開就加入", dropTo: (n) => `放開就加去「${n}」`, saved: "已儲存", deleted: "已刪除", none: "-",
     },
@@ -97,7 +97,7 @@
       spotHint: "e.g. top drawer", tagsHint: "separated by commas", months: (m) => (m % 12 === 0 ? `${m / 12} year${m === 12 ? "" : "s"}` : `${m} months`), wFrom: (d) => `from ${d}`,
       addT: "Add a thing", addToT: (n) => `Add photos / files to “${n}”`, zoneB: "Choose photos or files", zoneS: "or drop them here - the thing, receipts, warranty cards, manuals (photos / PDF)",
       modeOne: "All are one thing", modeOneS: "e.g. a photo of it + the receipt + the warranty card", modeEach: "Each file is its own thing", modeEachS: "e.g. photos of everything in a cupboard",
-      optPlace: "Where it is (optional)", optName: "Name (optional)", optHint: "A hint for your assistant (optional)", addGo: (n) => `Add ${n} file${n === 1 ? "" : "s"}`, manual: "No photo - type it in",
+      optPlace: "Where it is (optional)", optName: "Name (optional)", optHint: "A hint for your assistant (optional)", optSpot: "Spot (optional)", addSpotHint: "e.g. left wardrobe, 2nd shelf", optNotes: "Notes (optional)", notesHint: "e.g. a gift from Mum; takes AA batteries", hintMore: "Something your assistant should know?", hintHint: "e.g. the receipt is from 2023; only the machine on this receipt", addGo: (n) => `Add ${n} file${n === 1 ? "" : "s"}`, manual: "No photo - type it in",
       preparing: "preparing…", uploading: (i, n) => `uploading ${i} / ${n}…`, addedOk: "Added - your assistant files it", again: "Add it again anyway?",
       dropHere: "Drop to add", dropTo: (n) => `Drop to add to “${n}”`, saved: "Saved", deleted: "Deleted", none: "-",
     },
@@ -553,7 +553,7 @@
   }
   function drawAdd() {
     const n = picked.length;
-    const was = { place: $("addPlace")?.value, name: $("addName")?.value, hint: $("addHint")?.value };
+    const was = { place: $("addPlace")?.value, spot: $("addSpot")?.value, name: $("addName")?.value, notes: $("addNotes")?.value, hint: $("addHint")?.value, more: $("addMore")?.open };
     sheet(`${head(addTo ? t("addToT")(addTo.name || t("unnamed")) : t("addT"))}
       <label class="zone" id="zone"><span class="big">📸</span><b>${esc(t("zoneB"))}</b><span class="muted small">${esc(t("zoneS"))}</span>
         <input type="file" id="pick" multiple accept="image/*,.heic,.heif,application/pdf" class="hidden"></label>
@@ -561,16 +561,19 @@
       <div class="stack" style="margin-top:12px">
         ${n > 1 && !addTo ? `<div class="opts"><label class="opt"><input type="radio" name="mode" value="one" ${mode === "one" ? "checked" : ""}><span><b>${esc(t("modeOne"))}</b><small>${esc(t("modeOneS"))}</small></span></label>
           <label class="opt"><input type="radio" name="mode" value="each" ${mode === "each" ? "checked" : ""}><span><b>${esc(t("modeEach"))}</b><small>${esc(t("modeEachS"))}</small></span></label></div>` : ""}
-        ${addTo ? "" : `<label class="f">${esc(t("optPlace"))}<select id="addPlace">${placeOptions(filt.place && filt.place !== "none" ? filt.place : "")}</select></label>`}
         ${addTo || mode === "each" ? "" : `<label class="f">${esc(t("optName"))}<input id="addName" maxlength="160"></label>`}
-        <label class="f">${esc(t("optHint"))}<input id="addHint" maxlength="1000"></label>
+        ${addTo ? "" : `<div class="grid2"><label class="f">${esc(t("optPlace"))}<select id="addPlace">${placeOptions(filt.place && filt.place !== "none" ? filt.place : "")}</select></label>
+          <label class="f">${esc(t("optSpot"))}<input id="addSpot" maxlength="160" placeholder="${esc(t("addSpotHint"))}"></label></div>
+          <label class="f">${esc(t("optNotes"))}<textarea id="addNotes" rows="2" maxlength="4000" placeholder="${esc(t("notesHint"))}"></textarea></label>`}
+        ${addTo ? `<label class="f">${esc(t("optHint"))}<input id="addHint" maxlength="1000" placeholder="${esc(t("hintHint"))}"></label>`
+          : `<details class="more" id="addMore"><summary>${esc(t("hintMore"))}</summary><label class="f">${esc(t("optHint"))}<input id="addHint" maxlength="1000" placeholder="${esc(t("hintHint"))}"></label></details>`}
         <div class="row"><button type="button" class="btn primary" data-act="upload" ${n ? "" : "disabled"}>${esc(t("addGo")(n))}</button>
           ${addTo ? "" : `<button type="button" class="link" data-act="manual">✎ ${esc(t("manual"))}</button>`}</div>
         <div id="addProgress"></div>
       </div>`);
     if (was.place !== undefined && $("addPlace")) $("addPlace").value = was.place;
-    if (was.name && $("addName")) $("addName").value = was.name;
-    if (was.hint) $("addHint").value = was.hint;
+    for (const [k, id] of [["spot", "addSpot"], ["name", "addName"], ["notes", "addNotes"], ["hint", "addHint"]]) if (was[k] && $(id)) $(id).value = was[k];
+    if ((was.more || was.hint) && $("addMore")) $("addMore").open = true;
   }
 
   function progress(el, i, n, label) {
@@ -590,6 +593,7 @@
     const files = picked.map((p) => p.file), n = files.length;
     const one = !!addTo || mode === "one" || n === 1;
     const place = $("addPlace")?.value || null, name = $("addName")?.value.trim() || null, hint = $("addHint").value.trim() || null;
+    const spot = $("addSpot")?.value.trim() || null, notes = $("addNotes")?.value.trim() || null;
     document.querySelectorAll("#sheetBox button").forEach((b) => (b.disabled = true));
     let item = addTo?.id || null, readDone = false, ok = 0;
     for (let i = 0; i < n; i++) {
@@ -597,8 +601,9 @@
       try {
         const prep = await prepare(files[i], files[i].name, files[i].type);
         const last = i === n - 1;
-        const body = one ? { item_id: item, files: [prep], place_id: item ? undefined : place, name: item ? undefined : name, hint: i === 0 ? hint : undefined, read: last }
-          : { files: [prep], place_id: place, hint, read: true };
+        const fresh = item ? {} : { place_id: place, spot, notes };
+        const body = one ? { item_id: item, files: [prep], ...fresh, name: item ? undefined : name, hint: i === 0 ? hint : undefined, read: last }
+          : { files: [prep], ...fresh, hint, read: true };
         const it = await send("upload", body);
         if (!it) continue;
         ok++;
@@ -737,7 +742,12 @@
         }
         case "more": return moreSheet();
         case "add": return addSheet();
-        case "manual": closeSheet(); panel = { id: null, owner_fields: [], tags: [], files: [], place_id: filt.place && filt.place !== "none" ? Number(filt.place) : null, currency: st.currency, quantity: 1 }; editing = true; return drawPanel();
+        case "manual": {
+          // What was typed in the add sheet comes along.
+          const v = (id) => $(id)?.value.trim() || null;
+          const fresh = { name: v("addName"), place_id: v("addPlace") ? Number(v("addPlace")) : null, spot: v("addSpot"), notes: v("addNotes") };
+          closeSheet(); panel = { id: null, owner_fields: [], tags: [], files: [], ...fresh, currency: st.currency, quantity: 1 }; editing = true; return drawPanel();
+        }
         case "upload": return doUpload();
         case "addto": return addSheet([], panel);
         case "pclose": return closePanel();

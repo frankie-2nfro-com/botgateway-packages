@@ -333,7 +333,7 @@ function stats() {
 
 const fingerprint = (data) => host.crypto.hmac("homethingy", data, { data_encoding: "base64" }).hex;
 
-// {item_id?, files: [{name, media_type, data, thumb?, kind?}], place_id?, name?, hint?, read (default true), force}
+// {item_id?, files: [{name, media_type, data, thumb?, kind?}], place_id?, spot?, name?, notes?, hint?, read (default true), force}
 // -> the item. Without item_id a new item is made for the files. A file already kept is refused unless `force`.
 function upload(b) {
   const list = Array.isArray(b.files) ? b.files : [];
@@ -358,7 +358,8 @@ function upload(b) {
     host.db.transaction(() => {
       if (it) id = it.id;
       else {
-        const fields = { place_id: clean("place_id", b.place_id, false) ?? null, name: clean("name", b.name, false) ?? null };
+        const fields = {};
+        for (const k of ["place_id", "spot", "name", "notes"]) fields[k] = clean(k, b[k], false) ?? null;
         id = insertItem(fields, Object.keys(fields).filter((k) => fields[k] !== null));
       }
       for (const f of ready) {
