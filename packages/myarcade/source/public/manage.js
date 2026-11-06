@@ -5,7 +5,7 @@
     en: {
       lobby: "Open the lobby", warnTitle: "Publishing a game is your own decision and your own risk.",
       warn: "Do not publish copies of existing games, their names, characters, art, music or look. You answer for what you publish; 2nfro and the makers of Bot Gateway do not check games.",
-      make: "Make a game", describe: "Describe the game you want", describeHint: "What the player does, how it is won or lost, how it should look. An idea of your own, not a copy of a game that exists.",
+      make: "Make a game", describe: "Describe the game you want", describeHint: "What the player does, how it is won or lost, how it should look. An idea of your own, not a copy of a game that exists.", describeFirst: "Describe the game in the box first.",
       auto: "Make it now (your application's LLM)", ide: "Make it in my IDE (bigger games)",
       autoHint: "\"Make it now\" takes about 6 minutes and uses your LLM's quota. Ask Claude's Timeout must be at least 600 seconds (Workers). A game with pictures or sounds, or anything bigger, is for your IDE.",
       jobs: "In the making", noJobs: "Nothing is being made.",
@@ -25,7 +25,7 @@
     zh: {
       lobby: "開啟大廳", warnTitle: "發佈遊戲由你決定，風險亦由你承擔。",
       warn: "請勿發佈現有遊戲的抄襲版本，或使用其名稱、角色、美術、音樂或外觀。你須為所發佈的內容負責；2nfro 及 Bot Gateway 的製作者不會檢查遊戲。",
-      make: "製作遊戲", describe: "描述你想要的遊戲", describeHint: "玩家做甚麼、如何勝負、想要怎樣的外觀。請用你自己的構思，不要抄襲現有遊戲。",
+      make: "製作遊戲", describe: "描述你想要的遊戲", describeHint: "玩家做甚麼、如何勝負、想要怎樣的外觀。請用你自己的構思，不要抄襲現有遊戲。", describeFirst: "請先在輸入框描述遊戲。",
       auto: "立即製作（應用程式的 LLM）", ide: "在 IDE 製作（較大的遊戲）",
       autoHint: "「立即製作」約需 6 分鐘，並會用你的 LLM 額度。Ask Claude 的 Timeout 必須至少 600 秒（Workers）。有圖片或音效、或規模較大的遊戲，請用 IDE。",
       jobs: "製作中", noJobs: "目前沒有製作中的遊戲。",
@@ -129,16 +129,22 @@
 
   function makeSection() {
     const area = el("textarea", { id: "describe", placeholder: t("describeHint"), value: draft, oninput: () => { draft = area.value; } });
+    const empty = el("p", { class: "error", role: "alert", hidden: true }, t("describeFirst"));
     const start = async (mode) => {
-      if (!area.value.trim()) { area.focus(); return; }
+      if (!area.value.trim()) { empty.hidden = false; area.focus(); return; }
       const answer = await act("jobs", { description: area.value, mode });
-      if (answer) { draft = ""; render(); }
+      if (answer) {
+        draft = "";
+        render();
+        // The next step is in the list below, maybe out of sight: for an IDE, the line to copy.
+        document.querySelector(`[data-job="${answer.job}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
     };
     return el("section", {},
       el("h2", {}, t("make")),
       el("p", { class: "warning" }, el("strong", {}, t("warnTitle")), " ", t("warn")),
       el("div", { class: "card" },
-        el("label", { htmlFor: "describe" }, t("describe")), area,
+        el("label", { htmlFor: "describe" }, t("describe")), area, empty,
         el("div", { class: "row", style: "margin-top:10px" },
           el("button", { type: "button", class: "main", onclick: () => start("llm") }, t("auto")),
           el("button", { type: "button", onclick: () => start("ide") }, t("ide"))),
@@ -179,7 +185,7 @@
     return el("section", {}, el("h2", {}, t("jobs")),
       jobs.length ? jobs.map((job) => {
         const line = `Make MyArcade job ${job.id} with the MyArcade tools (arcade_job_get first).`;
-        return el("div", { class: "card" },
+        const card = el("div", { class: "card" },
           el("div", { class: "row" }, el("span", { class: `badge${job.state === "errors" || job.state === "failed" ? " bad" : ""}` }, t(states[job.state] || "stWorking")),
             el("span", { class: "grow" }, job.comment ? `${job.description} — ${job.comment}` : job.description)),
           job.mode === "ide" && job.state === "waiting" ? el("div", {},
@@ -195,6 +201,8 @@
           el("div", { class: "row", style: "margin-top:8px" },
             job.mode === "llm" && (job.state === "failed" || job.state === "errors") ? el("button", { type: "button", onclick: () => act(`jobs/${job.id}/retry`) }, t("retry")) : null,
             job.state !== "asking" ? el("button", { type: "button", class: "ghost", onclick: () => act(`jobs/${job.id}/remove`) }, t("dismiss")) : null));
+        card.dataset.job = job.id;
+        return card;
       }) : el("p", { class: "muted" }, t("noJobs")));
   }
 
