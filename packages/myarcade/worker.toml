@@ -1,7 +1,7 @@
 type = "application"
 id = "myarcade"
 name = "MyArcade"
-version = "0.1.3"
+version = "0.1.4"
 about = "Your own public web arcade. Describe a game on your local page; your assistant or your IDE makes it from a built-in game specification; test it and, if you like it, publish it. Visitors sign up and play, with play counts and leaderboards. Publishing a game is your own decision and your own responsibility. Games run in a sandboxed frame in the visitor's browser."
 author = "Bot Gateway"
 license = "Apache-2.0"

@@ -14,10 +14,19 @@
       test: "Test", publish: "Publish", unpublish: "Unpublish", remove: "Delete", deleteGame: "Delete game", change: "Ask for changes", retry: "Ask again", dismiss: "Dismiss",
       live: "public", draft: "draft", earlier: "not public", off: "not public", plays: "plays", cancel: "Cancel", save: "Save",
       stWaiting: "Waiting for your AI tool", stWorking: "Your IDE is working", stAsking: "Waiting for your LLM (minutes)", stReady: "Ready to test", stErrors: "The checks found problems", stFailed: "Failed",
-      step1: "1. Open a new empty project in Cursor or another AI tool that can write files, and paste the prompt there.", copyPrompt: "Copy the prompt", copied: "Copied", showPrompt: "Copy this prompt:",
-      step2: "2. When it has made the folder myarcade-job-{job}, choose that folder here. The checks run at once.", chooseFolder: "Choose the game's folder", uploading: "Uploading ...",
+      newProject: "In Cursor, or another AI tool that can write files, open a new empty folder as the project.",
+      oldProject: "In your AI tool, open the project where this game was made. If it is gone, open a new empty folder.",
+      pastePrompt: "Press \"Copy the prompt\" below, paste it into the tool's chat and send it.",
+      waitTool: "Wait until the tool says it is done. It makes the folder myarcade-job-{job} in the project and tells you where it is.",
+      pickFolder: "Press \"Choose the game's folder\" and choose myarcade-job-{job}, not the whole project. The checks run at once.",
+      pasteFix: "Press \"Copy the fix prompt\" below, paste it into the same chat in your AI tool and send it.",
+      waitFix: "Wait until it is done: it fixes the files in myarcade-job-{job}.",
+      pickAgain: "Press \"Choose the game's folder\" and choose myarcade-job-{job} again.",
+      tree: "your-project/\n├── ...                   (the tool's own files)\n└── myarcade-job-{job}/      ← choose this one\n    ├── game.json\n    ├── game.js\n    └── cover.svg",
+      wrongFolder: "That folder has no myarcade-job-{job} in it. Choose the folder myarcade-job-{job} that your AI tool made.",
+      copyPrompt: "Copy the prompt", copied: "Copied", showPrompt: "Copy this prompt:", chooseFolder: "Choose the game's folder", uploading: "Uploading ...",
       mcpLine: "Is your AI tool connected to this gateway by MCP (Dashboard, Client)? Then this one line is enough, and you see its progress here:", copy: "Copy",
-      ideAgain: "Copy the fix prompt, paste it into the same AI tool, and choose the folder again.", copyFix: "Copy the fix prompt",
+      copyFix: "Copy the fix prompt",
       changeNow: "Make it now (LLM)", changeIde: "In my IDE",
       publishTitle: "Publish", publishBody: "Anyone on the internet can then play this version. The website itself must also be published in the gateway.",
       statement: "I publish this game on my own decision. I have the rights to everything in it, including its name, code, art, music, characters and look, and it does not copy or imitate another game. I alone bear all risk and responsibility for it, including any claim by others. 2nfro and the makers of Bot Gateway do not check games, and take no responsibility for them or for what happens because of them.",
@@ -37,10 +46,19 @@
       test: "測試", publish: "發佈", unpublish: "下架", remove: "刪除", deleteGame: "刪除遊戲", change: "要求修改", retry: "再試一次", dismiss: "移除",
       live: "公開中", draft: "草稿", earlier: "未公開", off: "未公開", plays: "次遊玩", cancel: "取消", save: "儲存",
       stWaiting: "等待你的 AI 工具", stWorking: "IDE 製作中", stAsking: "等待 LLM（需時數分鐘）", stReady: "可以測試", stErrors: "檢查發現問題", stFailed: "失敗",
-      step1: "1. 在 Cursor 或其他能寫檔的 AI 工具開一個新的空專案，把 prompt 貼進去。", copyPrompt: "複製 prompt", copied: "已複製", showPrompt: "請複製這段 prompt：",
-      step2: "2. 工具做好 myarcade-job-{job} 資料夾後，在這裏選擇該資料夾。系統會立即檢查。", chooseFolder: "選擇遊戲資料夾", uploading: "上載中……",
+      newProject: "在 Cursor（或其他能寫檔的 AI 工具）開一個新的空資料夾作為專案。",
+      oldProject: "在 AI 工具打開當初製作這個遊戲的專案。如果已經沒有，就開一個新的空資料夾。",
+      pastePrompt: "按下面的「複製 prompt」，貼到工具的對話框並送出。",
+      waitTool: "等工具說完成。它會在專案內建立 myarcade-job-{job} 資料夾，並告訴你資料夾在哪裏。",
+      pickFolder: "按「選擇遊戲資料夾」，選 myarcade-job-{job}，不要選整個專案。系統會立即檢查。",
+      pasteFix: "按下面的「複製修正 prompt」，貼到 AI 工具原本的對話並送出。",
+      waitFix: "等它完成：它會修改 myarcade-job-{job} 內的檔案。",
+      pickAgain: "按「選擇遊戲資料夾」，再選一次 myarcade-job-{job}。",
+      tree: "你的專案/\n├── ……                    （工具自己的檔案）\n└── myarcade-job-{job}/      ← 選這個\n    ├── game.json\n    ├── game.js\n    └── cover.svg",
+      wrongFolder: "這個資料夾裏沒有 myarcade-job-{job}。請選 AI 工具建立的 myarcade-job-{job} 資料夾。",
+      copyPrompt: "複製 prompt", copied: "已複製", showPrompt: "請複製這段 prompt：", chooseFolder: "選擇遊戲資料夾", uploading: "上載中……",
       mcpLine: "你的 AI 工具已經用 MCP 連接此閘道（Dashboard → Client）？那麼只要這一句，還可以在這裏看到進度：", copy: "複製",
-      ideAgain: "複製修正 prompt，貼到同一個 AI 工具，然後再選擇資料夾。", copyFix: "複製修正 prompt",
+      copyFix: "複製修正 prompt",
       changeNow: "立即製作（LLM）", changeIde: "在 IDE 製作",
       publishTitle: "發佈", publishBody: "發佈後，互聯網上任何人都可以玩這個版本。網站本身也要在閘道發佈。",
       statement: "本人自行決定發佈此遊戲。本人擁有遊戲內所有內容（包括名稱、程式碼、美術、音樂、角色及外觀）的權利，遊戲亦沒有抄襲或模仿其他遊戲。一切風險及責任（包括他人提出的任何申索）概由本人獨自承擔。2nfro 及 Bot Gateway 的製作者不會檢查遊戲，亦不會就遊戲或因遊戲引致的任何事情負責。",
@@ -140,11 +158,14 @@
   document.body.append(folderPicker);
   let pickingJob = null;
   let uploadingJob = null;
+  let wrongJob = null;
   folderPicker.addEventListener("change", async () => {
     const job = pickingJob;
-    const files = [...folderPicker.files].filter((f) => !f.name.startsWith("."));
+    const files = packFiles([...folderPicker.files], `myarcade-job-${job}`);
     folderPicker.value = "";
-    if (!job || !files.length) return;
+    if (!job) return;
+    wrongJob = files.length ? null : job;
+    if (!files.length) return render();
     uploadingJob = job;
     render();
     try {
@@ -159,6 +180,16 @@
     await load();
     render();
   });
+
+  // Only the pack: the files directly in the folder myarcade-job-N, also when the whole project was chosen (the nearest such
+  // folder). Nothing else is sent: not the tool's source, not node_modules.
+  function packFiles(all, want) {
+    const dirOf = (f) => (f.webkitRelativePath || f.name).split("/").slice(0, -1);
+    const dirs = all.map(dirOf).filter((d) => d[d.length - 1] === want).map((d) => d.join("/"));
+    if (!dirs.length) return [];
+    const dir = dirs.sort((a, b) => a.length - b.length)[0];
+    return all.filter((f) => !f.name.startsWith(".") && dirOf(f).join("/") === dir);
+  }
 
   const asBase64 = (file) => new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -248,11 +279,14 @@
           el("div", { class: "row" }, el("span", { class: `badge${job.state === "errors" || job.state === "failed" ? " bad" : ""}` }, t(states[job.state] || "stWorking")),
             el("span", { class: "grow" }, job.comment ? `${job.description} — ${job.comment}` : job.description)),
           job.mode === "ide" && ["waiting", "errors"].includes(job.state) ? el("div", {},
-            el("p", {}, job.state === "errors" ? t("ideAgain") : t("step1")),
-            el("button", { type: "button", class: "main", onclick: (event) => copyPrompt(job.id, event.target) }, job.state === "errors" ? t("copyFix") : t("copyPrompt")),
-            el("p", {}, t("step2", { job: job.id })),
-            uploadingJob === job.id ? el("p", { class: "muted", role: "status" }, t("uploading"))
-              : el("button", { type: "button", onclick: () => { pickingJob = job.id; folderPicker.click(); } }, t("chooseFolder"))) : null,
+            el("ol", { class: "steps" }, (job.state === "errors" ? ["pasteFix", "waitFix", "pickAgain"]
+              : [job.comment ? "oldProject" : "newProject", "pastePrompt", "waitTool", "pickFolder"]).map((step) => el("li", {}, t(step, { job: job.id })))),
+            el("pre", { class: "tree" }, t("tree", { job: job.id })),
+            el("div", { class: "row" },
+              el("button", { type: "button", class: "main", onclick: (event) => copyPrompt(job.id, event.target) }, job.state === "errors" ? t("copyFix") : t("copyPrompt")),
+              uploadingJob === job.id ? el("span", { class: "muted", role: "status" }, t("uploading"))
+                : el("button", { type: "button", onclick: () => { pickingJob = job.id; folderPicker.click(); } }, t("chooseFolder"))),
+            wrongJob === job.id ? el("p", { class: "error", role: "alert" }, t("wrongFolder", { job: job.id })) : null) : null,
           job.mode === "ide" && job.state === "waiting" ? el("details", {}, el("summary", {}, "MCP"),
             el("p", { class: "muted" }, t("mcpLine")),
             el("div", { class: "row" }, el("div", { class: "line grow" }, line),

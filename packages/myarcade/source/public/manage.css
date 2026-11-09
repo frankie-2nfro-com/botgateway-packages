@@ -60,3 +60,6 @@ th { color: var(--muted); font-weight: 400; }
 @media (max-width: 560px) {
   .game { grid-template-columns: 1fr; }
 }
+.steps { margin: 10px 0; padding-left: 1.4em; line-height: 1.6; }
+.steps li { margin: 4px 0; }
+.tree { margin: 8px 0 12px; padding: 10px; background: #0d0b14; font-family: var(--mono); font-size: 0.82rem; line-height: 1.45; overflow-x: auto; }
