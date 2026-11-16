@@ -4,8 +4,13 @@ for the gateway owners - the Portal and the gateway show them as "What's new" be
 store_update.sh --package myarcade publishes it (dated) and puts the next patch version on top; change
 the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
 
-0.1.5
+0.1.6
 - [Changed and non commited item put here]
+
+0.1.5 (2026-11-16)
+- Asking for changes to a game: the box now says what to write, and pressing a button with the box empty tells you to write
+  the change first (before, nothing seemed to happen). After that the page moves to the new job and its steps.
+- Author is now shown as "2nfro" (was "Bot Gateway")
 
 0.1.4 (2026-11-09)
 - Making a game in an AI tool: the job card now shows the steps one by one, with a picture of which folder to choose

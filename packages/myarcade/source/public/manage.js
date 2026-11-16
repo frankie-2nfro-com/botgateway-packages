@@ -27,10 +27,10 @@
       copyPrompt: "Copy the prompt", copied: "Copied", showPrompt: "Copy this prompt:", chooseFolder: "Choose the game's folder", uploading: "Uploading ...",
       mcpLine: "Is your AI tool connected to this gateway by MCP (Dashboard, Client)? Then this one line is enough, and you see its progress here:", copy: "Copy",
       copyFix: "Copy the fix prompt",
-      changeNow: "Make it now (LLM)", changeIde: "In my IDE",
+      changeNow: "Make it now (LLM)", changeIde: "In my AI tool",
       publishTitle: "Publish", publishBody: "Anyone on the internet can then play this version. The website itself must also be published in the gateway.",
       statement: "I publish this game on my own decision. I have the rights to everything in it, including its name, code, art, music, characters and look, and it does not copy or imitate another game. I alone bear all risk and responsibility for it, including any claim by others. 2nfro and the makers of Bot Gateway do not check games, and take no responsibility for them or for what happens because of them.",
-      warnings: "Warnings", changeTitle: "What should change?", confirmDelete: "Delete this for good? Its plays and scores go with it.", confirmVersion: "Delete this version for good?",
+      warnings: "Warnings", changeTitle: "What should change?", changeHint: "Write what to change, for example: jump higher, add a third level. Then choose who makes it.", changeFirst: "Write what should change in the box first.", confirmDelete: "Delete this for good? Its plays and scores go with it.", confirmVersion: "Delete this version for good?",
       name: "Name", best: "Best", joined: "Joined", resetPassword: "New password", clearScores: "Clear scores", deletePlayer: "Delete", newPassword: "New password for {name} (at least 8 characters). Tell them yourself; they are logged out.",
       confirmPlayer: "Delete {name} with their scores?", confirmClear: "Clear the scores of {name}?", agreedOn: "statement agreed", size: "KB", failedHint: "If it timed out, raise Timeout on the Ask Claude worker (at least 600 seconds) and ask again.",
     },
@@ -59,10 +59,10 @@
       copyPrompt: "複製 prompt", copied: "已複製", showPrompt: "請複製這段 prompt：", chooseFolder: "選擇遊戲資料夾", uploading: "上載中……",
       mcpLine: "你的 AI 工具已經用 MCP 連接此閘道（Dashboard → Client）？那麼只要這一句，還可以在這裏看到進度：", copy: "複製",
       copyFix: "複製修正 prompt",
-      changeNow: "立即製作（LLM）", changeIde: "在 IDE 製作",
+      changeNow: "立即製作（LLM）", changeIde: "在 AI 工具製作",
       publishTitle: "發佈", publishBody: "發佈後，互聯網上任何人都可以玩這個版本。網站本身也要在閘道發佈。",
       statement: "本人自行決定發佈此遊戲。本人擁有遊戲內所有內容（包括名稱、程式碼、美術、音樂、角色及外觀）的權利，遊戲亦沒有抄襲或模仿其他遊戲。一切風險及責任（包括他人提出的任何申索）概由本人獨自承擔。2nfro 及 Bot Gateway 的製作者不會檢查遊戲，亦不會就遊戲或因遊戲引致的任何事情負責。",
-      warnings: "警告", changeTitle: "要改甚麼？", confirmDelete: "永久刪除？遊玩次數及分數也會一併刪除。", confirmVersion: "永久刪除這個版本？",
+      warnings: "警告", changeTitle: "要改甚麼？", changeHint: "寫下要改甚麼，例如：跳高一點、加多一關。然後選擇由誰製作。", changeFirst: "請先在輸入框寫下要改甚麼。", confirmDelete: "永久刪除？遊玩次數及分數也會一併刪除。", confirmVersion: "永久刪除這個版本？",
       name: "名稱", best: "最高分", joined: "登記日期", resetPassword: "重設密碼", clearScores: "清除分數", deletePlayer: "刪除", newPassword: "{name} 的新密碼（至少 8 個字元）。請親自告知對方；對方會被登出。",
       confirmPlayer: "刪除 {name} 及其分數？", confirmClear: "清除 {name} 的分數？", agreedOn: "已同意聲明", size: "KB", failedHint: "如果是超時，請把 Ask Claude worker 的 Timeout 調高至至少 600 秒，然後再試。",
     },
@@ -136,9 +136,14 @@
   });
 
   const changeBox = () => ask((d, close) => {
-    const field = el("textarea", {});
-    const send = (mode) => { if (field.value.trim()) close({ comment: field.value, mode }); else field.focus(); };
-    d.append(el("h3", {}, t("changeTitle")), field, el("div", { class: "actions" },
+    const field = el("textarea", { placeholder: t("changeHint") });
+    const empty = el("p", { class: "error", role: "alert", hidden: true }, t("changeFirst"));
+    const send = (mode) => {
+      if (field.value.trim()) return close({ comment: field.value, mode });
+      empty.hidden = false;
+      field.focus();
+    };
+    d.append(el("h3", {}, t("changeTitle")), el("p", { class: "muted" }, t("changeHint")), field, empty, el("div", { class: "actions" },
       el("button", { type: "button", onclick: () => close(null) }, t("cancel")),
       el("button", { type: "button", onclick: () => send("ide") }, t("changeIde")),
       el("button", { type: "button", class: "main", onclick: () => send("llm") }, t("changeNow"))));
@@ -327,7 +332,9 @@
               } }, t("publish")) : el("button", { type: "button", onclick: () => act(`games/${game.id}/unpublish`) }, t("unpublish")),
               el("button", { type: "button", onclick: async () => {
                 const change = await changeBox();
-                if (change) await act("jobs", { description: `${title}: ${manifest?.text?.en?.blurb || ""}`, comment: change.comment, mode: change.mode, base_game: game.id, base_version: v.version });
+                const answer = change && await act("jobs", { description: `${title}: ${manifest?.text?.en?.blurb || ""}`, comment: change.comment, mode: change.mode, base_game: game.id, base_version: v.version });
+                // The next steps are on the job's card in "In the making", above and out of sight.
+                if (answer) document.querySelector(`[data-job="${answer.job}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
               } }, t("change")),
               v.version !== game.live_version && game.versions.length > 1 ? el("button", { type: "button", class: "ghost danger", onclick: async () => {
                 if (await confirmBox(t("confirmVersion"), t("remove"))) await act(`games/${game.id}/remove-version`, { version: v.version });
