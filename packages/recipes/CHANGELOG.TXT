@@ -4,8 +4,11 @@ for the gateway owners - the Portal and the gateway show them as "What's new" be
 store_update.sh --package recipes publishes it (dated) and puts the next patch version on top; change
 the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
 
-0.5.15
+0.5.16
 - [Changed and non commited item put here]
+
+0.5.15 (2026-11-16)
+- Author is now shown as "2nfro" (was "Bot Gateway")
 
 0.5.14 (2026-11-05)
 - Its login page uses the language you last used Recipes in
