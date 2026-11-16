@@ -4,8 +4,11 @@ for the gateway owners - the Portal and the gateway show them as "What's new" be
 store_update.sh --package uppercase publishes it (dated) and puts the next patch version on top; change
 the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
 
-1.2.2
+1.2.3
 - [Changed and non commited item put here]
+
+1.2.2 (2026-11-16)
+- Author is now shown as "2nfro" (was "Bot Gateway")
 
 1.2.1 (2026-11-01)
 - A sample (`example`) for the gateway's Simulator, Send test and Dashboard (gateway 1.1.11)

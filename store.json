@@ -1298,6 +1298,21 @@
    "version": "1.2.1"
   },
   {
+   "about": "Upper-cases text - an example package (the old built-in uppercase as a Python program).",
+   "archive": "dist/uppercase-1.2.2.tar.gz",
+   "author": "2nfro",
+   "bytes": 1514,
+   "changes": [
+    "Author is now shown as \"2nfro\" (was \"Bot Gateway\")"
+   ],
+   "id": "uppercase",
+   "license": "Apache-2.0",
+   "name": "Uppercase (Python)",
+   "sha256": "70ee57994f4132047b4f245c239b040192e330c23cc0517aeb8fec7e89ad9d1f",
+   "type": "worker",
+   "version": "1.2.2"
+  },
+  {
    "about": "Counts the words and characters of a text - an example package.",
    "archive": "dist/wordcount-1.1.0.tar.gz",
    "author": "Bot Gateway",
