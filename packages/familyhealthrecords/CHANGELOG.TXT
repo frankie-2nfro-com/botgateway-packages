@@ -4,8 +4,11 @@ for the gateway owners - the Portal and the gateway show them as "What's new" be
 store_update.sh --package familyhealthrecords publishes it (dated) and puts the next patch version on top; change
 the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
 
-0.2.6
+0.2.7
 - [Changed and non commited item put here]
+
+0.2.6 (2026-11-16)
+- Author is now shown as "2nfro" (was "Bot Gateway")
 
 0.2.5 (2026-11-06)
 - A tray under the top bar on every page shows what your assistant is working on: waiting, being read, failed or
