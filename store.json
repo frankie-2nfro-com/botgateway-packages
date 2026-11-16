@@ -1338,6 +1338,21 @@
    "sha256": "f6d0d678548f3335c5fda4fdfb64f83cfa7bdb7f6729d76f9a3066e5d7192b3c",
    "type": "worker",
    "version": "1.1.1"
+  },
+  {
+   "about": "Counts the words and characters of a text - an example package.",
+   "archive": "dist/wordcount-1.1.2.tar.gz",
+   "author": "2nfro",
+   "bytes": 644,
+   "changes": [
+    "Author is now shown as \"2nfro\" (was \"Bot Gateway\")"
+   ],
+   "id": "wordcount",
+   "license": "Apache-2.0",
+   "name": "Word Count (Python)",
+   "sha256": "d0292c969132860be1d59d2cb90d1654fa1341476f85ca816e14a55d9aee7be4",
+   "type": "worker",
+   "version": "1.1.2"
   }
  ],
  "release": "1.0.10",
