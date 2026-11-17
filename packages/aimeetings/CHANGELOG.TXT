@@ -4,8 +4,16 @@ for the gateway owners - the Portal and the gateway show them as "What's new" be
 store_update.sh --package aimeetings publishes it (dated) and puts the next patch version on top; change
 the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
 
-0.1.1
+0.1.2
 - [Changed and non commited item put here]
+
+0.1.1 (2026-11-17)
+- The meeting starts with your opening statement, filled in from the purpose and the background: change it and
+  press Send and start. When an AI asks another participant a direct question, that one answers next by itself.
+  Each discussion round starts with the next participant.
+- Your opening statement shows in the meeting as the chair's message, marked "Opening statement".
+- New AI participants are named after your LLM workers' names in 2nfro Desktop (needs 1.1.38), and the LLM lists
+  show "name (id)"; changing a participant's LLM changes its name too while you haven't typed your own.
 
 0.1.0 (2026-11-17)
 - First version: chair a meeting of AI models (each participant one of the LLMs you allow in the application's Config,

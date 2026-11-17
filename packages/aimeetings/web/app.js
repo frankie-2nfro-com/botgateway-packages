@@ -19,6 +19,8 @@
       opening: "Opening round", openingHint: "Everyone answers at once, without seeing the others",
       discussion: "Discussion round", discussionHint: "One after another, answering each other",
       final: "Closing statements", ask: "Ask one…", stop: "Stop", skip: "Skip",
+      sendOpening: "Send and start", openingStatement: "Opening statement", openingNote: "Opening round: this is your opening statement, made from the purpose and the background - change it as you like. Every AI participant answers at once, without seeing the others.",
+      openingPurpose: "Purpose of this meeting", openingBackground: "Background", openingAsk: "Please each give your first view: what do you see, what would you suggest, and what worries you?",
       send: "Send", asInstruction: "Keep as instruction", sayHint: "Write to the meeting (Enter = send, Shift+Enter = new line)",
       instruction: "Instruction for the next turns", clear: "Clear",
       thinking: "speaking", failed: "failed", idle: "", left: "left", removed: "removed", hand: "✋",
@@ -51,6 +53,8 @@
       opening: "開場輪", openingHint: "大家同時發言，互相看不到",
       discussion: "討論輪", discussionHint: "輪流發言，互相回應",
       final: "總結發言", ask: "點名提問…", stop: "停止", skip: "跳過",
+      sendOpening: "發送並開始", openingStatement: "開場發言", openingNote: "開場輪：這是你的開場發言，由目的和背景資料組成 - 可以隨意修改。所有 AI 與會者會同時回答，互相看不到。",
+      openingPurpose: "會議目的", openingBackground: "背景資料", openingAsk: "請各位先講初步看法：你看到甚麼、有甚麼建議、擔心甚麼？",
       send: "發送", asInstruction: "作為指示保留", sayHint: "向會議發言（Enter 發送，Shift+Enter 換行）",
       instruction: "之後發言的指示", clear: "清除",
       thinking: "發言中", failed: "失敗", idle: "", left: "已離開", removed: "已移除", hand: "✋",
@@ -137,7 +141,7 @@
     const role = !chair && p.role ? ` · ${esc(p.role)}` : "";
     const mine = meId && m.participant_id === meId;
     return `<div class="msg ${chair ? "chair" : m.kind === "human" ? "human" : "ai"}">${avatar(p, chair)}<div class="bubble">
-      <div class="who"><b>${esc(chair ? t("chair") : m.name)}</b>${mine ? ` (${t("you")})` : ""}${role} · ${time(m.at)}</div>
+      <div class="who"><b>${esc(chair ? t("chair") : m.name)}</b>${mine ? ` (${t("you")})` : ""}${role}${chair && m.turn === "opening" ? ` · 📣 ${t("openingStatement")}` : ""} · ${time(m.at)}</div>
       <div class="txt">${esc(m.text)}</div>${m.stance ? `<div class="stance">➜ ${esc(m.stance)}</div>` : ""}</div></div>`;
   }
   function chipHtml(p, owner) {
@@ -156,7 +160,10 @@
   // =======================================================================================================
   // The chair (owner, this computer)
   // =======================================================================================================
-  const S = { llms: [], meetings: [], cur: null, msgs: [], lastId: 0, minutesDirty: false, loading: false };
+  // An LLM as the owner named its worker in 2nfro Desktop (else made from its id), and how a choice reads.
+  const llmName = (l) => (S.llmNames && S.llmNames[l]) || (l ? l.replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "");
+  const llmLabel = (l) => !l ? t("llmDefault") : llmName(l) === l ? l : `${llmName(l)} (${l})`;
+  const S = { llms: [], llmNames: {}, meetings: [], cur: null, msgs: [], lastId: 0, minutesDirty: false, loading: false };
 
   async function owner() {
     renderShell();
@@ -185,6 +192,7 @@
   async function loadList() {
     const s = await api("state");
     S.llms = s.llms || [];
+    S.llmNames = s.llm_names || {};
     S.meetings = s.meetings || [];
     renderList();
   }
@@ -199,7 +207,7 @@
 
   async function openMeeting(id) {
     const m = await api(`meeting?id=${id}&since=0`);
-    S.cur = m; S.msgs = m.messages; S.lastId = S.msgs.length ? S.msgs[S.msgs.length - 1].id : 0; S.minutesDirty = false;
+    S.cur = m; S.msgs = m.messages; S.lastId = S.msgs.length ? S.msgs[S.msgs.length - 1].id : 0; S.minutesDirty = false; S.openingDirty = false;
     store.set("aim.meeting", String(id));
     renderList();
     renderMeeting(true);
@@ -224,7 +232,7 @@
     if (!m) return;
     if (full) {
       $("main").innerHTML = `<div class="head" id="head"></div><div class="people" id="people"></div>
-        <div class="body"><div class="talk"><div class="feed" id="feed"></div><div id="focus"></div><div class="controls" id="controls"></div>
+        <div class="body"><div class="talk"><div class="feed" id="feed"></div><div id="focus"></div><div class="controls" id="controls"></div><p class="note" id="openNote" style="margin:8px 18px 0"></p>
           <div class="compose"><textarea id="say" rows="1" placeholder="${esc(t("sayHint"))}"></textarea>
             <div class="opts"><label><input type="checkbox" id="asInstr"> ${t("asInstruction")}</label><button type="button" class="btn primary" id="sendBtn">${t("send")}</button></div></div></div>
           <div class="aside" id="aside"></div></div>`;
@@ -232,10 +240,16 @@
       const send = async () => {
         const text = say.value.trim();
         if (!text) return;
-        try { await api("say", { id: m.id, text, instruction: $("asInstr").checked }); say.value = ""; $("asInstr").checked = false; autosize(); refresh(); } catch (e) { oops(e); }
+        try {
+          // Before the first round, what the chair sends is the opening statement and starts the opening round.
+          if (S.opening) await api("round", { id: m.id, kind: "opening", text });
+          else await api("say", { id: m.id, text, instruction: $("asInstr").checked });
+          say.value = ""; S.openingDirty = false; $("asInstr").checked = false; autosize(); refresh();
+        } catch (e) { oops(e); }
       };
-      const autosize = () => { say.style.height = "auto"; say.style.height = Math.min(160, say.scrollHeight) + "px"; };
-      say.oninput = autosize;
+      const autosize = () => { say.style.height = "auto"; say.style.height = Math.min(S.opening ? 320 : 160, say.scrollHeight) + "px"; };
+      S.autosize = autosize;
+      say.oninput = () => { if (S.opening) S.openingDirty = true; autosize(); };
       say.onkeydown = (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } };
       $("sendBtn").onclick = send;
     }
@@ -259,7 +273,7 @@
     const people = new Map(m.participants.map((p) => [p.id, p]));
     const feed = $("feed");
     const atEnd = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 80;
-    if (full) feed.innerHTML = S.msgs.length ? S.msgs.map((x) => messageHtml(x, people)).join("") : `<div class="empty">${t("openingHint")} → ${t("opening")}</div>`;
+    if (full) feed.innerHTML = S.msgs.length ? S.msgs.map((x) => messageHtml(x, people)).join("") : `<div class="empty">🎙️</div>`;
     else if (fresh.length) { if (!feed.querySelector(".msg, .sys")) feed.innerHTML = ""; feed.insertAdjacentHTML("beforeend", fresh.map((x) => messageHtml(x, people)).join("")); }
     if (full || (fresh.length && atEnd)) feed.scrollTop = feed.scrollHeight;
 
@@ -268,8 +282,20 @@
 
     const ais = m.participants.filter((p) => p.kind === "ai" && p.state !== "removed");
     const dis = ended || m.busy || !ais.length ? "disabled" : "";
-    $("controls").innerHTML = `<button type="button" class="btn" data-round="opening" title="${esc(t("openingHint"))}" ${dis}>${t("opening")}</button>
-      <button type="button" class="btn" data-round="discussion" title="${esc(t("discussionHint"))}" ${dis}>${t("discussion")}</button>
+    // No round yet: the compose box holds the opening statement (purpose + background) until the chair sends it.
+    const wasOpening = S.opening;
+    S.opening = !ended && m.round === 0;
+    $("openNote").textContent = S.opening ? t("openingNote") : "";
+    $("openNote").classList.toggle("hidden", !S.opening);
+    $("sendBtn").textContent = S.opening ? t("sendOpening") : t("send");
+    $("asInstr").closest("label").classList.toggle("hidden", S.opening);
+    if (S.opening && !S.openingDirty && (full || !wasOpening || S.openingFor !== m.updated)) {
+      $("say").value = openingText(m);
+      S.openingFor = m.updated;
+      S.autosize();
+    }
+    $("controls").classList.toggle("hidden", S.opening);
+    $("controls").innerHTML = `<button type="button" class="btn" data-round="discussion" title="${esc(t("discussionHint"))}" ${dis}>${t("discussion")}</button>
       <select class="btn" id="askSel" ${dis}><option value="">${t("ask")}</option>${ais.map((p) => `<option value="${p.id}">${esc(p.name)}</option>`).join("")}</select>
       <button type="button" class="btn" data-round="final" ${dis}>${t("final")}</button>
       <button type="button" class="btn danger" id="stopBtn" ${m.busy ? "" : "disabled"}>■ ${t("stop")}</button>`;
@@ -281,6 +307,14 @@
     renderAside(m);
   }
 
+  // In the meeting's language (else the page's).
+  function openingText(m) {
+    const l = m.lang === "zh-Hant" ? "zh" : m.lang === "en" ? "en" : lang;
+    const w = (k) => WORDS[l][k], colon = l === "zh" ? "：" : ": ";
+    return [m.purpose ? `${w("openingPurpose")}${colon}${m.purpose}` : "", m.background ? `${w("openingBackground")}${colon}\n${m.background}` : "", w("openingAsk")]
+      .filter(Boolean).join("\n\n");
+  }
+
   async function round(kind, participant) {
     try { await api("round", { id: S.cur.id, kind, participant }); refresh(); } catch (e) { oops(e); }
   }
@@ -289,7 +323,7 @@
     const el = $("aside");
     const editor = $("minutesText");
     const keep = editor && (S.minutesDirty || document.activeElement === editor) ? editor.value : null;
-    const llmOpts = (S.llms.length ? S.llms : [""]).map((l) => `<option value="${esc(l)}">${esc(l || t("llmDefault"))}</option>`).join("");
+    const llmOpts = (S.llms.length ? S.llms : [""]).map((l) => `<option value="${esc(l)}">${esc(llmLabel(l))}</option>`).join("");
     const prevSec = $("secSel") ? $("secSel").value : store.get("aim.secretary") || "";
     const writing = m.minutes_state === "writing";
     el.innerHTML = `<div class="box"><h3>🔗 ${t("invite")}</h3>
@@ -350,10 +384,10 @@
   function meetingDialog(m) {
     const llms = S.llms;
     const rows = m ? m.participants.filter((p) => p.kind === "ai" && p.state !== "removed").map((p) => ({ id: p.id, name: p.name, llm: p.llm || "", role: p.role || "" }))
-      : (llms.length ? llms.slice(0, 4) : [""]).map((l, i) => ({ id: 0, name: l ? l.replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : `AI ${i + 1}`, llm: l, role: "" }));
+      : (llms.length ? llms.slice(0, 4) : [""]).map((l, i) => ({ id: 0, name: l ? llmName(l).slice(0, 40) : `AI ${i + 1}`, llm: l, role: "" }));
     const d = m ? { title: m.title, purpose: m.purpose, background: m.background, lang: m.lang, words: m.words }
       : { title: "", purpose: "", background: "", lang: lang === "zh" ? "zh-Hant" : "auto", words: 180 };
-    const llmSelect = (v) => `<select class="p-llm">${(llms.length ? llms : [""]).map((l) => `<option value="${esc(l)}" ${l === v ? "selected" : ""}>${esc(l || t("llmDefault"))}</option>`).join("")}</select>`;
+    const llmSelect = (v) => `<select class="p-llm">${(llms.length ? llms : [""]).map((l) => `<option value="${esc(l)}" ${l === v ? "selected" : ""}>${esc(llmLabel(l))}</option>`).join("")}</select>`;
     const rowHtml = (r, i) => `<div class="prow" data-id="${r.id}"><span class="av" style="background:${COLORS[i % COLORS.length]}">${i + 1}</span>
       <input class="p-name" maxlength="40" value="${esc(r.name)}" placeholder="${esc(t("name"))}">${llmSelect(r.llm)}
       <input class="p-role role" maxlength="300" list="roleList" value="${esc(r.role)}" placeholder="${esc(t("role"))}">
@@ -373,12 +407,24 @@
       <p class="note">${t("dataNote")}</p>
       <div class="actions"><button type="button" class="btn" id="cancelD">${t("cancel")}</button><button type="button" class="btn primary" id="saveD">${m ? t("save") : t("start")}</button></div>`;
     $("dialog").classList.remove("hidden");
-    const bindRows = () => $("pRows").querySelectorAll("[data-del]").forEach((b) => b.onclick = () => { b.closest(".prow").remove(); });
+    const bindRows = () => {
+      $("pRows").querySelectorAll("[data-del]").forEach((b) => b.onclick = () => { b.closest(".prow").remove(); });
+      // Another LLM: a name that was still that LLM's name follows it.
+      $("pRows").querySelectorAll(".p-llm").forEach((sel) => {
+        sel.dataset.was = sel.value;
+        sel.onchange = () => {
+          const name = sel.closest(".prow").querySelector(".p-name");
+          if (!name.value.trim() || name.value === llmName(sel.dataset.was).slice(0, 40)) name.value = llmName(sel.value).slice(0, 40);
+          sel.dataset.was = sel.value;
+        };
+      });
+    };
     bindRows();
     $("addP").onclick = () => {
       const n = $("pRows").children.length;
       if (n >= 8) return;
-      $("pRows").insertAdjacentHTML("beforeend", rowHtml({ id: 0, name: `AI ${n + 1}`, llm: llms[n % Math.max(1, llms.length)] || "", role: "" }, n));
+      const l = llms[n % Math.max(1, llms.length)] || "";
+      $("pRows").insertAdjacentHTML("beforeend", rowHtml({ id: 0, name: l ? llmName(l).slice(0, 40) : `AI ${n + 1}`, llm: l, role: "" }, n));
       bindRows();
     };
     $("cancelD").onclick = closeDialog;

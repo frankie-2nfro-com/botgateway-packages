@@ -20,7 +20,9 @@ const refuse = (message) => { throw new Refused(message); };
 const MAX_AI = 8;
 const MAX_PEOPLE = 12;
 const MAX_SAY = 2000;        // the chair's message
+const MAX_OPENING = 14000;   // the chair's opening statement (purpose + background, edited)
 const MAX_GUEST_SAY = 1000;  // an invited person's message
+const MAX_REPLIES = 4;       // answers to a participant's direct question, per round (no endless back and forth)
 const GUEST_GAP_MS = 2000;   // between two messages of one person
 const TRANSCRIPT_CHARS = 24000; // what an AI turn gets of the transcript (newest kept)
 const JOIN_FAILS = 30, JOIN_WINDOW_MS = 10 * 60 * 1000;
@@ -65,6 +67,11 @@ function setMeta(key, value) {
 /** The LLMs the owner allows (Config -> LLMs it may use). Empty: every AI turn goes to the application's one LLM. */
 function llms() {
   return Array.isArray(host.app.llms) ? host.app.llms : [];
+}
+/** The owner's names of those LLM workers (gateway 1.1.37: host.app.llm_names); an older gateway gives none. */
+function llmNames() {
+  const n = host.app.llm_names;
+  return n && typeof n === "object" ? n : {};
 }
 function checkLlm(llm) {
   const l = text(llm, 100);
@@ -116,7 +123,7 @@ function meetingView(m, since, owner) {
   };
   if (owner) {
     Object.assign(v, { lang: m.lang, words: m.words, invite_on: !!m.invite_on, invite_code: m.invite_code ? showCode(m.invite_code) : null,
-      queue: json(m.queue, []), digest: m.digest, minutes_kind: m.minutes_kind, minutes_error: m.minutes_error, llms: llms() });
+      queue: json(m.queue, []), digest: m.digest, minutes_kind: m.minutes_kind, minutes_error: m.minutes_error, llms: llms(), llm_names: llmNames() });
   }
   return v;
 }
@@ -222,7 +229,7 @@ function transcript(m) {
   return { earlier_summary: m.digest || null, earlier_part_left_out: cut, messages: out };
 }
 
-function ask(m, p, kind) {
+function ask(m, p, kind, from) {
   const people = q("SELECT name, kind, role FROM participants WHERE meeting_id = ? AND state NOT IN ('left', 'removed') ORDER BY kind = 'human', position, id", [m.id]);
   const data = {
     meeting: { title: m.title, purpose: m.purpose, background: m.background, round: m.round },
@@ -230,7 +237,7 @@ function ask(m, p, kind) {
     you: p.name,
     transcript: transcript(m),
   };
-  const request = { task: speechTask({ name: p.name, role: p.role, kind, words: m.words, lang: m.lang, focus: m.focus }), schema: SPEECH_SCHEMA, data,
+  const request = { task: speechTask({ name: p.name, role: p.role, kind, words: m.words, lang: m.lang, focus: m.focus, from }), schema: SPEECH_SCHEMA, data,
     tag: { meeting: m.id, participant: p.id, turn: kind, prompt: PROMPT_VERSION } };
   if (p.llm) request.llm = p.llm;
   try {
@@ -251,7 +258,7 @@ function pump(m) {
     const p = one("SELECT * FROM participants WHERE id = ? AND meeting_id = ? AND state NOT IN ('left', 'removed')", [next.p, m.id]);
     run("UPDATE meetings SET queue = ? WHERE id = ?", [JSON.stringify(queue), m.id]);
     if (!p) continue;
-    ask(meeting(m.id), p, next.kind);
+    ask(meeting(m.id), p, next.kind, next.from);
     if (one("SELECT state FROM participants WHERE id = ?", [p.id]).state === "thinking") return;
   }
 }
@@ -263,16 +270,24 @@ function startRound(b) {
   const kind = ["opening", "discussion", "final", "ask"].includes(b.kind) ? b.kind : refuse("which round?");
   const ais = active(m, "ai");
   if (!ais.length) refuse("add an AI participant first");
+  // The opening is the chair's opening statement (the page fills in the purpose and the background; the chair edits it).
+  const opening = kind === "opening" ? text(b.text, MAX_OPENING) : "";
+  if (kind === "opening" && !opening) refuse("write the opening statement first");
   if (kind === "ask") {
     const p = participant(m, b.participant);
     if (p.kind !== "ai" || p.state === "removed") refuse("only an AI participant can be asked");
     run("UPDATE meetings SET queue = ? WHERE id = ?", [JSON.stringify([{ p: p.id, kind }]), m.id]);
   } else {
+    // How many discussion rounds before this one: each starts with the next participant.
+    const before = one("SELECT COUNT(*) AS n FROM messages WHERE meeting_id = ? AND kind = 'system' AND turn = 'discussion'", [m.id]).n;
     run("UPDATE meetings SET round = round + 1 WHERE id = ?", [m.id]);
     const label = { opening: "Opening round", discussion: "Discussion round", final: "Closing statements" }[kind];
     addMessage(meeting(m.id), "system", null, label, { name: "", turn: kind });
+    if (opening) addMessage(meeting(m.id), "chair", null, opening, { name: "Chair", turn: "opening" });
     if (kind === "discussion") {
-      run("UPDATE meetings SET queue = ? WHERE id = ?", [JSON.stringify(ais.map((p) => ({ p: p.id, kind }))), m.id]);
+      const k = before % ais.length;
+      const order = [...ais.slice(k), ...ais.slice(0, k)];
+      run("UPDATE meetings SET queue = ? WHERE id = ?", [JSON.stringify(order.map((p) => ({ p: p.id, kind }))), m.id]);
     } else {
       // Everyone at once: each request is made before any answer is in, so nobody sees the others' view.
       const fresh = meeting(m.id);
@@ -314,11 +329,31 @@ export function onAiResult(r) {
     const speech = text(r.answer?.speech, 6000) || "(said nothing)";
     addMessage(m, "ai", p, speech, { stance: text(r.answer?.stance, 200) || null, turn: p.turn });
     run("UPDATE participants SET state = 'idle', run = NULL, error = NULL WHERE id = ?", [p.id]);
+    // Asked directly: that participant answers next (only in turns that see the others, at most MAX_REPLIES a round).
+    if (["discussion", "ask", "reply"].includes(p.turn)) queueReplies(meeting(m.id), p, r.answer?.asks);
   } else {
     run("UPDATE participants SET state = 'failed', run = NULL, error = ? WHERE id = ?", [text(r.error || "no answer", 300), p.id]);
   }
   pump(m);
   changed(m);
+}
+
+function queueReplies(m, from, asks) {
+  if (!Array.isArray(asks) || !asks.length) return;
+  const ais = active(m, "ai");
+  let left = MAX_REPLIES - one("SELECT COUNT(*) AS n FROM messages WHERE meeting_id = ? AND round = ? AND turn = 'reply'", [m.id, m.round]).n;
+  let queue = json(m.queue, []);
+  const front = [];
+  for (const name of asks.slice(0, 3)) {
+    const key = String(name ?? "").trim().toLowerCase();
+    const p = ais.find((x) => x.id !== from.id && x.name.toLowerCase() === key);
+    if (!p || left <= 0 || front.some((x) => x.p === p.id)) continue;
+    // Their later turn in this round becomes this answer (nobody speaks twice for it).
+    queue = queue.filter((x) => x.p !== p.id);
+    front.push({ p: p.id, kind: "reply", from: from.name });
+    left--;
+  }
+  if (front.length) run("UPDATE meetings SET queue = ? WHERE id = ?", [JSON.stringify([...front, ...queue]), m.id]);
 }
 
 // --- minutes (the secretary) -------------------------------------------------------------------------------
@@ -534,7 +569,7 @@ function route(req) {
   }
   if (get && path === "state") {
     cleanGuests();
-    return { llms: llms(), meetings: listView() };
+    return { llms: llms(), llm_names: llmNames(), meetings: listView() };
   }
   if (get && path === "meeting") return meetingView(meeting(qs.id), qs.since, true);
   if (get) return null;
