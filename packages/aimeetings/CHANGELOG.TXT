@@ -1,0 +1,16 @@
+AI Meetings - change log
+The top section is the coming version (no date): write each change below it as "- ...", in words
+for the gateway owners - the Portal and the gateway show them as "What's new" before an update.
+store_update.sh --package aimeetings publishes it (dated) and puts the next patch version on top; change
+the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
+
+0.1.1
+- [Changed and non commited item put here]
+
+0.1.0 (2026-11-17)
+- First version: chair a meeting of AI models (each participant one of the LLMs you allow in the application's Config,
+  with a name and a role) and invited people. Opening round (everyone at once, without seeing the others), discussion
+  rounds (one after another), asking one participant, instructions that stay for the next turns, closing statements,
+  stop and skip. A secretary model drafts the minutes and a running summary for long meetings; you edit and finish
+  the minutes and export the meeting as Markdown. People join on the website with an invitation code and a name,
+  read along, write and raise a hand; only you start the AIs' turns. Needs 2nfro Desktop 1.1.33 for several LLMs.
