@@ -6,8 +6,14 @@ Portal) and puts the next patch version on top. Package changes go into packages
 kit/ changes only for something meant for every application: a change for one application stays in that
 package (its own kit copy), so it is published with --package alone and no other application needs a retest.
 
-1.0.11
+1.0.12
 - [Changed and non commited item put here]
+
+1.0.11 (2026-11-17)
+- [app] llm_choice = true in worker.toml: the application chooses among several LLMs the owner allows (gateway
+  1.1.33), listed in its disclosure
+- [app] sandbox_allow = ["pointer-lock"] in worker.toml: what an application's sandboxed pages may do beyond scripts,
+  checked when packing (known values only, needs sandbox_pages) and listed in its disclosure (gateway 1.1.31, relay 1.1.31)
 
 1.0.10 (2026-11-05)
 - App kit login page: without a language chosen in the kit, it uses the language the application's page was

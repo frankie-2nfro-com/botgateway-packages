@@ -97,7 +97,27 @@ def disclosure(m: dict):
         out["inbox"] = True
     if app.get("triggers"):
         out["triggers"] = app["triggers"]
+    # What its sandboxed pages may do beyond scripts (gateway 1.1.31): "pointer-lock".
+    if app.get("sandbox_allow"):
+        out["sandbox_allow"] = app["sandbox_allow"]
+    # It may send each AI request to one of several LLMs the owner allows (gateway 1.1.33, e.g. AI Meetings).
+    if app.get("llm_choice"):
+        out["llm_choice"] = True
     return out
+
+
+SANDBOX_ALLOW = ("pointer-lock",)
+
+
+def sandbox_allow_error(m: dict):
+    """[app] sandbox_allow: known values only, and only with sandbox_pages (the gateway checks the same). None = fine."""
+    app = m.get("app") or {}
+    a = app.get("sandbox_allow", [])
+    if not isinstance(a, list) or not all(isinstance(x, str) and x in SANDBOX_ALLOW for x in a):
+        return "[app] sandbox_allow must be a list of: " + ", ".join(f'"{x}"' for x in SANDBOX_ALLOW)
+    if a and not app.get("sandbox_pages"):
+        return "[app] sandbox_allow needs sandbox_pages (it applies to those pages only)"
+    return None
 
 
 TRIGGER = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
@@ -171,6 +191,8 @@ def main():
             sys.exit(f"{folder.name}: {about_lang(m)}")
         if triggers_error(m):
             sys.exit(f"{folder.name}: {triggers_error(m)}")
+        if sandbox_allow_error(m):
+            sys.exit(f"{folder.name}: {sandbox_allow_error(m)}")
         data = pack(folder)
         target = dist / f"{m['id']}-{m['version']}.tar.gz"
         if target.exists():
