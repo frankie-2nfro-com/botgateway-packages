@@ -69,6 +69,11 @@ function llms() {
   return Array.isArray(host.app.llms) ? host.app.llms : [];
 }
 /** The owner's names of those LLM workers (gateway 1.1.37: host.app.llm_names); an older gateway gives none. */
+/** How the gateway runs (gateway 1.1.41, R56): "local" = only this computer - no website, so no invitations; an older
+ *  gateway gives none = "relay". */
+function mode() {
+  return host.app.mode === "local" ? "local" : "relay";
+}
 function llmNames() {
   const n = host.app.llm_names;
   return n && typeof n === "object" ? n : {};
@@ -123,7 +128,7 @@ function meetingView(m, since, owner) {
   };
   if (owner) {
     Object.assign(v, { lang: m.lang, words: m.words, invite_on: !!m.invite_on, invite_code: m.invite_code ? showCode(m.invite_code) : null,
-      queue: json(m.queue, []), digest: m.digest, minutes_kind: m.minutes_kind, minutes_error: m.minutes_error, llms: llms(), llm_names: llmNames() });
+      queue: json(m.queue, []), digest: m.digest, minutes_kind: m.minutes_kind, minutes_error: m.minutes_error, llms: llms(), llm_names: llmNames(), mode: mode() });
   }
   return v;
 }
@@ -438,6 +443,7 @@ const normCode = (c) => String(c ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "").
 
 function invite(b) {
   const m = meeting(b.id);
+  if (b.on && mode() === "local") refuse("inviting people needs a Connected gateway: this one runs on this computer only");
   if (m.status === "ended" && b.on) refuse("the meeting has ended");
   const code = b.renew || !m.invite_code ? newCode() : m.invite_code;
   host.db.transaction(() => {
@@ -569,7 +575,7 @@ function route(req) {
   }
   if (get && path === "state") {
     cleanGuests();
-    return { llms: llms(), llm_names: llmNames(), meetings: listView() };
+    return { llms: llms(), llm_names: llmNames(), mode: mode(), meetings: listView() };
   }
   if (get && path === "meeting") return meetingView(meeting(qs.id), qs.since, true);
   if (get) return null;

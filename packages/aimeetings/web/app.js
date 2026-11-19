@@ -26,6 +26,8 @@
       thinking: "speaking", failed: "failed", idle: "", left: "left", removed: "removed", hand: "✋",
       invite: "Invite people", inviteOff: "Off - nobody can join with a code.", inviteOn: "On - people can join on the website with this code:",
       inviteHint: "Share the code and the address of this application's website (2nfro Desktop → the application → Website). Invited people read and write; only you start AI turns.",
+      inviteLocal: "This 2nfro Desktop gateway runs on this computer only (Local), so nobody else can join. To invite people, use AI Meetings on a Connected gateway (2nfro Cloud).",
+      noLlms: "No AI for the participants yet: in 2nfro Desktop → Applications → AI Meetings → Config, tick the LLMs it may use (e.g. an API key worker or Ask an AI CLI).",
       turnOn: "Turn on", turnOff: "Turn off", newCode: "New code", remove: "Remove", lower: "Lower hand",
       minutes: "Minutes", secretary: "Secretary", draft: "Draft the minutes", digest: "Summarize so far",
       digestHint: "A short running summary the AIs get instead of the oldest part of a long meeting.", writing: "The secretary is writing",
@@ -60,6 +62,8 @@
       thinking: "發言中", failed: "失敗", idle: "", left: "已離開", removed: "已移除", hand: "✋",
       invite: "邀請真人", inviteOff: "關閉 - 沒有人可以用邀請碼加入。", inviteOn: "開啟 - 其他人可以在網站用這個碼加入：",
       inviteHint: "把邀請碼和這個應用程式的網站地址（2nfro Desktop → 應用程式 → 網站）給對方。受邀者可以閱讀和發言；只有你可以叫 AI 發言。",
+      inviteLocal: "這個 2nfro Desktop gateway 只在這部電腦運行（本機），其他人無法加入。要邀請其他人，請在「連線」gateway（2nfro Cloud）使用 AI 會議。",
+      noLlms: "與會 AI 未有可用的 LLM：請到 2nfro Desktop →「Applications」→ AI Meetings →「Config」，剔選它可以用的 LLM（例如 API key worker 或 Ask an AI CLI）。",
       turnOn: "開啟", turnOff: "關閉", newCode: "換新碼", remove: "移除", lower: "放下手",
       minutes: "會議紀要", secretary: "秘書", draft: "起草紀要", digest: "摘要至今內容",
       digestHint: "會議很長時，AI 會收到這段摘要，代替最舊的部分。", writing: "秘書正在撰寫",
@@ -193,15 +197,18 @@
     const s = await api("state");
     S.llms = s.llms || [];
     S.llmNames = s.llm_names || {};
+    S.mode = s.mode || "relay";
     S.meetings = s.meetings || [];
     renderList();
   }
   function renderList() {
     const el = $("list");
     if (!el) return;
-    el.innerHTML = S.meetings.length ? S.meetings.map((m) => `<button type="button" data-open="${m.id}" class="${S.cur && S.cur.id === m.id ? "on" : ""}">
-        <b>${esc(m.title)}</b><small>${m.status === "ended" ? t("ended") : t("open")} · ${m.ais} ${t("ais")}${m.people ? ` · ${m.people} ${t("people")}` : ""}${m.invite_on ? " · 🔗" : ""}</small></button>`).join("")
-      : `<p class="muted" style="padding:8px 10px">${t("noMeetings")}</p>`;
+    // Local gateway without any LLM ticked: nothing could answer - say where to choose them.
+    const noAi = S.mode === "local" && !S.llms.length ? `<p class="bad" style="padding:8px 10px;font-size:12px">⚠ ${t("noLlms")}</p>` : "";
+    el.innerHTML = noAi + (S.meetings.length ? S.meetings.map((m) => `<button type="button" data-open="${m.id}" class="${S.cur && S.cur.id === m.id ? "on" : ""}">
+        <b>${esc(m.title)}</b><small>${m.status === "ended" ? t("ended") : t("open")} · ${m.ais} ${t("ais")}${m.people ? ` · ${m.people} ${t("people")}` : ""}${m.invite_on && S.mode !== "local" ? " · 🔗" : ""}</small></button>`).join("")
+      : `<p class="muted" style="padding:8px 10px">${t("noMeetings")}</p>`);
     el.querySelectorAll("[data-open]").forEach((b) => b.onclick = () => openMeeting(Number(b.dataset.open)).catch(oops));
   }
 
@@ -326,11 +333,14 @@
     const llmOpts = (S.llms.length ? S.llms : [""]).map((l) => `<option value="${esc(l)}">${esc(llmLabel(l))}</option>`).join("");
     const prevSec = $("secSel") ? $("secSel").value : store.get("aim.secretary") || "";
     const writing = m.minutes_state === "writing";
-    el.innerHTML = `<div class="box"><h3>🔗 ${t("invite")}</h3>
+    // Local gateway (R56): no website, so the invitation box is only a short note.
+    const inviteBox = S.mode === "local" ? `<div class="box"><h3>🔗 ${t("invite")}</h3><p class="muted">${t("inviteLocal")}</p></div>`
+      : `<div class="box"><h3>🔗 ${t("invite")}</h3>
         ${m.invite_on ? `<p>${t("inviteOn")}</p><div class="code" id="codeBox" title="${t("copied")}">${esc(m.invite_code)}</div>` : `<p class="muted">${t("inviteOff")}</p>`}
         <p class="muted">${t("inviteHint")}</p>
         <div class="row">${m.invite_on ? `<button type="button" class="btn sm" id="invOff">${t("turnOff")}</button><button type="button" class="btn sm" id="invNew">${t("newCode")}</button>`
-          : `<button type="button" class="btn sm" id="invOn" ${m.status === "ended" ? "disabled" : ""}>${t("turnOn")}</button>`}</div></div>
+          : `<button type="button" class="btn sm" id="invOn" ${m.status === "ended" ? "disabled" : ""}>${t("turnOn")}</button>`}</div></div>`;
+    el.innerHTML = `${inviteBox}
       <div class="box"><h3>📝 ${t("minutes")}</h3>
         <div class="row"><span class="muted">${t("secretary")}</span><select id="secSel">${llmOpts}</select></div>
         <div class="row" style="margin-top:8px"><button type="button" class="btn sm" id="draftBtn" ${writing ? "disabled" : ""}>${t("draft")}</button>

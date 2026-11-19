@@ -1,7 +1,7 @@
 type = "application"
 id = "aimeetings"
 name = "AI Meetings"
-version = "0.1.1"
+version = "0.1.2"
 about = "Chair a meeting of AI models - Claude, GPT, Gemini, Grok, a model on your own computer, any LLM you add to 2nfro Desktop - and invited people. Set the purpose and the background, give each AI participant a role (e.g. finance, the critic, the user), then run it: an opening round where everyone answers at once without seeing the others, discussion rounds where they answer each other, a question to one of them, your instructions, closing statements. A secretary model drafts the minutes; you edit and finish them. People join on the application's website with an invitation code and a name, read along and write - only you start the AIs' turns, so only you decide what is spent. Meetings and minutes stay on your computer."
 author = "2nfro"
 license = "Apache-2.0"

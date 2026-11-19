@@ -4,8 +4,13 @@ for the gateway owners - the Portal and the gateway show them as "What's new" be
 store_update.sh --package aimeetings publishes it (dated) and puts the next patch version on top; change
 the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
 
-0.1.2
+0.1.3
 - [Changed and non commited item put here]
+
+0.1.2 (2026-11-19)
+- On a Local gateway (2nfro Desktop 1.1.41: runs on this computer only) inviting people is not offered - the box
+  says it needs a Connected gateway; and while no LLM is ticked in its Config, the meeting list says where to tick
+  them. On a Connected gateway nothing changes.
 
 0.1.1 (2026-11-17)
 - The meeting starts with your opening statement, filled in from the purpose and the background: change it and
