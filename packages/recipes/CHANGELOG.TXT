@@ -4,8 +4,12 @@ for the gateway owners - the Portal and the gateway show them as "What's new" be
 store_update.sh --package recipes publishes it (dated) and puts the next patch version on top; change
 the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
 
-0.5.16
+0.5.17
 - [Changed and non commited item put here]
+
+0.5.16 (2026-11-19)
+- On a Local gateway (2nfro Desktop 1.1.41: runs on this computer only, no website) Publish / Unpublish, the
+  "Unpublished" mark and the visitors' Preview are not shown. On a Connected gateway nothing changes.
 
 0.5.15 (2026-11-16)
 - Author is now shown as "2nfro" (was "Bot Gateway")

@@ -393,6 +393,8 @@ export function createApp(spec) {
     const visitor = who === "visitor";
     return {
       name: spec.name || host.app.name, look: spec.look || {}, enabled: true, public: visitor,
+      // How the gateway runs (gateway 1.1.41, R56): "local" = this computer only - no website, so nothing to publish.
+      mode: host.app.mode === "local" ? "local" : "relay",
       languages: spec.languages || ["en"], words: spec.words || {}, version: host.app.version || "",
       collections: colls.filter((c) => !visitor || (c.public || []).length),
       actions: actions.filter((a) => !visitor || a.public).map((a) => ({ name: a.name, title: a.title, on: a.on, runnable: true, ask: a.ask || null, public: !!a.public })),

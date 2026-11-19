@@ -176,6 +176,8 @@ function armed(btn, word, run) {
 
 let M = null;   // the application: collections, actions, look (in a preview: the visitors' view of it)
 let OWNER = null;   // the application as the server gave it (M outside a preview)
+// A Local gateway (R56): no website - no Publish, no "Unpublished" flag, no visitors' preview.
+const LOCAL = () => !!OWNER && OWNER.mode === 'local';
 // What visitors get of the application (the server's meta for them): only collections they may use, only
 // public actions.
 const visitorMeta = m => ({ ...m, public: true, collections: m.collections.filter(c => (c.public || []).length), actions: (m.actions || []).filter(a => a.public) });
@@ -298,7 +300,7 @@ async function render() {
   closeModal();
   const [name, id, sub] = decodeURIComponent(location.hash.slice(1)).split('/');
   // A preview uses the visitors' view of the app; anything else the real one.
-  const preview = sub === 'preview' && !OWNER.public && (((OWNER.collections.find(x => x.name === name) || {}).public) || []).includes('read');
+  const preview = sub === 'preview' && !OWNER.public && !LOCAL() && (((OWNER.collections.find(x => x.name === name) || {}).public) || []).includes('read');
   const want = preview ? visitorMeta(OWNER) : OWNER;
   if ((M === OWNER) !== (want === OWNER)) { M = want; frame(); }
   const c = coll(name) || M.collections[0];
@@ -621,7 +623,7 @@ async function sheet(c, it, keep) {
             `<a class="chip" href="#${esc(f.ref)}/${id}">${esc(refNames[f.name][id] ?? '?')}</a>`).join(' ')}</div>` : '').join('')}
           <div class="acts">${acts.map(a => `<button type="button" class="btn primary" data-act="${esc(a.name)}">✨ ${esc(tn(a.title || a.name))}</button>`).join('')}
             ${may(c, 'change') ? `<button type="button" class="btn" id="editBtn">${esc(t('Edit'))}</button>` : ''}${pubBtn(c, it)}
-            ${!M.public && (c.public || []).includes('read') ? `<a class="btn" href="#${esc(c.name)}/${it.id}/preview" title="${esc(t('how visitors see it on the website'))}">${esc(t('👁 Preview'))}</a>` : ''}</div>
+            ${!M.public && !LOCAL() && (c.public || []).includes('read') ? `<a class="btn" href="#${esc(c.name)}/${it.id}/preview" title="${esc(t('how visitors see it on the website'))}">${esc(t('👁 Preview'))}</a>` : ''}</div>
           <div id="runs"></div><div class="err" id="sErr"></div></div></div>
       ${body || `<p class="muted">${esc(t('Nothing written here yet.'))}${acts.length ? esc(t(' Press “{action}” and the assistant fills it in.', { action: tn(acts[0].title || acts[0].name) })) : ''}</p>`}
       ${kids.map(({ o, f }) => `<section><div class="shead"><h3>${esc(title(o))}</h3>
@@ -740,12 +742,12 @@ $('avView').addEventListener('click', e => {
 });
 // Not published: a flag on the cover's top right corner (published items need no mark; visitors never see it).
 function pubFlag(c, it) {
-  if (!c.publish || M.public || it[c.publish.field] === c.publish.value) return '';
+  if (!c.publish || M.public || LOCAL() || it[c.publish.field] === c.publish.value) return '';
   return `<span class="pubflag" title="${esc(t('only you see it - not on the website'))}">${esc(t('Unpublished'))}</span>`;
 }
 // Publish / Unpublish (a collection with `publish`, the owner only). The other choice of the field is "not published".
 function pubBtn(c, it) {
-  if (!c.publish || M.public || !may(c, 'change')) return '';
+  if (!c.publish || M.public || LOCAL() || !may(c, 'change')) return '';
   const on = it[c.publish.field] === c.publish.value;
   return `<button type="button" class="btn${on ? '' : ' pubgo'}" id="pubBtn">${esc(t(on ? 'Unpublish' : '🌐 Publish'))}</button>`;
 }
