@@ -214,6 +214,11 @@ def main():
             entries[-1]["about_lang"] = about_lang(m)
         if changes.get(m["id"], {}).get(m["version"]):
             entries[-1]["changes"] = changes[m["id"]][m["version"]]
+        # The oldest 2nfro Desktop (gateway) this version works with (R57 4): the gateway refuses an older one.
+        if m.get("min_gateway"):
+            if not isinstance(m["min_gateway"], str) or not re.match(r"^\d+\.\d+\.\d+$", m["min_gateway"]):
+                sys.exit(f'{a.name}: min_gateway must be a version like "1.1.42"')
+            entries[-1]["min_gateway"] = m["min_gateway"]
         if m.get("type") == "application":
             entries[-1]["disclosure"] = disclosure(m)
             if icon:

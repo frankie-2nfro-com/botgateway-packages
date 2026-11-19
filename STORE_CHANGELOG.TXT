@@ -6,8 +6,13 @@ Portal) and puts the next patch version on top. Package changes go into packages
 kit/ changes only for something meant for every application: a change for one application stays in that
 package (its own kit copy), so it is published with --package alone and no other application needs a retest.
 
-1.0.12
+1.0.13
 - [Changed and non commited item put here]
+
+1.0.12 (2026-11-19)
+- build_store.py: a package's worker.toml may say `min_gateway = "1.1.42"` (top level) - the oldest 2nfro Desktop the
+  version works with; copied into its store.json entry (checked: x.y.z). 2nfro Desktop 1.1.42 refuses to install it on
+  an older version and its Update popup says "update 2nfro Desktop first" (R57).
 
 1.0.11 (2026-11-17)
 - [app] llm_choice = true in worker.toml: the application chooses among several LLMs the owner allows (gateway
