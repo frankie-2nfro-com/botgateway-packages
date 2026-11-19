@@ -347,7 +347,8 @@ function adminState() {
   }));
   const players = q(`SELECT p.id, p.name, p.created, (SELECT COUNT(*) FROM plays x WHERE x.player_id = p.id) AS plays,
     (SELECT MAX(score) FROM best b WHERE b.player_id = p.id) AS best FROM players p ORDER BY p.id DESC LIMIT 200`);
-  return { games, jobs, players, statement: STATEMENT_VERSION };
+  // How the gateway runs (gateway 1.1.41, R56): "local" = this computer only - no website, so nothing to publish.
+  return { games, jobs, players, statement: STATEMENT_VERSION, mode: host.app.mode === "local" ? "local" : "relay" };
 }
 
 function removeGameFiles(game, version) {
@@ -412,6 +413,7 @@ function admin(path, b) {
     const game = m[1];
     if (!one("SELECT id FROM games WHERE id = ?", [game])) refuse("no such game");
     if (m[2] === "publish") {
+      if (host.app.mode === "local") refuse("publishing needs a Connected gateway: this one runs on this computer only");
       const version = text(b.version, 32);
       if (!one("SELECT 1 AS x FROM versions WHERE game_id = ? AND version = ?", [game, version])) refuse("no such version");
       // The owner's statement (requirements 5.2): checked here, not only on the page.

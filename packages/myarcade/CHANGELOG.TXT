@@ -4,8 +4,15 @@ for the gateway owners - the Portal and the gateway show them as "What's new" be
 store_update.sh --package myarcade publishes it (dated) and puts the next patch version on top; change
 the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
 
-0.1.6
+0.1.7
 - [Changed and non commited item put here]
+
+0.1.6 (2026-11-19)
+- Games can use mouse look (the pointer locks after a click, Esc releases it), e.g. first-person 3D games; needs
+  2nfro Desktop 1.1.31 or newer, on an older one such a game falls back to dragging
+- On a Local gateway (2nfro Desktop 1.1.41: runs on this computer only, no website) you make games and play them
+  with Test; Publish, the lobby link and the players list are not shown (a game published before can still be taken
+  off). On a Connected gateway nothing changes.
 
 0.1.5 (2026-11-16)
 - Asking for changes to a game: the box now says what to write, and pressing a button with the box empty tells you to write
