@@ -47,6 +47,9 @@
       raise: "✋ Raise hand", lowerMine: "Lower hand", leave: "Leave", confirmLeave: "Leave the meeting?",
       waitingChair: "The chair runs the meeting. You can write at any time.", endedNote: "The meeting has ended.",
       minutesFinal: "Minutes", gone: "You are no longer in this meeting.",
+      askTitle: "Ask one participant", askWho: "Ask", askText: "Your question", askTextHint: "What should they answer? (empty = they answer your latest message)",
+      askWords: "Expected length", askSend: "Ask", askNote: "Your question goes into the meeting as your message, addressed to them; only they answer.",
+      turnLength: "Length of a turn", turnLengthHint: "Every AI aims to stay under about this many words, from the next turn on.", turnLengthSaved: "Length of a turn saved",
     },
     zh: {
       newMeeting: "＋ 新會議", noMeetings: "未有會議。", pick: "在左邊選一個會議，或開一個新會議。",
@@ -83,6 +86,9 @@
       raise: "✋ 舉手", lowerMine: "放下手", leave: "離開", confirmLeave: "離開會議？",
       waitingChair: "會議由主席主持。你可以隨時發言。", endedNote: "會議已結束。",
       minutesFinal: "會議紀要", gone: "你已不在這個會議。",
+      askTitle: "點名提問", askWho: "問", askText: "你的問題", askTextHint: "想對方答甚麼？（留空 = 回應你最新的發言）",
+      askWords: "預期長度", askSend: "提問", askNote: "你的問題會以你的發言放入會議，指明問對方；只有對方回答。",
+      turnLength: "每次發言長度", turnLengthHint: "由下一次發言起，每個 AI 盡量不超過大約這個字數。", turnLengthSaved: "已儲存發言長度",
     },
   };
   let lang = store.get("aim.lang") || ((navigator.language || "").toLowerCase().startsWith("zh") ? "zh" : "en");
@@ -307,7 +313,7 @@
       <button type="button" class="btn" data-round="final" ${dis}>${t("final")}</button>
       <button type="button" class="btn danger" id="stopBtn" ${m.busy ? "" : "disabled"}>■ ${t("stop")}</button>`;
     $("controls").querySelectorAll("[data-round]").forEach((b) => b.onclick = () => round(b.dataset.round));
-    $("askSel").onchange = (e) => { const v = Number(e.target.value); e.target.value = ""; if (v) round("ask", v); };
+    $("askSel").onchange = (e) => { const v = Number(e.target.value); e.target.value = ""; if (v) askDialog(v); };
     $("stopBtn").onclick = () => api("stop", { id: m.id }).then(refresh, oops);
     $("say").disabled = ended; $("sendBtn").disabled = ended;
 
@@ -322,12 +328,38 @@
       .filter(Boolean).join("\n\n");
   }
 
-  async function round(kind, participant) {
-    try { await api("round", { id: S.cur.id, kind, participant }); refresh(); } catch (e) { oops(e); }
+  async function round(kind, participant, extra = {}) {
+    try { await api("round", { id: S.cur.id, kind, participant, ...extra }); refresh(); return true; } catch (e) { oops(e); return false; }
+  }
+
+  // Ask one participant: who, the question (optional) and how long the answer should be.
+  const LENGTHS = [30, 50, 80, 120, 180, 250, 400, 600, 800, 1000];
+  const lengthOpts = (v) => [...new Set([...LENGTHS, Number(v)])].filter(Boolean).sort((a, b) => a - b)
+    .map((w) => `<option value="${w}" ${w === Number(v) ? "selected" : ""}>~${w} ${t("words")}</option>`).join("");
+  function askDialog(pid) {
+    const m = S.cur;
+    const ais = m.participants.filter((p) => p.kind === "ai" && p.state !== "removed");
+    $("dialogBox").innerHTML = `<h2>${t("askTitle")}</h2>
+      <label class="field"><span>${t("askWho")}</span><select id="aWho">${ais.map((p) => `<option value="${p.id}" ${p.id === pid ? "selected" : ""}>${esc(p.name)}${p.role ? ` · ${esc(p.role)}` : ""}</option>`).join("")}</select></label>
+      <label class="field"><span>${t("askText")}</span><textarea id="aText" maxlength="2000" placeholder="${esc(t("askTextHint"))}" style="min-height:110px"></textarea></label>
+      <label class="field"><span>${t("askWords")}</span><select id="aWords">${lengthOpts(m.words)}</select></label>
+      <p class="note">${t("askNote")}</p>
+      <div class="actions"><button type="button" class="btn" id="cancelD">${t("cancel")}</button><button type="button" class="btn primary" id="saveD">${t("askSend")}</button></div>`;
+    $("dialog").classList.remove("hidden");
+    $("cancelD").onclick = closeDialog;
+    const go = async () => {
+      $("saveD").disabled = true;
+      const ok = await round("ask", Number($("aWho").value), { text: $("aText").value.trim(), words: Number($("aWords").value) });
+      if (ok) closeDialog(); else $("saveD").disabled = false;
+    };
+    $("saveD").onclick = go;
+    $("aText").onkeydown = (e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); go(); } };
+    $("aText").focus();
   }
 
   function renderAside(m) {
-    const el = $("aside");
+    renderLength(m);
+    const el = $("asideRest");
     const editor = $("minutesText");
     const keep = editor && (S.minutesDirty || document.activeElement === editor) ? editor.value : null;
     const llmOpts = (S.llms.length ? S.llms : [""]).map((l) => `<option value="${esc(l)}">${esc(llmLabel(l))}</option>`).join("");
@@ -370,6 +402,28 @@
     $("finishMin").onclick = () => saveMin(true);
   }
 
+  // Length of a turn (right column): its own box, not redrawn while the chair moves the slider.
+  function renderLength(m) {
+    const words = Number(m.words) || 180, ended = m.status === "ended";
+    let wr = $("wRange");
+    if (!wr) {
+      $("aside").innerHTML = `<div class="box" id="lenBox"></div><div id="asideRest" style="display:contents"></div>`;
+      wr = null;
+    }
+    if (wr && (S.wDrag || document.activeElement === wr) && Number(wr.dataset.meeting) === m.id) { wr.disabled = ended; return; }
+    $("lenBox").innerHTML = `<h3>📏 ${t("turnLength")}</h3>
+      <div class="row"><input type="range" id="wRange" data-meeting="${m.id}" min="30" max="1000" step="10" value="${words}" ${ended ? "disabled" : ""} style="flex:1">
+        <b id="wShow" style="min-width:78px;text-align:right">~${words} ${t("words")}</b></div>
+      <p class="muted">${t("turnLengthHint")}</p>`;
+    wr = $("wRange");
+    wr.onpointerdown = () => { S.wDrag = true; };
+    wr.oninput = () => { $("wShow").textContent = `~${wr.value} ${t("words")}`; };
+    wr.onchange = () => {
+      S.wDrag = false;
+      api("words", { id: m.id, words: Number(wr.value) }).then(() => { toast(t("turnLengthSaved")); wr.blur(); refresh(); }, oops);
+    };
+  }
+
   function exportMeeting() {
     const m = S.cur;
     const people = new Map(m.participants.map((p) => [p.id, p]));
@@ -408,7 +462,7 @@
       <label class="field"><span>${t("background")} <span class="muted">· ${t("backgroundHint")}</span></span><textarea id="fBg" maxlength="12000" style="min-height:110px">${esc(d.background)}</textarea></label>
       <div class="grid2"><label class="field"><span>${t("lang")}</span><select id="fLang">
           <option value="auto" ${d.lang === "auto" ? "selected" : ""}>${t("langAuto")}</option><option value="zh-Hant" ${d.lang === "zh-Hant" ? "selected" : ""}>中文（繁體）</option><option value="en" ${d.lang === "en" ? "selected" : ""}>English</option></select></label>
-        <label class="field"><span>${t("length")}</span><select id="fWords">${[80, 120, 180, 250, 400].map((w) => `<option value="${w}" ${Number(d.words) === w ? "selected" : ""}>~${w} ${t("words")}</option>`).join("")}</select></label></div>
+        <label class="field"><span>${t("length")}</span><select id="fWords">${lengthOpts(d.words)}</select></label></div>
       <div class="field"><span>${t("participants")}</span></div>
       ${llms.length ? "" : `<p class="note">⚠ ${esc(t("noLlms"))}</p>`}
       <div id="pRows">${rows.map(rowHtml).join("")}</div>

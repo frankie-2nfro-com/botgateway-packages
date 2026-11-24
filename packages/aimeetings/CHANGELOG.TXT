@@ -4,8 +4,14 @@ for the gateway owners - the Portal and the gateway show them as "What's new" be
 store_update.sh --package aimeetings publishes it (dated) and puts the next patch version on top; change
 the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
 
-0.1.3
+0.1.4
 - [Changed and non commited item put here]
+
+0.1.3 (2026-11-24)
+- "Ask one…" opens a box: choose who, write your question and choose how long the answer should be (about 30 to
+  1000 words, for that answer only). Your question shows in the meeting as "@Name …".
+- New in the right column: "Length of a turn" - move the slider to make every AI's next turns shorter or longer
+  (30 to 1000 words) during the meeting.
 
 0.1.2 (2026-11-19)
 - On a Local gateway (2nfro Desktop 1.1.41: runs on this computer only) inviting people is not offered - the box
