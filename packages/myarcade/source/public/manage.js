@@ -4,6 +4,7 @@
   const WORDS = {
     en: {
       lobby: "Open the lobby", warnTitle: "Publishing a game is your own decision and your own risk.",
+      localNote: "This 2nfro Desktop gateway runs on this computer only (Local): make games and play them here with Test. To publish games for other people, with a lobby and leaderboards, use MyArcade on a Connected gateway (2nfro Cloud).",
       warn: "Do not publish copies of existing games, their names, characters, art, music or look. You answer for what you publish; 2nfro and the makers of Bot Gateway do not check games.",
       make: "Make a game", describe: "Describe the game you want", describeHint: "What the player does, how it is won or lost, how it should look. An idea of your own, not a copy of a game that exists.", describeFirst: "Describe the game in the box first.",
       auto: "Make it now (your application's LLM)", ide: "Make it in my AI tool (bigger games)",
@@ -36,6 +37,7 @@
     },
     zh: {
       lobby: "開啟大廳", warnTitle: "發佈遊戲由你決定，風險亦由你承擔。",
+      localNote: "這個 2nfro Desktop gateway 只在這部電腦運行（本機）：你可以製作遊戲，並用「測試」在這裏玩。要發佈遊戲給其他人玩（連大廳及排行榜），請在「連線」gateway（2nfro Cloud）使用 MyArcade。",
       warn: "請勿發佈現有遊戲的抄襲版本，或使用其名稱、角色、美術、音樂或外觀。你須為所發佈的內容負責；2nfro 及 Bot Gateway 的製作者不會檢查遊戲。",
       make: "製作遊戲", describe: "描述你想要的遊戲", describeHint: "玩家做甚麼、如何勝負、想要怎樣的外觀。請用你自己的構思，不要抄襲現有遊戲。", describeFirst: "請先在輸入框描述遊戲。",
       auto: "立即製作（應用程式的 LLM）", ide: "在 AI 工具製作（較大的遊戲）",
@@ -227,6 +229,7 @@
 
   const titleOf = (manifest) => manifest?.text?.[lang === "zh" ? "zh-TW" : "en"]?.title || manifest?.text?.en?.title || manifest?.id || "";
   let state = null;
+  const local = () => state?.mode === "local";
   let draft = "";
   let timer = 0;
 
@@ -327,9 +330,10 @@
               el("span", { class: `badge${v.version === game.live_version ? " live" : ""}` }, v.version === game.live_version ? t("live") : v.agreed ? t("earlier") : t("draft")),
               el("span", { class: "muted grow" }, `${Math.ceil(v.size / 1024)} ${t("size")}`),
               el("a", { href: `./#/test/${game.id}/${v.version}` }, t("test")),
-              v.version !== game.live_version ? el("button", { type: "button", onclick: async () => {
+              // Local gateway (R56): no website - no Publish; a game published before can still be taken off.
+              v.version !== game.live_version ? (local() ? null : el("button", { type: "button", onclick: async () => {
                 if (await publishBox(title, v.version)) await act(`games/${game.id}/publish`, { version: v.version, agreed: true, statement: state.statement });
-              } }, t("publish")) : el("button", { type: "button", onclick: () => act(`games/${game.id}/unpublish`) }, t("unpublish")),
+              } }, t("publish"))) : el("button", { type: "button", onclick: () => act(`games/${game.id}/unpublish`) }, t("unpublish")),
               el("button", { type: "button", onclick: async () => {
                 const change = await changeBox();
                 const answer = change && await act("jobs", { description: `${title}: ${manifest?.text?.en?.blurb || ""}`, comment: change.comment, mode: change.mode, base_game: game.id, base_version: v.version });
@@ -369,11 +373,14 @@
     if (!state) return;
     document.documentElement.lang = lang === "zh" ? "zh-Hant" : "en";
     $("lobby").textContent = t("lobby");
+    $("lobby").classList.toggle("hidden", local());
     $("lang").textContent = lang === "zh" ? "EN" : "中文";
     // Not while the owner is typing or a dialog is open: the live refresh must not take the words away.
     const app = $("app");
     app.textContent = "";
-    app.append(makeSection(), jobsSection(), gamesSection(), playersSection());
+    // Local: a note instead of the website's parts (players sign up on the website).
+    if (local()) app.append(el("p", { class: "muted" }, t("localNote")));
+    app.append(makeSection(), jobsSection(), gamesSection(), ...(local() ? [] : [playersSection()]));
   }
 
   async function load() {

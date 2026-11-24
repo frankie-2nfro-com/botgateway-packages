@@ -14,6 +14,14 @@ const WORDS = new Set(["left", "right", "up", "down", "jump"]);
 export const NAME = /^[A-Za-z0-9_-][A-Za-z0-9_.-]*$/;
 export const ID = /^[a-z0-9-]{2,32}$/;
 
+/** "9:16" -> 0.5625 (width / height); null when it is not "w:h" with whole numbers 1-999 or is beyond 1:3 .. 3:1. */
+export function aspectRatio(value) {
+  const m = typeof value === "string" && /^([1-9]\d{0,2}):([1-9]\d{0,2})$/.exec(value.trim());
+  if (!m) return null;
+  const r = Number(m[1]) / Number(m[2]);
+  return r >= 1 / 3 && r <= 3 ? r : null;
+}
+
 // What the sandboxed frame refuses, or what does not belong in a game. Comments are removed first.
 const REFUSED = [
   [/\beval\s*\(/, "eval() is refused by the security policy"],
@@ -79,6 +87,7 @@ function checkManifest(g, names, err, warn) {
   need(g.entry === "game.js", "entry must be game.js");
   need(typeof g.cover === "string" && names.includes(g.cover), "cover must be a file in the pack");
   need(g.stage === "wide" || g.stage === "standard", "stage must be wide or standard");
+  need(g.aspect === undefined || aspectRatio(g.aspect) !== null, 'aspect: "width:height" with whole numbers, e.g. "9:16", between 1:3 and 3:1');
   need(Array.isArray(g.tags), "tags must be a list");
   need(g.max_score === undefined || (Number.isInteger(g.max_score) && g.max_score > 0), "max_score must be a positive integer");
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { type CSSProperties, useCallback, useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import type { CopyKey, Lang } from '../i18n.ts'
 import { apiUrl, beginPlay, completePlay, setMuted, type Game } from '../store.ts'
@@ -11,6 +11,12 @@ interface Snap {
   level: number
   won: boolean
   stats: Record<string, number>
+}
+function aspectRatio(value: string | undefined): number | null {
+  const m = typeof value === 'string' ? /^([1-9]\d{0,2}):([1-9]\d{0,2})$/.exec(value.trim()) : null
+  if (!m) return null
+  const r = Number(m[1]) / Number(m[2])
+  return r >= 1 / 3 && r <= 3 ? r : null
 }
 const emptySnap: Snap = { status: 'ready', score: 0, level: 1, won: false, stats: {} }
 const WORDS: Record<string, CopyKey> = { left: 'game.left', right: 'game.right', up: 'game.up', down: 'game.down', jump: 'game.jump' }
@@ -144,6 +150,10 @@ export function Room({ game, record, back }: { game: Game; record: boolean; back
     focusFrame()
   }
 
+  // The game's own shape (game.json "aspect", e.g. "9:16"); without it a standard game is 1:2 and a wide one keeps the
+  // landscape box. The frame is the largest box of that shape that fits, with nothing around it.
+  const ratio = aspectRatio(game.aspect) ?? (game.stage === 'wide' ? null : 0.5)
+
   return (
     <section className="room">
       <div className="room-bar">
@@ -155,7 +165,7 @@ export function Room({ game, record, back }: { game: Game; record: boolean; back
       </div>
 
       <div className="stage-layout">
-        <div className={game.stage === 'wide' ? 'bezel wide' : 'bezel'}>
+        <div className={ratio ? 'bezel fit' : 'bezel wide'} style={ratio ? ({ '--ar': ratio } as CSSProperties) : undefined}>
           {/* "autoplay *": a frame with no origin matches no default list, and its sound would stay off. */}
           <iframe ref={frameRef} src="frame.html" title={text(game, 'title')} allow="autoplay *; fullscreen *; gamepad *" />
           {snap.status !== 'playing' ? (

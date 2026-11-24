@@ -11,6 +11,7 @@ export interface Game {
   kind: '2d' | '3d'
   engine: string
   stage: 'wide' | 'standard'
+  aspect?: string
   tags: string[]
   text: Partial<Record<Lang, { title: string; blurb: string; howto: string }>>
   panel: Array<string | { key: string; label: Words }>

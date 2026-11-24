@@ -4,8 +4,13 @@ for the gateway owners - the Portal and the gateway show them as "What's new" be
 store_update.sh --package myarcade publishes it (dated) and puts the next patch version on top; change
 the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
 
-0.1.7
+0.1.8
 - [Changed and non commited item put here]
+
+0.1.7 (2026-11-24)
+- A game's frame now has the game's own shape: a portrait (phone-like) game such as Rune Rush or Lantern Well no
+  longer sits in a wide box with black space beside it
+- Game makers can give the shape in game.json, e.g. "aspect": "9:16" or "4:3"; without it a game looks as before
 
 0.1.6 (2026-11-19)
 - Games can use mouse look (the pointer locks after a click, Esc releases it), e.g. first-person 3D games; needs

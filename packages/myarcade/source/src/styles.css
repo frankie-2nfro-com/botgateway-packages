@@ -224,13 +224,18 @@ h1, h2, h3, p { margin: 0; }
 }
 .bezel iframe {
   display: block;
-  height: min(68svh, 640px);
-  width: calc(min(68svh, 640px) / 2);
-  aspect-ratio: 1 / 2;
   background: #120f18;
   border: 0;
   touch-action: none;
 }
+/* A game with a shape (--ar = width / height): the largest box of that shape that fits the column and --fit-h, and the
+   bezel shrinks to it, so there is no empty space around the game. */
+.bezel.fit {
+  --fit-h: min(70svh, 720px);
+  justify-self: center;
+  width: min(100%, calc(var(--fit-h) * var(--ar) + 26px));
+}
+.bezel.fit iframe { width: 100%; height: auto; aspect-ratio: var(--ar); }
 .stage-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 180px;
@@ -268,7 +273,7 @@ h1, h2, h3, p { margin: 0; }
   .top-tools { width: 100%; justify-content: space-between; }
   .cabinet { grid-template-columns: 1fr 1fr; }
   .bezel { grid-column: 1 / -1; order: -1; justify-self: center; }
-  .bezel iframe { width: min(72vw, 280px); height: auto; }
+  .bezel.fit { --fit-h: 62svh; }
   .stage-layout { grid-template-columns: 1fr; }
   .bezel.wide iframe { width: 100%; height: 48vh; }
   .panel { display: block; }
