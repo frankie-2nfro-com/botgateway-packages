@@ -4,8 +4,14 @@ for the gateway owners - the Portal and the gateway show them as "What's new" be
 store_update.sh --package myarcade publishes it (dated) and puts the next patch version on top; change
 the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
 
-0.1.10
+0.1.11
 - [Changed and non commited item put here]
+
+0.1.10 (2026-11-25)
+- Sound on iPhone: a game's sound now starts with the tap on Start (before, only after a tap inside the game itself,
+  so sound came sometimes and sometimes not); it also plays with the phone's silent switch on (iOS 17 or newer)
+- Full screen on iPhone: it follows the part of the screen really visible (Safari's bars), so the top and the ✕ are
+  no longer cut off; the page keeps clear of the notch and the status bar
 
 0.1.9 (2026-11-25)
 - Full screen on a phone (iPhone): the game now fits the screen exactly and the page no longer scrolls behind it

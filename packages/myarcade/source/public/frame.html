@@ -21,6 +21,58 @@
         let booted = false
         let muted = false
 
+        // Sound on phones (iPhone): audio may only start from a tap IN this frame, and Web Audio follows the silent switch.
+        // Every AudioContext the game makes is remembered and resumed on the next tap or key here; "playback" lets it
+        // play with the switch on silent (iOS 17+).
+        const contexts = []
+        for (const name of ['AudioContext', 'webkitAudioContext']) {
+          const Native = window[name]
+          if (!Native) continue
+          window[name] = class extends Native {
+            constructor(...args) {
+              super(...args)
+              contexts.push(this)
+            }
+          }
+        }
+        const unlock = () => {
+          try { if (navigator.audioSession) navigator.audioSession.type = 'playback' } catch {}
+          for (const ctx of contexts) {
+            if (ctx.state === 'closed') continue
+            if (ctx.state !== 'running') ctx.resume().catch(() => {})
+            try {
+              const source = ctx.createBufferSource()
+              source.buffer = ctx.createBuffer(1, 1, 22050)
+              source.connect(ctx.destination)
+              source.start(0)
+            } catch {}
+          }
+        }
+        for (const type of ['pointerup', 'touchend', 'click', 'keydown']) addEventListener(type, unlock, true)
+
+        // While the page shows Start / Resume over the game, a tap on it lands here (the page's cover lets it through):
+        // the frame does it, so the tap that starts the game also starts its sound. The game itself never sees that tap.
+        let tapAction = null
+        let tapping = false
+        addEventListener('pointerdown', (event) => {
+          if (!tapAction || !game) return
+          tapping = true
+          event.preventDefault()
+          event.stopImmediatePropagation()
+        }, true)
+        addEventListener('pointerup', (event) => {
+          if (!tapping) return
+          tapping = false
+          event.preventDefault()
+          event.stopImmediatePropagation()
+          const action = tapAction
+          if (!action || !game) return
+          tapAction = null
+          unlock()
+          canvas.focus()
+          game[action]()
+        }, true)
+
         addEventListener('error', (event) => send({ type: 'error', message: String(event.message) }))
         addEventListener('unhandledrejection', (event) => send({ type: 'error', message: String(event.reason) }))
         document.addEventListener('securitypolicyviolation', (event) =>
@@ -57,6 +109,8 @@
             boot(message).catch((error) => send({ type: 'error', message: String(error && error.message || error) }))
           } else if (message.type === 'mute') {
             muted = Boolean(message.muted)
+          } else if (message.type === 'tap') {
+            tapAction = message.action === 'start' || message.action === 'resume' ? message.action : null
           } else if (message.type === 'focus') {
             canvas.focus()
           } else if (message.type === 'key') {

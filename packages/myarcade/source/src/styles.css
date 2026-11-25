@@ -27,6 +27,8 @@
 html, body, #root { min-height: 100%; }
 body {
   margin: 0;
+  /* viewport-fit=cover: keep clear of a phone's notch when it is turned sideways. */
+  padding: 0 env(safe-area-inset-right) 0 env(safe-area-inset-left);
   background:
     radial-gradient(900px 420px at 8% -10%, rgba(255, 61, 127, 0.22), transparent 55%),
     radial-gradient(700px 380px at 100% 0%, rgba(226, 255, 85, 0.14), transparent 50%),
@@ -55,7 +57,7 @@ h1, h2, h3, p { margin: 0; }
   display: flex;
   align-items: center;
   gap: 18px;
-  padding: 14px 22px;
+  padding: calc(14px + env(safe-area-inset-top)) 22px 14px;
   background: rgba(9, 8, 15, 0.78);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(16px);
@@ -244,11 +246,11 @@ h1, h2, h3, p { margin: 0; }
    (html.arcade-full) and touches here never pan. */
 .screen.full {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
+  top: var(--vv-top, 0px);
+  left: var(--vv-left, 0px);
+  width: var(--vv-w, 100vw);
   height: 100vh;
-  height: 100dvh;
+  height: var(--vv-h, 100dvh);
   z-index: 100;
   background: #000;
   display: flex;
@@ -308,6 +310,8 @@ html.arcade-full, html.arcade-full body { overflow: hidden; height: 100%; oversc
 .screen.full .bezel.fit iframe { width: min(100cqw, calc(100cqh * var(--ar))); height: auto; }
 .screen.full .bezel.wide iframe { width: 100cqw; height: 100cqh; }
 .screen.full .overlay { inset: 0; }
+/* The cover over the game lets taps through: the frame does Start / Resume, so the tap also starts the sound. */
+.overlay { pointer-events: none; }
 .screen.full .pad { flex: none; width: min(100%, 520px); align-self: center; padding: 0 10px 10px; }
 @media (pointer: coarse) { .screen.full .pad { display: grid; } }
 .stage-layout {

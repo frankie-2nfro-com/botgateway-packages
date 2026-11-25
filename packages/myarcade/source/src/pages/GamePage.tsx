@@ -66,10 +66,27 @@ export function Room({ game, record, back }: { game: Game; record: boolean; back
     document.addEventListener('webkitfullscreenchange', change)
     document.documentElement.classList.add('arcade-full')
     window.scrollTo(0, 0)
+    // The part of the page really visible (iPhone: Safari's bars float over the page, and dvh is not always that):
+    // the cover follows it.
+    const vv = window.visualViewport
+    const fit = () => {
+      const el = screenRef.current
+      if (!el || !vv) return
+      el.style.setProperty('--vv-top', `${vv.offsetTop}px`)
+      el.style.setProperty('--vv-left', `${vv.offsetLeft}px`)
+      el.style.setProperty('--vv-w', `${vv.width}px`)
+      el.style.setProperty('--vv-h', `${vv.height}px`)
+    }
+    fit()
+    vv?.addEventListener('resize', fit)
+    vv?.addEventListener('scroll', fit)
     return () => {
       document.removeEventListener('fullscreenchange', change)
       document.removeEventListener('webkitfullscreenchange', change)
       document.documentElement.classList.remove('arcade-full')
+      vv?.removeEventListener('resize', fit)
+      vv?.removeEventListener('scroll', fit)
+      for (const name of ['--vv-top', '--vv-left', '--vv-w', '--vv-h']) screenRef.current?.style.removeProperty(name)
     }
   }, [full])
   // Leaving the room leaves full screen too.
@@ -183,6 +200,13 @@ export function Room({ game, record, back }: { game: Game; record: boolean; back
   // The game's own shape (game.json "aspect", e.g. "9:16"); without it a standard game is 1:2 and a wide one keeps the
   // landscape box. The frame is the largest box of that shape that fits, with nothing around it.
   const ratio = aspectRatio(game.aspect) ?? (game.stage === 'wide' ? null : 0.5)
+
+  // What a tap on the game does while the cover shows Start / Resume: the frame does it (sound on phones starts only
+  // from a tap inside the frame).
+  const tapAction = failure ? null : snap.status === 'paused' ? 'resume' : snap.status !== 'playing' && mounted ? 'start' : null
+  useEffect(() => {
+    post({ type: 'tap', action: tapAction })
+  }, [tapAction, post])
 
   // Full screen: the browser's own when it has one (not on iPhone), else the page covers the window. Black around the
   // game where the screen's shape differs; a game with no shape (wide) fills it.
