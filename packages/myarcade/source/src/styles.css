@@ -314,6 +314,13 @@ html.arcade-full, html.arcade-full body { overflow: hidden; height: 100%; oversc
 .overlay { pointer-events: none; }
 .screen.full .pad { flex: none; width: min(100%, 520px); align-self: center; padding: 0 10px 10px; }
 @media (pointer: coarse) { .screen.full .pad { display: grid; } }
+/* 🎮: the player hid the touch buttons (or the game is played by touching it). */
+.screen.pad-off .pad { display: none !important; }
+.fs-pad { right: calc(env(safe-area-inset-right) + 56px); font-size: 1.1rem; }
+.fs-pad[aria-pressed="false"] { opacity: 0.55; }
+/* The room bar's 🎮 only where the buttons are shown at all (narrow or touch screens). */
+.pad-toggle { display: none; }
+@media (max-width: 860px), (pointer: coarse) { .pad-toggle { display: inline-block; } }
 .stage-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 180px;

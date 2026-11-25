@@ -51,6 +51,22 @@ export function Room({ game, record, back }: { game: Game; record: boolean; back
   const frameRef = useRef<HTMLIFrameElement>(null)
   const screenRef = useRef<HTMLDivElement>(null)
   const [full, setFull] = useState(false)
+  // The touch buttons: shown unless the game is played by touching it (game.json "touch_play"); the player's choice
+  // (🎮) is remembered for this game in this browser.
+  const padKey = `myarcade-pad-${game.id}`
+  const [padOn, setPadOn] = useState(() => {
+    try {
+      const kept = localStorage.getItem(padKey)
+      if (kept === 'on' || kept === 'off') return kept === 'on'
+    } catch { /* no storage: the default */ }
+    return game.touch_play !== true
+  })
+  const togglePad = () => {
+    const next = !padOn
+    setPadOn(next)
+    try { localStorage.setItem(padKey, next ? 'on' : 'off') } catch { /* not kept */ }
+    focusFrame()
+  }
   // The browser leaves its full screen by itself (Esc, a gesture): follow it. In the page's own full screen (iPhone)
   // the page behind must not scroll (html.arcade-full).
   useEffect(() => {
@@ -242,13 +258,23 @@ export function Room({ game, record, back }: { game: Game; record: boolean; back
         <button type="button" className="ghost" onClick={enterFull}>
           {t('game.full')}
         </button>
+        {game.pad.length ? (
+          <button type="button" className="ghost pad-toggle" onClick={togglePad} aria-pressed={padOn} title={padOn ? t('game.hidePad') : t('game.showPad')}>
+            🎮 {padOn ? t('game.hidePad') : t('game.showPad')}
+          </button>
+        ) : null}
       </div>
 
       <div className="stage-layout">
-        <div ref={screenRef} className={full ? 'screen full' : 'screen'}>
+        <div ref={screenRef} className={`screen${full ? ' full' : ''}${padOn ? '' : ' pad-off'}`}>
         {full ? (
           <div className="fs-bar">
             <span className="fs-score">{number.format(snap.score)}</span>
+            {game.pad.length ? (
+              <button type="button" className="fs-exit fs-pad" onClick={togglePad} aria-pressed={padOn} aria-label={padOn ? t('game.hidePad') : t('game.showPad')} title={padOn ? t('game.hidePad') : t('game.showPad')}>
+                🎮
+              </button>
+            ) : null}
             <button type="button" className="fs-exit" onClick={exitFull} aria-label={t('game.exitFull')} title={t('game.exitFull')}>
               ✕
             </button>

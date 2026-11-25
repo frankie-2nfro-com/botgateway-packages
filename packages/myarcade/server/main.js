@@ -257,7 +257,7 @@ function liveManifest(game) {
 function gameView(row) {
   const m = JSON.parse(row.manifest);
   return {
-    id: m.id, version: row.version, kind: m.kind, engine: m.engine, stage: m.stage, aspect: m.aspect, tags: m.tags, text: m.text, panel: m.panel, pad: m.pad,
+    id: m.id, version: row.version, kind: m.kind, engine: m.engine, stage: m.stage, aspect: m.aspect, touch_play: m.touch_play === true, tags: m.tags, text: m.text, panel: m.panel, pad: m.pad,
     cover: m.cover, released: (row.released || row.created || "").slice(0, 10), files: JSON.parse(row.files).map((f) => f.name),
   };
 }

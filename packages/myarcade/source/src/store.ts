@@ -12,6 +12,7 @@ export interface Game {
   engine: string
   stage: 'wide' | 'standard'
   aspect?: string
+  touch_play?: boolean
   tags: string[]
   text: Partial<Record<Lang, { title: string; blurb: string; howto: string }>>
   panel: Array<string | { key: string; label: Words }>

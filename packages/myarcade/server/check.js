@@ -87,6 +87,7 @@ function checkManifest(g, names, err, warn) {
   need(g.entry === "game.js", "entry must be game.js");
   need(typeof g.cover === "string" && names.includes(g.cover), "cover must be a file in the pack");
   need(g.stage === "wide" || g.stage === "standard", "stage must be wide or standard");
+  need(g.touch_play === undefined || typeof g.touch_play === "boolean", "touch_play must be true or false");
   need(g.aspect === undefined || aspectRatio(g.aspect) !== null, 'aspect: "width:height" with whole numbers, e.g. "9:16", between 1:3 and 3:1');
   need(Array.isArray(g.tags), "tags must be a list");
   need(g.max_score === undefined || (Number.isInteger(g.max_score) && g.max_score > 0), "max_score must be a positive integer");
