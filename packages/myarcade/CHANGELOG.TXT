@@ -4,8 +4,13 @@ for the gateway owners - the Portal and the gateway show them as "What's new" be
 store_update.sh --package myarcade publishes it (dated) and puts the next patch version on top; change
 the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
 
-0.1.8
+0.1.9
 - [Changed and non commited item put here]
+
+0.1.8 (2026-11-25)
+- Full screen button in the game room: the game as large as the screen allows, black around it where the screen's
+  shape differs (a wide game fills the screen); the score, Exit full screen and the touch buttons stay. On a phone
+  without the browser's full screen (iPhone) the page covers the window instead
 
 0.1.7 (2026-11-24)
 - A game's frame now has the game's own shape: a portrait (phone-like) game such as Rune Rush or Lantern Well no

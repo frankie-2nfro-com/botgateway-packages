@@ -25,6 +25,9 @@ const ASSET_TYPES: Record<string, string> = {
   ogg: 'audio/ogg', wav: 'audio/wav', m4a: 'audio/mp4', woff2: 'font/woff2', json: 'application/json', bin: 'application/octet-stream',
 }
 
+type FsDocument = Document & { webkitFullscreenElement?: Element | null; webkitExitFullscreen?: () => void }
+type FsElement = HTMLElement & { webkitRequestFullscreen?: () => void }
+
 function HoldButton({ label, onDown, onUp }: { label: string; onDown: () => void; onUp: () => void }) {
   return (
     <button
@@ -46,6 +49,33 @@ function HoldButton({ label, onDown, onUp }: { label: string; onDown: () => void
 export function Room({ game, record, back }: { game: Game; record: boolean; back: string }) {
   const { t, text, word, db } = useArcade()
   const frameRef = useRef<HTMLIFrameElement>(null)
+  const screenRef = useRef<HTMLDivElement>(null)
+  const [full, setFull] = useState(false)
+  // The browser leaves its full screen by itself (Esc, a gesture): follow it. In the page's own full screen the body
+  // must not scroll behind it.
+  useEffect(() => {
+    if (!full) return
+    const d = document as FsDocument
+    let wasFull = false
+    const change = () => {
+      const now = !!(document.fullscreenElement ?? d.webkitFullscreenElement)
+      if (wasFull && !now) setFull(false)
+      wasFull = now
+    }
+    document.addEventListener('fullscreenchange', change)
+    document.addEventListener('webkitfullscreenchange', change)
+    const overflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('fullscreenchange', change)
+      document.removeEventListener('webkitfullscreenchange', change)
+      document.body.style.overflow = overflow
+    }
+  }, [full])
+  // Leaving the room leaves full screen too.
+  useEffect(() => () => {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
+  }, [])
   const [snap, setSnap] = useState<Snap>(emptySnap)
   const [mounted, setMounted] = useState(false)
   const [failure, setFailure] = useState<string | null>(null)
@@ -154,6 +184,29 @@ export function Room({ game, record, back }: { game: Game; record: boolean; back
   // landscape box. The frame is the largest box of that shape that fits, with nothing around it.
   const ratio = aspectRatio(game.aspect) ?? (game.stage === 'wide' ? null : 0.5)
 
+  // Full screen: the browser's own when it has one (not on iPhone), else the page covers the window. Black around the
+  // game where the screen's shape differs; a game with no shape (wide) fills it.
+  const fsElement = () => document.fullscreenElement ?? (document as FsDocument).webkitFullscreenElement ?? null
+  const enterFull = () => {
+    const el = screenRef.current as FsElement | null
+    setFull(true)
+    const ask = el?.requestFullscreen?.bind(el) ?? el?.webkitRequestFullscreen?.bind(el)
+    const lock = () => {
+      const o = screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> }
+      if (ratio !== null && o?.lock) o.lock(ratio > 1 ? 'landscape' : 'portrait').catch(() => {})
+    }
+    if (ask) Promise.resolve(ask()).then(lock, () => {}).finally(focusFrame)
+    else focusFrame()
+  }
+  const exitFull = () => {
+    setFull(false)
+    if (fsElement()) {
+      const d = document as FsDocument
+      ;(document.exitFullscreen?.bind(document) ?? d.webkitExitFullscreen?.bind(d))?.()
+    }
+    focusFrame()
+  }
+
   return (
     <section className="room">
       <div className="room-bar">
@@ -162,9 +215,21 @@ export function Room({ game, record, back }: { game: Game; record: boolean; back
         <button type="button" className="ghost" onClick={() => setMuted(!db.muted)}>
           {db.muted ? t('game.unmute') : t('game.mute')}
         </button>
+        <button type="button" className="ghost" onClick={enterFull}>
+          {t('game.full')}
+        </button>
       </div>
 
       <div className="stage-layout">
+        <div ref={screenRef} className={full ? 'screen full' : 'screen'}>
+        {full ? (
+          <div className="fs-bar">
+            <span className="fs-score">{number.format(snap.score)}</span>
+            <button type="button" className="ghost" onClick={exitFull}>
+              {t('game.exitFull')}
+            </button>
+          </div>
+        ) : null}
         <div className={ratio ? 'bezel fit' : 'bezel wide'} style={ratio ? ({ '--ar': ratio } as CSSProperties) : undefined}>
           {/* "autoplay *": a frame with no origin matches no default list, and its sound would stay off. */}
           <iframe ref={frameRef} src="frame.html" title={text(game, 'title')} allow="autoplay *; fullscreen *; gamepad *" />
@@ -195,6 +260,17 @@ export function Room({ game, record, back }: { game: Game; record: boolean; back
             </div>
           ) : null}
         </div>
+        <div className="pad">
+          {game.pad.map((button) => (
+            <HoldButton
+              key={button.action}
+              label={typeof button.label === 'string' ? t(WORDS[button.label] ?? 'game.up') : word(button.label)}
+              onDown={() => post({ type: 'input', action: button.action, down: true })}
+              onUp={() => post({ type: 'input', action: button.action, down: false })}
+            />
+          ))}
+        </div>
+        </div>
         <aside className="panel">
           <dl>
             {game.panel.map((row) => {
@@ -213,16 +289,6 @@ export function Room({ game, record, back }: { game: Game; record: boolean; back
       </div>
 
       <p className="howto">{text(game, 'howto')}</p>
-      <div className="pad">
-        {game.pad.map((button) => (
-          <HoldButton
-            key={button.action}
-            label={typeof button.label === 'string' ? t(WORDS[button.label] ?? 'game.up') : word(button.label)}
-            onDown={() => post({ type: 'input', action: button.action, down: true })}
-            onUp={() => post({ type: 'input', action: button.action, down: false })}
-          />
-        ))}
-      </div>
     </section>
   )
 }
