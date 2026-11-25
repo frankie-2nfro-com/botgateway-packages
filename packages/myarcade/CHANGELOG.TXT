@@ -4,8 +4,14 @@ for the gateway owners - the Portal and the gateway show them as "What's new" be
 store_update.sh --package myarcade publishes it (dated) and puts the next patch version on top; change
 the top version by hand for a bigger step (e.g. 1.0.0). This file is not packed into the package.
 
-0.1.9
+0.1.10
 - [Changed and non commited item put here]
+
+0.1.9 (2026-11-25)
+- Full screen on a phone (iPhone): the game now fits the screen exactly and the page no longer scrolls behind it
+  (the room's title row was wider than a phone screen and made the whole page wider)
+- Full screen: a round ✕ at the top right leaves it, and the score floats at the top left, so the game gets the
+  whole height
 
 0.1.8 (2026-11-25)
 - Full screen button in the game room: the game as large as the screen allows, black around it where the screen's

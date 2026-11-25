@@ -51,8 +51,8 @@ export function Room({ game, record, back }: { game: Game; record: boolean; back
   const frameRef = useRef<HTMLIFrameElement>(null)
   const screenRef = useRef<HTMLDivElement>(null)
   const [full, setFull] = useState(false)
-  // The browser leaves its full screen by itself (Esc, a gesture): follow it. In the page's own full screen the body
-  // must not scroll behind it.
+  // The browser leaves its full screen by itself (Esc, a gesture): follow it. In the page's own full screen (iPhone)
+  // the page behind must not scroll (html.arcade-full).
   useEffect(() => {
     if (!full) return
     const d = document as FsDocument
@@ -64,12 +64,12 @@ export function Room({ game, record, back }: { game: Game; record: boolean; back
     }
     document.addEventListener('fullscreenchange', change)
     document.addEventListener('webkitfullscreenchange', change)
-    const overflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    document.documentElement.classList.add('arcade-full')
+    window.scrollTo(0, 0)
     return () => {
       document.removeEventListener('fullscreenchange', change)
       document.removeEventListener('webkitfullscreenchange', change)
-      document.body.style.overflow = overflow
+      document.documentElement.classList.remove('arcade-full')
     }
   }, [full])
   // Leaving the room leaves full screen too.
@@ -225,8 +225,8 @@ export function Room({ game, record, back }: { game: Game; record: boolean; back
         {full ? (
           <div className="fs-bar">
             <span className="fs-score">{number.format(snap.score)}</span>
-            <button type="button" className="ghost" onClick={exitFull}>
-              {t('game.exitFull')}
+            <button type="button" className="fs-exit" onClick={exitFull} aria-label={t('game.exitFull')} title={t('game.exitFull')}>
+              ✕
             </button>
           </div>
         ) : null}
